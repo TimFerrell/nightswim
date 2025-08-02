@@ -1,233 +1,363 @@
-# Hayward Omni Pool Manager
+# Hayward Omnilogic Proxy Server
 
-A modern, web-based application for managing your Hayward Omni pool automation system. Built with React, Node.js, and designed for easy deployment to Vercel.
+A Node.js proxy server that forwards and authenticates requests to the Hayward Omnilogic ASP.NET WebForms application. This server handles session management, authentication, and provides data extraction capabilities using Cheerio for HTML parsing.
 
 ## Features
 
-### 🏊‍♂️ Complete Pool Control
-- **Equipment Status Monitoring**: Real-time status of all pool equipment
-- **Temperature Control**: Set and monitor heater temperatures
-- **Pump Management**: Control variable speed pumps and filters
-- **Lighting Control**: Full ColorLogic light show selection with brightness/speed
-- **Chlorinator Management**: Monitor salt levels, set output percentage, super chlorination
-- **Relay Control**: Manage auxiliary equipment (blowers, jets, etc.)
+- **Secure Authentication**: Handles ASP.NET WebForms authentication with viewstate management
+- **Session Management**: Maintains user sessions with cookie persistence
+- **Proxy Functionality**: Forwards requests to Hayward Omnilogic while maintaining authentication
+- **Data Extraction**: Uses Cheerio to parse HTML and extract specific data from responses
+- **Custom Selectors**: Supports custom CSS selectors for targeted data extraction
+- **Error Handling**: Comprehensive error handling and logging
+- **Security**: Implements CORS, Helmet security headers, and session management
 
-### 📊 System Monitoring
-- **Live Telemetry**: Water temperature, air temperature, flow status
-- **Alarm Monitoring**: Real-time alarm notifications and status
-- **Equipment Status**: Detailed status for each piece of equipment
-- **Auto-Refresh**: Automatic data updates every 30 seconds
+## Installation
 
-### 🎨 Modern Interface
-- **Responsive Design**: Works on desktop, tablet, and mobile devices
-- **Intuitive Controls**: Easy-to-use interface for all pool functions
-- **Real-time Updates**: Instant feedback on all control actions
-- **Beautiful UI**: Modern, clean design with pool-themed styling
+1. Clone or initialize the repository:
+```bash
+git clone <repository-url>
+cd hayward-omnilogic-proxy
+```
 
-## Quick Start
+2. Install dependencies:
+```bash
+npm install
+```
 
-### Prerequisites
-- Node.js 18+ 
-- Hayward Omni pool system with OmniLogic controller
-- Hayward app account credentials
+3. Configure environment variables:
+```bash
+cp .env.example .env
+# Edit .env with your configuration
+```
 
-### Local Development
+4. Start the server:
+```bash
+# Development mode with auto-reload
+npm run dev
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/TimFerrell/nightswim
-   cd nightswim
-   ```
+# Production mode
+npm start
+```
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
+## Environment Variables
 
-3. **Start the development server**
-   ```bash
-   npm run dev
-   ```
-
-4. **Open your browser**
-   Navigate to `http://localhost:3000` and log in with your Hayward credentials.
-
-### Deploy to Vercel
-
-#### One-Click Deploy
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/TimFerrell/nightswim)
-
-#### Manual Deploy
-
-1. **Install Vercel CLI**
-   ```bash
-   npm install -g vercel
-   ```
-
-2. **Deploy**
-   ```bash
-   vercel
-   ```
-
-3. **Follow the prompts** to configure your deployment
-
-## Configuration
-
-### Environment Variables
-
-Create a `.env.local` file for local development:
+Create a `.env` file with the following variables:
 
 ```env
+# Server Configuration
+PORT=3000
 NODE_ENV=development
+
+# Session Configuration
+SESSION_SECRET=your-secret-key-here-change-in-production
+
+# CORS Configuration
+CORS_ORIGIN=http://localhost:3000
+
+# Hayward Omnilogic URL
+HAYWARD_BASE_URL=https://haywardomnilogic.com
 ```
 
-For production deployment, set these in your Vercel dashboard:
+## API Endpoints
 
-```env
-NODE_ENV=production
+### Authentication
+
+#### POST `/api/auth/login`
+Authenticate with Hayward Omnilogic credentials.
+
+**Request Body:**
+```json
+{
+  "username": "your-username",
+  "password": "your-password"
+}
 ```
 
-### Hayward Credentials
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Authentication successful"
+}
+```
 
-The application uses your existing Hayward OmniLogic app credentials. These are:
-- **Stored locally** in your browser (localStorage)
-- **Never sent to external services** except Hayward's official API
-- **Transmitted securely** over HTTPS to Hayward's servers
+#### POST `/api/auth/logout`
+Logout and destroy session.
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Logged out successfully"
+}
+```
+
+#### GET `/api/auth/status`
+Check authentication status.
+
+**Response:**
+```json
+{
+  "authenticated": true
+}
+```
+
+### Proxy Endpoints
+
+#### ALL `/api/proxy/*`
+Forward requests to Hayward Omnilogic. Requires authentication.
+
+**Example:**
+```bash
+# GET request to a specific page
+curl -X GET http://localhost:3000/api/proxy/dashboard \
+  -H "Cookie: connect.sid=your-session-id"
+
+# POST request with data
+curl -X POST http://localhost:3000/api/proxy/some-action \
+  -H "Content-Type: application/json" \
+  -H "Cookie: connect.sid=your-session-id" \
+  -d '{"key": "value"}'
+```
+
+### Data Extraction
+
+#### GET `/api/extract/:page`
+Extract common data patterns from a page using Cheerio.
+
+**Example:**
+```bash
+curl -X GET http://localhost:3000/api/extract/dashboard \
+  -H "Cookie: connect.sid=your-session-id"
+```
+
+**Response:**
+```json
+{
+  "title": "Page Title",
+  "headings": [
+    {
+      "level": "h1",
+      "text": "Dashboard",
+      "id": "main-heading",
+      "class": "title"
+    }
+  ],
+  "forms": [
+    {
+      "id": "form1",
+      "action": "/submit",
+      "method": "POST",
+      "fields": [
+        {
+          "name": "username",
+          "type": "text",
+          "value": "",
+          "id": "txtUsername",
+          "class": "form-control"
+        }
+      ]
+    }
+  ],
+  "tables": [],
+  "links": [],
+  "images": [],
+  "meta": {}
+}
+```
+
+#### POST `/api/extract-custom`
+Extract specific data using custom CSS selectors.
+
+**Request Body:**
+```json
+{
+  "page": "dashboard",
+  "selectors": {
+    "poolTemperature": ".temperature-value",
+    "status": ".status-indicator",
+    "equipmentList": ".equipment-item"
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "poolTemperature": {
+    "text": "78°F",
+    "html": "<span class=\"temperature-value\">78°F</span>",
+    "attributes": {
+      "class": "temperature-value",
+      "data-temp": "78"
+    }
+  },
+  "status": {
+    "text": "Online",
+    "html": "<div class=\"status-indicator online\">Online</div>",
+    "attributes": {
+      "class": "status-indicator online"
+    }
+  },
+  "equipmentList": [
+    {
+      "text": "Pool Pump",
+      "html": "<div class=\"equipment-item\">Pool Pump</div>",
+      "attributes": {
+        "class": "equipment-item",
+        "data-id": "pump1"
+      }
+    }
+  ]
+}
+```
+
+### Health Check
+
+#### GET `/health`
+Server health and status information.
+
+**Response:**
+```json
+{
+  "status": "ok",
+  "timestamp": "2024-01-15T10:30:00.000Z",
+  "activeSessions": 3
+}
+```
+
+## Usage Examples
+
+### JavaScript/Node.js Client
+
+```javascript
+const axios = require('axios');
+
+const client = axios.create({
+  baseURL: 'http://localhost:3000',
+  withCredentials: true // Important for session cookies
+});
+
+async function example() {
+  try {
+    // Login
+    await client.post('/api/auth/login', {
+      username: 'your-username',
+      password: 'your-password'
+    });
+
+    // Extract data from dashboard
+    const dashboardData = await client.get('/api/extract/dashboard');
+    console.log('Dashboard data:', dashboardData.data);
+
+    // Custom data extraction
+    const customData = await client.post('/api/extract-custom', {
+      page: 'status',
+      selectors: {
+        temperature: '.pool-temp',
+        status: '.system-status'
+      }
+    });
+    console.log('Custom data:', customData.data);
+
+    // Proxy a specific request
+    const response = await client.get('/api/proxy/equipment-status');
+    console.log('Raw response:', response.data);
+
+  } catch (error) {
+    console.error('Error:', error.response?.data || error.message);
+  }
+}
+
+example();
+```
+
+### cURL Examples
+
+```bash
+# Login
+curl -c cookies.txt -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username": "your-username", "password": "your-password"}'
+
+# Extract dashboard data
+curl -b cookies.txt -X GET http://localhost:3000/api/extract/dashboard
+
+# Custom extraction
+curl -b cookies.txt -X POST http://localhost:3000/api/extract-custom \
+  -H "Content-Type: application/json" \
+  -d '{
+    "page": "status", 
+    "selectors": {
+      "temperature": ".pool-temp",
+      "status": ".system-status"
+    }
+  }'
+
+# Proxy request
+curl -b cookies.txt -X GET http://localhost:3000/api/proxy/some-page
+```
 
 ## Architecture
 
-### Frontend (React/Next.js)
-- **Pages**: Main app routing and page components
-- **Components**: Reusable UI components for equipment control
-- **Styles**: Tailwind CSS for responsive, modern styling
+### Session Management
+- Each user session is isolated with its own cookie jar
+- Sessions automatically expire after 24 hours of inactivity
+- Automatic cleanup of expired sessions
 
-### Backend (Node.js/Express)
-- **API Routes**: RESTful endpoints for pool equipment control
-- **OmniLogic Library**: Node.js implementation of Hayward's API
-- **Authentication**: Secure credential handling and token management
+### Authentication Flow
+1. Client sends credentials to `/api/auth/login`
+2. Server fetches Hayward login page and extracts ASP.NET WebForms viewstate
+3. Server submits login form with proper viewstate and credentials
+4. Server validates authentication success and stores session
+5. Subsequent requests use the authenticated session
 
-### Deployment (Vercel)
-- **Serverless Functions**: API routes deployed as serverless functions
-- **Static Frontend**: React app served from Vercel's global CDN
-- **Auto-scaling**: Handles traffic spikes automatically
+### Data Extraction
+- **Generic extraction** (`/api/extract/:page`): Extracts common HTML elements (headings, forms, tables, links, images, meta tags)
+- **Custom extraction** (`/api/extract-custom`): Uses provided CSS selectors to extract specific data
+- All extraction uses Cheerio for reliable HTML parsing
 
-## API Reference
+## Security Considerations
 
-### Authentication
+- Session secrets should be changed in production
+- HTTPS should be used in production environments
+- CORS is configured to restrict cross-origin requests
+- Helmet middleware provides security headers
+- Sessions are properly isolated per user
+
+## Error Handling
+
+The server provides comprehensive error handling:
+- Authentication failures return appropriate HTTP status codes
+- Network errors are caught and reported
+- Invalid selectors are handled gracefully
+- Session timeouts are detected and reported
+
+## Dependencies
+
+- **express**: Web server framework
+- **axios**: HTTP client for making requests to Hayward
+- **cheerio**: Server-side jQuery implementation for HTML parsing
+- **express-session**: Session management
+- **tough-cookie**: Cookie jar implementation
+- **helmet**: Security middleware
+- **cors**: Cross-origin resource sharing
+- **form-data**: Multipart form data handling
+
+## Development
+
 ```bash
-POST /api/auth/test-connection
-POST /api/auth/login
+# Install dependencies
+npm install
+
+# Run in development mode with auto-reload
+npm run dev
+
+# Run in production mode
+npm start
 ```
-
-### Pool Management
-```bash
-GET /api/pool/config          # Get pool configuration
-GET /api/pool/telemetry       # Get real-time telemetry
-GET /api/pool/alarms          # Get active alarms
-
-POST /api/pool/heater/temperature    # Set heater temperature
-POST /api/pool/heater/toggle         # Turn heater on/off
-POST /api/pool/pump/speed            # Set pump speed
-POST /api/pool/lights/show           # Set light show
-POST /api/pool/chlorinator/settings  # Configure chlorinator
-POST /api/pool/chlorinator/super     # Super chlorination
-POST /api/pool/relay/toggle          # Control relays/valves
-```
-
-## Equipment Support
-
-### Supported Equipment Types
-- ✅ **Heaters**: Virtual heaters, gas heaters, heat pumps
-- ✅ **Pumps**: Variable speed pumps, single speed pumps, filter pumps
-- ✅ **Lights**: ColorLogic V1 and V2 lights with full show control
-- ✅ **Chlorinators**: All Hayward chlorinator models
-- ✅ **Relays**: Auxiliary equipment control (blowers, jets, etc.)
-- ✅ **Valves**: Automated valve control
-- ✅ **Temperature Sensors**: Water and air temperature monitoring
-- ✅ **Flow Sensors**: Flow detection and monitoring
-
-### Light Shows Supported
-- Voodoo Lounge, Deep Blue Sea, Royal Blue
-- Afternoon Skies, Aqua Green, Emerald
-- Cloud White, Warm Red, Flamingo
-- Vivid Violet, Sangria, Twilight
-- Tranquility, Gemstone, USA
-- Mardi Gras, Cool Cabaret
-- And more...
-
-## Security
-
-### Data Protection
-- **No credential storage** on external servers
-- **HTTPS encryption** for all communications
-- **Client-side authentication** with Hayward's official API
-- **No third-party data sharing**
-
-### Best Practices
-- Credentials are only stored locally in your browser
-- All API calls use official Hayward endpoints
-- No modification of pool safety systems
-- Secure token-based authentication
-
-## Browser Support
-
-- ✅ Chrome 90+
-- ✅ Firefox 90+
-- ✅ Safari 14+
-- ✅ Edge 90+
-- ✅ Mobile browsers (iOS Safari, Chrome Mobile)
-
-## Troubleshooting
-
-### Common Issues
-
-**Connection Failed**
-- Verify your Hayward app credentials are correct
-- Ensure your pool system is online
-- Check internet connectivity
-
-**Equipment Not Responding**
-- Wait a few seconds and try again
-- Check if equipment is in manual override mode
-- Verify equipment is powered and connected
-
-**Data Not Updating**
-- Refresh the page
-- Check network connection
-- Verify pool system is communicating
-
-### Support
-
-For technical support:
-1. Check the browser console for error messages
-2. Verify your pool system is accessible via the Hayward app
-3. Ensure all equipment is properly configured in the Hayward system
-
-## Contributing
-
-We welcome contributions! Please see our contributing guidelines for details.
-
-### Development Setup
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Disclaimer
-
-This is an unofficial application for Hayward pool systems. While it uses official Hayward APIs, it is not affiliated with or endorsed by Hayward Pool Products. Use at your own risk and always follow proper pool safety guidelines.
-
-## Acknowledgments
-
-- Hayward Pool Products for their OmniLogic API
-- The home automation community for API documentation and examples
-- Contributors to the open-source pool automation projects
-
----
-
-**Made with 💙 for pool enthusiasts**
+MIT License
