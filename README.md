@@ -35,8 +35,8 @@ A modern, web-based application for managing your Hayward Omni pool automation s
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url>
-   cd hayward-omni-pool-manager
+   git clone https://github.com/TimFerrell/nightswim
+   cd nightswim
    ```
 
 2. **Install dependencies**
@@ -55,7 +55,7 @@ A modern, web-based application for managing your Hayward Omni pool automation s
 ### Deploy to Vercel
 
 #### One-Click Deploy
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/your-repo/hayward-omni-pool-manager)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/TimFerrell/nightswim)
 
 #### Manual Deploy
 
