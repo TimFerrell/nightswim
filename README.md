@@ -55,7 +55,7 @@ A modern, web-based application for managing your Hayward Omni pool automation s
 ### Deploy to Vercel
 
 #### One-Click Deploy
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/your-repo/hayward-omni-pool-manager)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/TimFerrell/nightswim)
 
 #### Manual Deploy
 
