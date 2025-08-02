@@ -1,0 +1,43 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gradient-to-br from-pool-50 to-pool-100 min-h-screen;
+  }
+}
+
+@layer components {
+  .pool-card {
+    @apply bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-pool-200/50;
+  }
+  
+  .pool-button {
+    @apply bg-pool-500 hover:bg-pool-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+  }
+  
+  .pool-button-secondary {
+    @apply bg-white/80 hover:bg-white text-pool-700 font-medium py-2 px-4 rounded-lg border border-pool-200 transition-colors duration-200;
+  }
+  
+  .pool-input {
+    @apply w-full px-3 py-2 border border-pool-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pool-500 focus:border-transparent;
+  }
+  
+  .equipment-status {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  
+  .status-online {
+    @apply bg-green-100 text-green-800;
+  }
+  
+  .status-offline {
+    @apply bg-red-100 text-red-800;
+  }
+  
+  .status-warning {
+    @apply bg-yellow-100 text-yellow-800;
+  }
+}
