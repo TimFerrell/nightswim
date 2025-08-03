@@ -147,18 +147,34 @@
             <div id="poolData"></div>
             
             <div class="chart-container">
-                <h2>📊 Pool Metrics Over Time</h2>
+                <h2>🌡️ Temperature Metrics</h2>
                 <div class="chart-controls">
                     <label for="timeRange">Time Range:</label>
-                    <select id="timeRange" class="time-selector" onchange="updateChart()">
+                    <select id="timeRange" class="time-selector" onchange="updateAllCharts()">
                         <option value="1">Last Hour</option>
                         <option value="6">Last 6 Hours</option>
                         <option value="24" selected>Last 24 Hours</option>
                         <option value="48">Last 48 Hours</option>
                     </select>
-                    <div class="chart-status" id="chartStatus">Loading...</div>
+                    <div class="chart-status" id="tempChartStatus">Loading...</div>
                 </div>
-                <canvas id="poolChart"></canvas>
+                <canvas id="tempChart"></canvas>
+            </div>
+
+            <div class="chart-container">
+                <h2>⚡ Electrical Metrics</h2>
+                <div class="chart-controls">
+                    <div class="chart-status" id="electricalChartStatus">Loading...</div>
+                </div>
+                <canvas id="electricalChart"></canvas>
+            </div>
+
+            <div class="chart-container">
+                <h2>🧂 Water Chemistry</h2>
+                <div class="chart-controls">
+                    <div class="chart-status" id="chemistryChartStatus">Loading...</div>
+                </div>
+                <canvas id="chemistryChart"></canvas>
             </div>
         </div>
         

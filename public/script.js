@@ -1,20 +1,255 @@
-// Global chart instance
-let poolChart = null;
+// Global chart instances
+let tempChart = null;
+let electricalChart = null;
+let chemistryChart = null;
 let chartUpdateInterval = null;
 let statsUpdateInterval = null;
 
 /**
- * Initialize the pool metrics chart
+ * Common chart configuration
  */
-const initializeChart = () => {
-  // Destroy existing chart if it exists
-  if (poolChart) {
-    poolChart.destroy();
+const getChartConfig = (type) => {
+  const baseConfig = {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: {
+      mode: 'index',
+      intersect: false
+    },
+    plugins: {
+      title: {
+        display: false
+      },
+      legend: {
+        position: 'top',
+        labels: {
+          usePointStyle: true,
+          padding: 20,
+          font: {
+            size: 12
+          }
+        }
+      },
+      tooltip: {
+        backgroundColor: 'rgba(0, 0, 0, 0.9)',
+        titleColor: 'white',
+        bodyColor: 'white',
+        borderColor: '#667eea',
+        borderWidth: 2,
+        cornerRadius: 12,
+        displayColors: true,
+        padding: 12,
+        titleFont: {
+          size: 14,
+          weight: 'bold'
+        },
+        bodyFont: {
+          size: 13
+        }
+      }
+    },
+    scales: {
+      x: {
+        type: 'time',
+        time: {
+          unit: 'hour',
+          displayFormats: {
+            hour: 'MMM d, h:mm a'
+          }
+        },
+        title: {
+          display: true,
+          text: 'Time',
+          font: {
+            size: 14,
+            weight: 'bold'
+          }
+        },
+        grid: {
+          color: 'rgba(0, 0, 0, 0.08)',
+          drawBorder: false
+        },
+        ticks: {
+          font: {
+            size: 11
+          }
+        }
+      }
+    }
+  };
+
+  // Add specific Y-axis configuration based on chart type
+  if (type === 'temperature') {
+    baseConfig.scales.y = {
+      type: 'linear',
+      display: true,
+      position: 'left',
+      title: {
+        display: true,
+        text: 'Temperature (°F)',
+        font: {
+          size: 14,
+          weight: 'bold'
+        }
+      },
+      grid: {
+        color: 'rgba(0, 0, 0, 0.08)',
+        drawBorder: false
+      },
+      ticks: {
+        font: {
+          size: 11
+        }
+      }
+    };
+  } else if (type === 'electrical') {
+    baseConfig.scales.y = {
+      type: 'linear',
+      display: true,
+      position: 'left',
+      title: {
+        display: true,
+        text: 'Voltage (V)',
+        font: {
+          size: 14,
+          weight: 'bold'
+        }
+      },
+      grid: {
+        color: 'rgba(0, 0, 0, 0.08)',
+        drawBorder: false
+      },
+      ticks: {
+        font: {
+          size: 11
+        }
+      }
+    };
+  } else if (type === 'chemistry') {
+    baseConfig.scales.y = {
+      type: 'linear',
+      display: true,
+      position: 'left',
+      title: {
+        display: true,
+        text: 'Salt Level (PPM)',
+        font: {
+          size: 14,
+          weight: 'bold'
+        }
+      },
+      grid: {
+        color: 'rgba(0, 0, 0, 0.08)',
+        drawBorder: false
+      },
+      ticks: {
+        font: {
+          size: 11
+        }
+      }
+    };
+  }
+
+  return baseConfig;
+};
+
+/**
+ * Initialize the temperature chart
+ */
+const initializeTempChart = () => {
+  if (tempChart) {
+    tempChart.destroy();
   }
   
-  const ctx = document.getElementById('poolChart').getContext('2d');
+  const ctx = document.getElementById('tempChart').getContext('2d');
   
-  poolChart = new Chart(ctx, {
+  tempChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [
+        {
+          label: 'Water Temperature (°F)',
+          data: [],
+          borderColor: '#45b7d1',
+          backgroundColor: 'rgba(69, 183, 209, 0.15)',
+          borderWidth: 3,
+          tension: 0.4,
+          fill: true,
+          pointRadius: 4,
+          pointHoverRadius: 6
+        },
+        {
+          label: 'Air Temperature (°F)',
+          data: [],
+          borderColor: '#ffa726',
+          backgroundColor: 'rgba(255, 167, 38, 0.15)',
+          borderWidth: 3,
+          tension: 0.4,
+          fill: true,
+          pointRadius: 4,
+          pointHoverRadius: 6
+        },
+        {
+          label: 'Cell Temperature (°F)',
+          data: [],
+          borderColor: '#ff6b6b',
+          backgroundColor: 'rgba(255, 107, 107, 0.15)',
+          borderWidth: 3,
+          tension: 0.4,
+          fill: true,
+          pointRadius: 4,
+          pointHoverRadius: 6
+        }
+      ]
+    },
+    options: getChartConfig('temperature')
+  });
+};
+
+/**
+ * Initialize the electrical chart
+ */
+const initializeElectricalChart = () => {
+  if (electricalChart) {
+    electricalChart.destroy();
+  }
+  
+  const ctx = document.getElementById('electricalChart').getContext('2d');
+  
+  electricalChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [
+        {
+          label: 'Cell Voltage (V)',
+          data: [],
+          borderColor: '#4ecdc4',
+          backgroundColor: 'rgba(78, 205, 196, 0.15)',
+          borderWidth: 3,
+          tension: 0.4,
+          fill: true,
+          pointRadius: 4,
+          pointHoverRadius: 6
+        }
+      ]
+    },
+    options: getChartConfig('electrical')
+  });
+};
+
+/**
+ * Initialize the chemistry chart
+ */
+const initializeChemistryChart = () => {
+  if (chemistryChart) {
+    chemistryChart.destroy();
+  }
+  
+  const ctx = document.getElementById('chemistryChart').getContext('2d');
+  
+  chemistryChart = new Chart(ctx, {
     type: 'line',
     data: {
       labels: [],
@@ -23,130 +258,26 @@ const initializeChart = () => {
           label: 'Salt Level (PPM)',
           data: [],
           borderColor: '#667eea',
-          backgroundColor: 'rgba(102, 126, 234, 0.1)',
+          backgroundColor: 'rgba(102, 126, 234, 0.15)',
+          borderWidth: 3,
           tension: 0.4,
-          yAxisID: 'y'
-        },
-        {
-          label: 'Cell Temperature (°F)',
-          data: [],
-          borderColor: '#ff6b6b',
-          backgroundColor: 'rgba(255, 107, 107, 0.1)',
-          tension: 0.4,
-          yAxisID: 'y'
-        },
-        {
-          label: 'Cell Voltage (V)',
-          data: [],
-          borderColor: '#4ecdc4',
-          backgroundColor: 'rgba(78, 205, 196, 0.1)',
-          tension: 0.4,
-          yAxisID: 'y2'
-        },
-        {
-          label: 'Water Temperature (°F)',
-          data: [],
-          borderColor: '#45b7d1',
-          backgroundColor: 'rgba(69, 183, 209, 0.1)',
-          tension: 0.4,
-          yAxisID: 'y'
-        },
-        {
-          label: 'Air Temperature (°F)',
-          data: [],
-          borderColor: '#ffa726',
-          backgroundColor: 'rgba(255, 167, 38, 0.1)',
-          tension: 0.4,
-          yAxisID: 'y'
+          fill: true,
+          pointRadius: 4,
+          pointHoverRadius: 6
         }
       ]
     },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: {
-        mode: 'index',
-        intersect: false
-      },
-      plugins: {
-        title: {
-          display: false
-        },
-        legend: {
-          position: 'top',
-          labels: {
-            usePointStyle: true,
-            padding: 20
-          }
-        },
-        tooltip: {
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
-          titleColor: 'white',
-          bodyColor: 'white',
-          borderColor: '#667eea',
-          borderWidth: 1,
-          cornerRadius: 8,
-          displayColors: true
-        }
-      },
-      scales: {
-        x: {
-          type: 'time',
-          time: {
-            unit: 'hour',
-            displayFormats: {
-              hour: 'MMM d, h:mm a'
-            }
-          },
-          title: {
-            display: true,
-            text: 'Time'
-          },
-          grid: {
-            color: 'rgba(0, 0, 0, 0.1)'
-          }
-        },
-        y: {
-          type: 'linear',
-          display: true,
-          position: 'left',
-          title: {
-            display: true,
-            text: 'Temperature (°F) / Salt (PPM)'
-          },
-          grid: {
-            color: 'rgba(0, 0, 0, 0.1)'
-          }
-        },
-        y2: {
-          type: 'linear',
-          display: true,
-          position: 'right',
-          title: {
-            display: true,
-            text: 'Voltage (V)'
-          },
-          grid: {
-            drawOnChartArea: false
-          }
-        }
-      }
-    }
+    options: getChartConfig('chemistry')
   });
 };
 
 /**
- * Update the chart with new data
+ * Update all charts with new data
  */
-const updateChart = async () => {
-  if (!poolChart) return;
-  
+const updateAllCharts = async () => {
   const timeRange = document.getElementById('timeRange').value;
-  const statusElement = document.getElementById('chartStatus');
   
   try {
-    statusElement.textContent = 'Loading...';
-    
     const response = await fetch(`/api/pool/timeseries?hours=${timeRange}`, {
       credentials: 'include'
     });
@@ -158,81 +289,125 @@ const updateChart = async () => {
     const result = await response.json();
     
     if (!result.success || !result.data || result.data.length === 0) {
-      statusElement.textContent = 'No data available';
+      document.getElementById('tempChartStatus').textContent = 'No data available';
+      document.getElementById('electricalChartStatus').textContent = 'No data available';
+      document.getElementById('chemistryChartStatus').textContent = 'No data available';
       return;
     }
     
-    // Process data for chart
+    // Process data for all charts
     const labels = result.data.map(point => new Date(point.timestamp));
-    const saltData = result.data.map(point => point.saltInstant);
-    const cellTempData = result.data.map(point => point.cellTemp);
-    const cellVoltageData = result.data.map(point => point.cellVoltage);
     const waterTempData = result.data.map(point => point.waterTemp);
     const airTempData = result.data.map(point => point.airTemp);
+    const cellTempData = result.data.map(point => point.cellTemp);
+    const cellVoltageData = result.data.map(point => point.cellVoltage);
+    const saltData = result.data.map(point => point.saltInstant);
     
-    // Update chart data
-    poolChart.data.labels = labels;
-    poolChart.data.datasets[0].data = saltData;
-    poolChart.data.datasets[1].data = cellTempData;
-    poolChart.data.datasets[2].data = cellVoltageData;
-    poolChart.data.datasets[3].data = waterTempData;
-    poolChart.data.datasets[4].data = airTempData;
+    // Update temperature chart
+    if (tempChart) {
+      tempChart.data.labels = labels;
+      tempChart.data.datasets[0].data = waterTempData;
+      tempChart.data.datasets[1].data = airTempData;
+      tempChart.data.datasets[2].data = cellTempData;
+      tempChart.update('none');
+    }
     
-    poolChart.update('none'); // Update without animation for better performance
+    // Update electrical chart
+    if (electricalChart) {
+      electricalChart.data.labels = labels;
+      electricalChart.data.datasets[0].data = cellVoltageData;
+      electricalChart.update('none');
+    }
+    
+    // Update chemistry chart
+    if (chemistryChart) {
+      chemistryChart.data.labels = labels;
+      chemistryChart.data.datasets[0].data = saltData;
+      chemistryChart.update('none');
+    }
     
     // Update status with data info
     const dataCount = result.data.length;
     const oldestTime = result.stats?.oldestTimestamp ? new Date(result.stats.oldestTimestamp).toLocaleTimeString() : 'N/A';
     const newestTime = result.stats?.newestTimestamp ? new Date(result.stats.newestTimestamp).toLocaleTimeString() : 'N/A';
+    const statusText = `${dataCount} data points | ${oldestTime} - ${newestTime} | Updated: ${new Date().toLocaleTimeString()}`;
     
-    statusElement.textContent = `${dataCount} data points | ${oldestTime} - ${newestTime} | Updated: ${new Date().toLocaleTimeString()}`;
+    document.getElementById('tempChartStatus').textContent = statusText;
+    document.getElementById('electricalChartStatus').textContent = statusText;
+    document.getElementById('chemistryChartStatus').textContent = statusText;
     
   } catch (error) {
     console.error('Chart update error:', error);
-    statusElement.textContent = 'Error loading data';
+    document.getElementById('tempChartStatus').textContent = 'Error loading data';
+    document.getElementById('electricalChartStatus').textContent = 'Error loading data';
+    document.getElementById('chemistryChartStatus').textContent = 'Error loading data';
   }
 };
 
 /**
- * Append a single data point to the chart
+ * Append a single data point to all charts
  */
 const appendDataPoint = (dataPoint) => {
-  if (!poolChart) return;
-  
   const timestamp = new Date(dataPoint.timestamp);
-  
-  // Add new data point to each dataset
-  poolChart.data.labels.push(timestamp);
-  poolChart.data.datasets[0].data.push(dataPoint.saltInstant);
-  poolChart.data.datasets[1].data.push(dataPoint.cellTemp);
-  poolChart.data.datasets[2].data.push(dataPoint.cellVoltage);
-  poolChart.data.datasets[3].data.push(dataPoint.waterTemp);
-  poolChart.data.datasets[4].data.push(dataPoint.airTemp);
-  
-  // Remove old data points if we exceed the time range
   const timeRange = parseInt(document.getElementById('timeRange').value);
   const cutoffTime = new Date(Date.now() - (timeRange * 60 * 60 * 1000));
   
-  while (poolChart.data.labels.length > 0 && poolChart.data.labels[0] < cutoffTime) {
-    poolChart.data.labels.shift();
-    poolChart.data.datasets[0].data.shift();
-    poolChart.data.datasets[1].data.shift();
-    poolChart.data.datasets[2].data.shift();
-    poolChart.data.datasets[3].data.shift();
-    poolChart.data.datasets[4].data.shift();
+  // Update temperature chart
+  if (tempChart) {
+    tempChart.data.labels.push(timestamp);
+    tempChart.data.datasets[0].data.push(dataPoint.waterTemp);
+    tempChart.data.datasets[1].data.push(dataPoint.airTemp);
+    tempChart.data.datasets[2].data.push(dataPoint.cellTemp);
+    
+    // Remove old data points
+    while (tempChart.data.labels.length > 0 && tempChart.data.labels[0] < cutoffTime) {
+      tempChart.data.labels.shift();
+      tempChart.data.datasets[0].data.shift();
+      tempChart.data.datasets[1].data.shift();
+      tempChart.data.datasets[2].data.shift();
+    }
+    
+    tempChart.update('active');
   }
   
-  // Update chart with smooth animation
-  poolChart.update('active');
+  // Update electrical chart
+  if (electricalChart) {
+    electricalChart.data.labels.push(timestamp);
+    electricalChart.data.datasets[0].data.push(dataPoint.cellVoltage);
+    
+    // Remove old data points
+    while (electricalChart.data.labels.length > 0 && electricalChart.data.labels[0] < cutoffTime) {
+      electricalChart.data.labels.shift();
+      electricalChart.data.datasets[0].data.shift();
+    }
+    
+    electricalChart.update('active');
+  }
   
-  // Update status
-  const statusElement = document.getElementById('chartStatus');
-  const dataCount = poolChart.data.labels.length;
-  const oldestTime = poolChart.data.labels[0] ? poolChart.data.labels[0].toLocaleTimeString() : 'N/A';
-  const newestTime = poolChart.data.labels[poolChart.data.labels.length - 1] ? 
-    poolChart.data.labels[poolChart.data.labels.length - 1].toLocaleTimeString() : 'N/A';
+  // Update chemistry chart
+  if (chemistryChart) {
+    chemistryChart.data.labels.push(timestamp);
+    chemistryChart.data.datasets[0].data.push(dataPoint.saltInstant);
+    
+    // Remove old data points
+    while (chemistryChart.data.labels.length > 0 && chemistryChart.data.labels[0] < cutoffTime) {
+      chemistryChart.data.labels.shift();
+      chemistryChart.data.datasets[0].data.shift();
+    }
+    
+    chemistryChart.update('active');
+  }
   
-  statusElement.textContent = `${dataCount} data points | ${oldestTime} - ${newestTime} | Updated: ${new Date().toLocaleTimeString()}`;
+  // Update status for all charts
+  const dataCount = tempChart ? tempChart.data.labels.length : 0;
+  const oldestTime = tempChart && tempChart.data.labels[0] ? tempChart.data.labels[0].toLocaleTimeString() : 'N/A';
+  const newestTime = tempChart && tempChart.data.labels[tempChart.data.labels.length - 1] ? 
+    tempChart.data.labels[tempChart.data.labels.length - 1].toLocaleTimeString() : 'N/A';
+  const statusText = `${dataCount} data points | ${oldestTime} - ${newestTime} | Updated: ${new Date().toLocaleTimeString()}`;
+  
+  document.getElementById('tempChartStatus').textContent = statusText;
+  document.getElementById('electricalChartStatus').textContent = statusText;
+  document.getElementById('chemistryChartStatus').textContent = statusText;
 };
 
 /**
@@ -248,8 +423,8 @@ const startChartAutoRefresh = () => {
   // Update every 2 minutes (data collected by cron every 5 minutes)
   chartUpdateInterval = setInterval(async () => {
     try {
-      // Just refresh the chart with existing data from InfluxDB
-      updateChart();
+      // Just refresh the charts with existing data from InfluxDB
+      updateAllCharts();
     } catch (error) {
       console.error('Chart refresh error:', error);
     }
@@ -270,9 +445,17 @@ const stopChartAutoRefresh = () => {
  * Clean up chart resources
  */
 const cleanupChart = () => {
-  if (poolChart) {
-    poolChart.destroy();
-    poolChart = null;
+  if (tempChart) {
+    tempChart.destroy();
+    tempChart = null;
+  }
+  if (electricalChart) {
+    electricalChart.destroy();
+    electricalChart = null;
+  }
+  if (chemistryChart) {
+    chemistryChart.destroy();
+    chemistryChart = null;
   }
 };
 
@@ -449,12 +632,14 @@ const loadPoolData = async () => {
     // Display formatted data
     poolDataDiv.innerHTML = formatPoolData(data);
 
-    // Initialize chart only once, then just update it
-    if (!poolChart) {
-      initializeChart();
-      updateChart(); // Load initial historical data
+    // Initialize charts only once, then just update them
+    if (!tempChart) {
+      initializeTempChart();
+      initializeElectricalChart();
+      initializeChemistryChart();
+      updateAllCharts(); // Load initial historical data
     } else {
-      // Append the new data point to the existing chart
+      // Append the new data point to the existing charts
       const timeSeriesPoint = {
         timestamp: data.timestamp,
         saltInstant: data.chlorinator?.salt?.instant || null,
@@ -508,8 +693,8 @@ const refreshPoolData = async () => {
     // Update just the data display without showing loading screen
     poolDataDiv.innerHTML = formatPoolData(data);
 
-          // Add new data point to chart if chart exists
-      if (poolChart) {
+          // Add new data point to charts if they exist
+      if (tempChart) {
         const timeSeriesPoint = {
           timestamp: data.timestamp,
           saltInstant: data.chlorinator?.salt?.instant || null,
@@ -546,9 +731,9 @@ const refreshPoolData = async () => {
 window.onload = loadPoolData;
 
 // Handle time range changes
-window.updateChart = () => {
-  if (poolChart) {
-    updateChart(); // Reload full dataset for new time range
+window.updateAllCharts = () => {
+  if (tempChart) {
+    updateAllCharts(); // Reload full dataset for new time range
   }
 };
 
