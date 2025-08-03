@@ -1,6 +1,7 @@
 // Global chart instance
 let poolChart = null;
 let chartUpdateInterval = null;
+let statsUpdateInterval = null;
 
 /**
  * Initialize the pool metrics chart
@@ -202,6 +203,31 @@ const stopChartAutoRefresh = () => {
   }
 };
 
+/**
+ * Start automatic stats refresh every 30 seconds
+ */
+const startStatsAutoRefresh = () => {
+  // Clear any existing interval
+  if (statsUpdateInterval) {
+    clearInterval(statsUpdateInterval);
+  }
+  
+  // Update every 30 seconds
+  statsUpdateInterval = setInterval(() => {
+    loadPoolData();
+  }, 30000);
+};
+
+/**
+ * Stop automatic stats refresh
+ */
+const stopStatsAutoRefresh = () => {
+  if (statsUpdateInterval) {
+    clearInterval(statsUpdateInterval);
+    statsUpdateInterval = null;
+  }
+};
+
 const formatPoolData = (data) => {
   let html = '';
 
@@ -325,7 +351,6 @@ const loadPoolData = async () => {
   const content = document.getElementById('content');
   const error = document.getElementById('error');
   const poolDataDiv = document.getElementById('poolData');
-  const jsonDataDiv = document.getElementById('jsonData');
 
   loading.style.display = 'block';
   content.style.display = 'none';
@@ -346,13 +371,13 @@ const loadPoolData = async () => {
     // Display formatted data
     poolDataDiv.innerHTML = formatPoolData(data);
 
-    // Display raw JSON
-    jsonDataDiv.textContent = JSON.stringify(data, null, 2);
-
     // Initialize and update chart
     initializeChart();
     updateChart();
+
+    // Start auto-refresh for chart and stats
     startChartAutoRefresh();
+    startStatsAutoRefresh();
 
     loading.style.display = 'none';
     content.style.display = 'block';
@@ -370,4 +395,5 @@ window.onload = loadPoolData;
 // Clean up when page is unloaded
 window.onbeforeunload = () => {
   stopChartAutoRefresh();
+  stopStatsAutoRefresh();
 };
