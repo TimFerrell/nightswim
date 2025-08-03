@@ -40,24 +40,52 @@ class InfluxDBService {
    * Initialize InfluxDB connection
    */
   initialize() {
+    console.log('🔍 Initializing InfluxDB connection...');
+    console.log('📋 Configuration check:');
+    console.log(`   URL: ${this.config.url ? '✅ Set' : '❌ Missing'}`);
+    console.log(`   Token: ${this.config.token ? '✅ Set' : '❌ Missing'}`);
+    console.log(`   Org: ${this.config.org ? '✅ Set' : '❌ Missing'}`);
+    console.log(`   Bucket: ${this.config.bucket || 'pool_metrics'}`);
+    
     if (!this.config.url || !this.config.token || !this.config.org) {
-      console.warn('InfluxDB configuration missing. Time series storage disabled.');
+      console.warn('❌ InfluxDB configuration missing. Time series storage disabled.');
+      console.warn('   Missing variables:', {
+        url: !!this.config.url,
+        token: !!this.config.token,
+        org: !!this.config.org
+      });
       return;
     }
 
     try {
+      console.log('🔌 Creating InfluxDB client...');
       this.client = new InfluxDB({
         url: this.config.url,
         token: this.config.token
       });
+      console.log('✅ InfluxDB client created');
 
+      console.log('📝 Setting up write API...');
       this.writeApi = this.client.getWriteApi(this.config.org, this.config.bucket, 'ms');
-      this.queryApi = this.client.getQueryApi(this.config.org);
-      this.isConnected = true;
+      console.log('✅ Write API configured');
 
-      console.log('InfluxDB connected successfully');
+      console.log('🔍 Setting up query API...');
+      this.queryApi = this.client.getQueryApi(this.config.org);
+      console.log('✅ Query API configured');
+
+      this.isConnected = true;
+      console.log('🎉 InfluxDB connected successfully');
     } catch (error) {
-      console.error('InfluxDB connection failed:', error);
+      console.error('❌ InfluxDB connection failed:', error);
+      console.error('   Error details:', {
+        message: error.message,
+        stack: error.stack,
+        config: {
+          url: this.config.url,
+          org: this.config.org,
+          bucket: this.config.bucket
+        }
+      });
       this.isConnected = false;
     }
   }
@@ -68,12 +96,23 @@ class InfluxDBService {
    * @returns {Promise<boolean>} Success status
    */
   async storeDataPoint(dataPoint) {
+    console.log('📊 Attempting to store data point...');
+    console.log('   Data:', {
+      timestamp: dataPoint.timestamp,
+      saltInstant: dataPoint.saltInstant,
+      cellTemp: dataPoint.cellTemp,
+      cellVoltage: dataPoint.cellVoltage,
+      waterTemp: dataPoint.waterTemp
+    });
+    
     if (!this.isConnected) {
-      console.warn('InfluxDB not connected, skipping data point storage');
+      console.warn('❌ InfluxDB not connected, skipping data point storage');
+      console.warn('   Connection status:', this.isConnected);
       return false;
     }
 
     try {
+      console.log('🏷️ Creating data point...');
       const point = new Point('pool_metrics')
         .timestamp(new Date(dataPoint.timestamp))
         .floatField('salt_instant', dataPoint.saltInstant)
@@ -82,12 +121,21 @@ class InfluxDBService {
         .floatField('water_temp', dataPoint.waterTemp)
         .tag('source', 'hayward_omnilogic');
 
+      console.log('📝 Writing point to InfluxDB...');
       await this.writeApi.writePoint(point);
+      console.log('🔄 Flushing write buffer...');
       await this.writeApi.flush();
       
+      console.log('✅ Data point stored successfully');
       return true;
     } catch (error) {
-      console.error('Failed to store data point:', error);
+      console.error('❌ Failed to store data point:', error);
+      console.error('   Error details:', {
+        message: error.message,
+        stack: error.stack,
+        connectionStatus: this.isConnected,
+        writeApiExists: !!this.writeApi
+      });
       return false;
     }
   }
@@ -238,6 +286,50 @@ class InfluxDBService {
       console.error('Failed to get stats:', error);
       return { connected: false, error: error.message };
     }
+  }
+
+  /**
+   * Test InfluxDB connection and configuration
+   * @returns {Promise<object>} Test results
+   */
+  async testConnection() {
+    console.log('🧪 Testing InfluxDB connection...');
+    
+    const results = {
+      configCheck: {
+        url: !!this.config.url,
+        token: !!this.config.token,
+        org: !!this.config.org,
+        bucket: this.config.bucket
+      },
+      connectionStatus: this.isConnected,
+      clientExists: !!this.client,
+      writeApiExists: !!this.writeApi,
+      queryApiExists: !!this.queryApi
+    };
+    
+    console.log('📋 Test results:', results);
+    
+    if (this.isConnected && this.writeApi) {
+      try {
+        console.log('🧪 Testing write operation...');
+        const testPoint = new Point('connection_test')
+          .timestamp(new Date())
+          .stringField('test', 'connection_test')
+          .tag('source', 'test');
+        
+        await this.writeApi.writePoint(testPoint);
+        await this.writeApi.flush();
+        console.log('✅ Write test successful');
+        results.writeTest = true;
+      } catch (error) {
+        console.error('❌ Write test failed:', error);
+        results.writeTest = false;
+        results.writeError = error.message;
+      }
+    }
+    
+    return results;
   }
 
   /**

@@ -68,6 +68,25 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// InfluxDB test endpoint
+app.get('/api/test-influxdb', async (req, res) => {
+  try {
+    const influxDBService = require('./src/services/influxDBService');
+    const results = await influxDBService.testConnection();
+    res.json({
+      success: true,
+      timestamp: new Date().toISOString(),
+      results
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // Routes
 app.use('/api/pool', poolRoutes);
 app.use('/api/cron', cronRoutes);
