@@ -9,6 +9,7 @@ const {
 } = require('./poolDataParser');
 const { POOL_CONSTANTS, buildSystemUrl, buildDashboardUrl } = require('../utils/constants');
 const timeSeriesService = require('./timeSeriesService');
+const influxDBService = require('./influxDBService');
 
 /**
  * @typedef {object} PoolData
@@ -94,7 +95,11 @@ const poolDataService = {
       waterTemp: poolData.dashboard?.temperature?.actual || null
     };
 
+    // Store in local memory for immediate chart access
     timeSeriesService.addDataPoint(timeSeriesPoint);
+    
+    // Store in InfluxDB for persistent storage
+    await influxDBService.storeDataPoint(timeSeriesPoint);
 
     return poolData;
   }

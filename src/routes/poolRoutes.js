@@ -2,6 +2,7 @@ const express = require('express');
 const sessionManager = require('../services/sessionManager');
 const poolDataService = require('../services/poolDataService');
 const timeSeriesService = require('../services/timeSeriesService');
+const influxDBService = require('../services/influxDBService');
 const credentials = require('../utils/credentials');
 
 /** @type {import('express').Router} */
@@ -87,6 +88,97 @@ router.get('/timeseries/stats', (req, res) => {
   } catch (error) {
     console.error('Time series stats fetch error:', error);
     res.status(500).json({ error: 'Failed to fetch time series statistics' });
+  }
+});
+
+// Get persistent time series data from InfluxDB
+router.get('/timeseries/persistent', async (req, res) => {
+  try {
+    const hours = parseInt(req.query.hours) || 24;
+    const endTime = new Date();
+    const startTime = new Date(endTime.getTime() - (hours * 60 * 60 * 1000));
+    
+    const dataPoints = await influxDBService.queryDataPoints(startTime, endTime);
+    const stats = await influxDBService.getStats();
+    
+    res.json({
+      success: true,
+      data: dataPoints,
+      hours,
+      stats
+    });
+  } catch (error) {
+    console.error('Persistent time series data fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch persistent time series data' });
+  }
+});
+
+// Get annotations from InfluxDB
+router.get('/annotations', async (req, res) => {
+  try {
+    const hours = parseInt(req.query.hours) || 24;
+    const endTime = new Date();
+    const startTime = new Date(endTime.getTime() - (hours * 60 * 60 * 1000));
+    
+    const annotations = await influxDBService.queryAnnotations(startTime, endTime);
+    
+    res.json({
+      success: true,
+      data: annotations,
+      hours
+    });
+  } catch (error) {
+    console.error('Annotations fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch annotations' });
+  }
+});
+
+// Store a new annotation
+router.post('/annotations', async (req, res) => {
+  try {
+    const { timestamp, title, description, category, metadata } = req.body;
+    
+    if (!timestamp || !title) {
+      return res.status(400).json({ error: 'Timestamp and title are required' });
+    }
+    
+    const annotation = {
+      timestamp,
+      title,
+      description: description || '',
+      category: category || 'note',
+      metadata: metadata || {}
+    };
+    
+    const success = await influxDBService.storeAnnotation(annotation);
+    
+    if (success) {
+      res.json({
+        success: true,
+        message: 'Annotation stored successfully',
+        annotation
+      });
+    } else {
+      res.status(500).json({ error: 'Failed to store annotation' });
+    }
+  } catch (error) {
+    console.error('Annotation storage error:', error);
+    res.status(500).json({ error: 'Failed to store annotation' });
+  }
+});
+
+// Get InfluxDB statistics
+router.get('/influxdb/stats', async (req, res) => {
+  try {
+    const stats = await influxDBService.getStats();
+    
+    res.json({
+      success: true,
+      stats
+    });
+  } catch (error) {
+    console.error('InfluxDB stats fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch InfluxDB statistics' });
   }
 });
 

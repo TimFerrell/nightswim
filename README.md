@@ -8,6 +8,8 @@ A Node.js Express server that acts as a proxy to the Hayward OmniLogic pool cont
 - **Comprehensive Data**: Fetches dashboard, filter, heater, chlorinator, lights, and schedule data
 - **Time Series Charts**: Beautiful line charts showing historical trends for chlorinator and temperature data
 - **Backend Data Retention**: Automatically stores and manages 24 hours of historical data on the server
+- **Persistent Storage**: Optional InfluxDB Cloud integration for long-term data retention and event annotations
+- **Event Annotations**: Store and retrieve events/notes at specific timestamps
 - **Clean JSON API**: Returns structured JSON data for easy integration
 - **Session Management**: Handles authentication sessions automatically
 - **Browser Interface**: Simple web interface to view pool data with interactive charts
@@ -72,7 +74,30 @@ nightswim/
    
    **Note**: The application will throw an error if credentials are not provided.
 
-4. **Start the server**
+4. **Configure InfluxDB (Optional)**
+   
+   For persistent time series storage and event annotations:
+   
+   a. **Sign up for InfluxDB Cloud**
+      - Go to [cloud.influxdata.com](https://cloud.influxdata.com)
+      - Create a free account
+      - Create a new organization and bucket named `pool_metrics`
+   
+   b. **Get your connection details**
+      - Copy your cluster URL (e.g., `https://us-east-1-1.aws.cloud2.influxdata.com`)
+      - Generate an API token with write permissions
+      - Note your organization name
+   
+   c. **Add to environment variables**
+      ```bash
+      # Add to your .env file or deployment environment
+      INFLUXDB_URL=https://your-cluster.cloud.influxdata.com
+      INFLUXDB_TOKEN=your-influxdb-token
+      INFLUXDB_ORG=your-organization-name
+      INFLUXDB_BUCKET=pool_metrics
+      ```
+
+5. **Start the server**
    ```bash
    npm run dev
    ```
@@ -129,6 +154,52 @@ Returns statistics about the stored time series data.
   }
 }
 ```
+
+#### `GET /api/pool/timeseries/persistent?hours=24`
+Returns persistent time series data from InfluxDB (requires InfluxDB configuration). Supports query parameter `hours` to specify time range (default: 24 hours).
+
+#### `GET /api/pool/annotations?hours=24`
+Returns stored annotations/events from InfluxDB. Supports query parameter `hours` to specify time range (default: 24 hours).
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "timestamp": "2025-08-03T03:47:30.070Z",
+      "title": "Pool Maintenance",
+      "description": "Added chlorine tablets",
+      "category": "maintenance",
+      "metadata": {
+        "technician": "John Doe",
+        "cost": 45.00
+      }
+    }
+  ],
+  "hours": 24
+}
+```
+
+#### `POST /api/pool/annotations`
+Store a new annotation/event.
+
+**Request Body:**
+```json
+{
+  "timestamp": "2025-08-03T03:47:30.070Z",
+  "title": "Pool Maintenance",
+  "description": "Added chlorine tablets",
+  "category": "maintenance",
+  "metadata": {
+    "technician": "John Doe",
+    "cost": 45.00
+  }
+}
+```
+
+#### `GET /api/pool/influxdb/stats`
+Returns InfluxDB connection and storage statistics.
 
 **Response:**
 ```json
