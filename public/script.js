@@ -7,6 +7,11 @@ let statsUpdateInterval = null;
  * Initialize the pool metrics chart
  */
 const initializeChart = () => {
+  // Destroy existing chart if it exists
+  if (poolChart) {
+    poolChart.destroy();
+  }
+  
   const ctx = document.getElementById('poolChart').getContext('2d');
   
   poolChart = new Chart(ctx, {
@@ -204,6 +209,16 @@ const stopChartAutoRefresh = () => {
 };
 
 /**
+ * Clean up chart resources
+ */
+const cleanupChart = () => {
+  if (poolChart) {
+    poolChart.destroy();
+    poolChart = null;
+  }
+};
+
+/**
  * Start automatic stats refresh every 30 seconds
  */
 const startStatsAutoRefresh = () => {
@@ -371,8 +386,10 @@ const loadPoolData = async () => {
     // Display formatted data
     poolDataDiv.innerHTML = formatPoolData(data);
 
-    // Initialize and update chart
-    initializeChart();
+    // Initialize chart only once, then just update it
+    if (!poolChart) {
+      initializeChart();
+    }
     updateChart();
 
     // Start auto-refresh for chart and stats
@@ -396,4 +413,5 @@ window.onload = loadPoolData;
 window.onbeforeunload = () => {
   stopChartAutoRefresh();
   stopStatsAutoRefresh();
+  cleanupChart();
 };
