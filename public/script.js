@@ -655,6 +655,135 @@ const formatPoolData = (data) => {
 };
 
 /**
+ * Update existing status cards with new data (without recreating them)
+ */
+const updateStatusCards = (data) => {
+  // Update salt level card
+  const saltCard = document.querySelector('#saltSparkline')?.closest('.status-card');
+  if (saltCard && data.chlorinator?.salt) {
+    const statusValue = saltCard.querySelector('.status-value');
+    if (statusValue) {
+      statusValue.textContent = data.chlorinator.salt.instant || '--';
+    }
+    
+    // Calculate and update 24-hour average
+    let average24H = '--';
+    if (saltSparkline && saltSparkline.data.datasets[0].data.length > 0) {
+      const saltData = saltSparkline.data.datasets[0].data.filter(v => v !== null && v !== undefined);
+      if (saltData.length > 0) {
+        const sum = saltData.reduce((acc, val) => acc + val, 0);
+        average24H = Math.round(sum / saltData.length);
+      }
+    }
+    
+    const averageElement = saltCard.querySelector('.status-detail-value');
+    if (averageElement) {
+      averageElement.textContent = `${average24H} PPM`;
+    }
+    
+    // Add pulse animation
+    saltCard.classList.add('pulse');
+    setTimeout(() => saltCard.classList.remove('pulse'), 600);
+  }
+  
+  // Update water temperature card
+  const waterTempCard = document.querySelector('#waterTempSparkline')?.closest('.status-card');
+  if (waterTempCard && data.dashboard?.temperature) {
+    const statusValue = waterTempCard.querySelector('.status-value');
+    if (statusValue) {
+      statusValue.textContent = data.dashboard.temperature.actual || '--';
+    }
+    
+    const targetElement = waterTempCard.querySelector('.status-detail-value');
+    if (targetElement) {
+      targetElement.textContent = `${data.dashboard.temperature.target || '--'}°F`;
+    }
+    
+    // Add pulse animation
+    waterTempCard.classList.add('pulse');
+    setTimeout(() => waterTempCard.classList.remove('pulse'), 600);
+  }
+  
+  // Update cell voltage card
+  const cellVoltageCard = document.querySelector('#cellVoltageSparkline')?.closest('.status-card');
+  if (cellVoltageCard && data.chlorinator?.cell?.voltage) {
+    const statusValue = cellVoltageCard.querySelector('.status-value');
+    if (statusValue) {
+      statusValue.textContent = data.chlorinator.cell.voltage || '--';
+    }
+    
+    const tempElement = cellVoltageCard.querySelector('.status-detail-value');
+    if (tempElement) {
+      tempElement.textContent = `${data.chlorinator.cell.temperature?.value || '--'}°F`;
+    }
+    
+    // Add pulse animation
+    cellVoltageCard.classList.add('pulse');
+    setTimeout(() => cellVoltageCard.classList.remove('pulse'), 600);
+  }
+  
+  // Update air temperature card (find by h3 text content)
+  const airTempCards = document.querySelectorAll('.status-card h3');
+  const airTempCard = Array.from(airTempCards).find(h3 => h3.textContent === 'Air Temperature')?.closest('.status-card');
+  if (airTempCard && data.dashboard?.airTemperature) {
+    const statusValue = airTempCard.querySelector('.status-value');
+    if (statusValue) {
+      statusValue.textContent = data.dashboard.airTemperature || '--';
+    }
+    
+    // Add pulse animation
+    airTempCard.classList.add('pulse');
+    setTimeout(() => airTempCard.classList.remove('pulse'), 600);
+  }
+  
+  // Update filter pump card (find by h3 text content)
+  const filterCards = document.querySelectorAll('.status-card h3');
+  const filterCard = Array.from(filterCards).find(h3 => h3.textContent === 'Filter Pump')?.closest('.status-card');
+  if (filterCard && data.filter) {
+    const filterStatus = data.filter.status ? 'Running' : 'Stopped';
+    const statusValue = filterCard.querySelector('.status-value');
+    if (statusValue) {
+      statusValue.textContent = filterStatus;
+    }
+    
+    const speedElement = filterCard.querySelector('.status-detail-value');
+    if (speedElement) {
+      speedElement.textContent = `${data.filter.speed || '--'} RPM`;
+    }
+    
+    // Add pulse animation
+    filterCard.classList.add('pulse');
+    setTimeout(() => filterCard.classList.remove('pulse'), 600);
+  }
+  
+  // Update heater card (find by h3 text content)
+  const heaterCards = document.querySelectorAll('.status-card h3');
+  const heaterCard = Array.from(heaterCards).find(h3 => h3.textContent === 'Heater')?.closest('.status-card');
+  if (heaterCard && data.heater) {
+    const heaterStatus = data.heater.status ? 'Active' : 'Inactive';
+    const statusValue = heaterCard.querySelector('.status-value');
+    if (statusValue) {
+      statusValue.textContent = heaterStatus;
+    }
+    
+    const targetElement = heaterCard.querySelector('.status-detail-value');
+    if (targetElement) {
+      targetElement.textContent = `${data.heater.target || '--'}°F`;
+    }
+    
+    // Add pulse animation
+    heaterCard.classList.add('pulse');
+    setTimeout(() => heaterCard.classList.remove('pulse'), 600);
+  }
+  
+  // Update timestamp
+  const timestamp = document.getElementById('timestamp');
+  if (timestamp) {
+    timestamp.textContent = `Last updated: ${new Date().toLocaleString()}`;
+  }
+};
+
+/**
  * Load pool data and initialize dashboard
  */
 const loadPoolData = async () => {
@@ -681,6 +810,12 @@ const loadPoolData = async () => {
       initializeSparklines();
       updateAllCharts();
       updateSparklines();
+      
+      // Format and display the data (initial load)
+      formatPoolData(result.data);
+    } else {
+      // Update existing cards without recreating them (refresh)
+      updateStatusCards(result.data);
     }
     
     // Create time series data point
@@ -695,9 +830,6 @@ const loadPoolData = async () => {
     
     // Append to charts
     appendDataPoint(timeSeriesPoint);
-    
-    // Format and display the data (after spark lines are updated)
-    formatPoolData(result.data);
     
     // Start auto-refresh
     startChartAutoRefresh();
