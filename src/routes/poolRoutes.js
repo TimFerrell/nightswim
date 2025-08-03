@@ -50,7 +50,11 @@ router.get('/data', async (req, res) => {
     // Fetch all pool data
     const poolData = await poolDataService.fetchAllPoolData(session);
 
-    res.json(poolData);
+    res.json({
+      success: true,
+      data: poolData,
+      timestamp: new Date().toISOString()
+    });
 
   } catch (error) {
     console.error('Pool data fetch error:', error);
