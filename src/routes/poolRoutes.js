@@ -57,22 +57,58 @@ router.get('/data', async (req, res) => {
   }
 });
 
-// Get time series data for charts
-router.get('/timeseries', (req, res) => {
+// Get time series data for charts (sources from InfluxDB)
+router.get('/timeseries', async (req, res) => {
   try {
     const hours = parseInt(req.query.hours) || 24;
-    const dataPoints = timeSeriesService.getDataPoints(hours);
-    const stats = timeSeriesService.getStats();
- 
+    const endTime = new Date();
+    const startTime = new Date(endTime.getTime() - (hours * 60 * 60 * 1000));
+    
+    // Try to get data from InfluxDB first
+    const dataPoints = await influxDBService.queryDataPoints(startTime, endTime);
+    const stats = await influxDBService.getStats();
+    
+    // If InfluxDB is not available, fall back to in-memory storage
+    if (dataPoints.length === 0) {
+      console.log('InfluxDB data not available, falling back to in-memory storage');
+      const fallbackData = timeSeriesService.getDataPoints(hours);
+      const fallbackStats = timeSeriesService.getStats();
+      
+      return res.json({
+        success: true,
+        data: fallbackData,
+        hours,
+        stats: fallbackStats,
+        source: 'memory'
+      });
+    }
+    
     res.json({
       success: true,
       data: dataPoints,
       hours,
-      stats
+      stats,
+      source: 'influxdb'
     });
   } catch (error) {
     console.error('Time series data fetch error:', error);
-    res.status(500).json({ error: 'Failed to fetch time series data' });
+    
+    // Fall back to in-memory storage on error
+    try {
+      const hours = parseInt(req.query.hours) || 24;
+      const dataPoints = timeSeriesService.getDataPoints(hours);
+      const stats = timeSeriesService.getStats();
+      
+      res.json({
+        success: true,
+        data: dataPoints,
+        hours,
+        stats,
+        source: 'memory'
+      });
+    } catch (fallbackError) {
+      res.status(500).json({ error: 'Failed to fetch time series data' });
+    }
   }
 });
 

@@ -224,7 +224,8 @@ const appendDataPoint = (dataPoint) => {
 };
 
 /**
- * Start automatic chart refresh every 30 seconds
+ * Start automatic chart refresh every 2 minutes
+ * Data is collected by cron every 5 minutes, so we refresh slightly more frequently
  */
 const startChartAutoRefresh = () => {
   // Clear any existing interval
@@ -232,29 +233,15 @@ const startChartAutoRefresh = () => {
     clearInterval(chartUpdateInterval);
   }
   
-  // Update every 30 seconds
+  // Update every 2 minutes (data collected by cron every 5 minutes)
   chartUpdateInterval = setInterval(async () => {
     try {
-      // Get latest pool data and append to chart
-      const dataResponse = await fetch('/api/pool/data', {
-        credentials: 'include'
-      });
-      
-      if (dataResponse.ok) {
-        const data = await dataResponse.json();
-        const timeSeriesPoint = {
-          timestamp: data.timestamp,
-          saltInstant: data.chlorinator?.salt?.instant || null,
-          cellTemp: data.chlorinator?.cell?.temperature?.value || null,
-          cellVoltage: data.chlorinator?.cell?.voltage || null,
-          waterTemp: data.dashboard?.temperature?.actual || null
-        };
-        appendDataPoint(timeSeriesPoint);
-      }
+      // Just refresh the chart with existing data from InfluxDB
+      updateChart();
     } catch (error) {
-      console.error('Auto-refresh error:', error);
+      console.error('Chart refresh error:', error);
     }
-  }, 30000);
+  }, 120000); // 2 minutes
 };
 
 /**
@@ -278,7 +265,8 @@ const cleanupChart = () => {
 };
 
 /**
- * Start automatic stats refresh every 30 seconds
+ * Start automatic stats refresh every 2 minutes
+ * Data is collected by cron every 5 minutes
  */
 const startStatsAutoRefresh = () => {
   // Clear any existing interval
@@ -286,10 +274,10 @@ const startStatsAutoRefresh = () => {
     clearInterval(statsUpdateInterval);
   }
   
-  // Update every 30 seconds
+  // Update every 2 minutes (data collected by cron every 5 minutes)
   statsUpdateInterval = setInterval(() => {
     loadPoolData();
-  }, 30000);
+  }, 120000); // 2 minutes
 };
 
 /**
@@ -461,7 +449,7 @@ const loadPoolData = async () => {
       appendDataPoint(timeSeriesPoint);
     }
 
-    // Start auto-refresh for chart and stats
+    // Start auto-refresh for chart and stats (data now collected by cron)
     startChartAutoRefresh();
     startStatsAutoRefresh();
 

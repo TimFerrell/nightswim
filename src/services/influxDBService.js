@@ -28,7 +28,7 @@ class InfluxDBService {
     // Configuration from environment variables
     this.config = {
       url: process.env.INFLUXDB_URL,
-      token: process.env.INFLUXDB_TOKEN,
+      token: process.env.INFLUX_DB_TOKEN, // Updated to match Vercel env var
       org: process.env.INFLUXDB_ORG,
       bucket: process.env.INFLUXDB_BUCKET || 'pool_metrics'
     };

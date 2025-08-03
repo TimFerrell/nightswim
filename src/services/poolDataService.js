@@ -95,11 +95,11 @@ const poolDataService = {
       waterTemp: poolData.dashboard?.temperature?.actual || null
     };
 
-    // Store in local memory for immediate chart access
-    timeSeriesService.addDataPoint(timeSeriesPoint);
-    
-    // Store in InfluxDB for persistent storage
+    // Store in InfluxDB for persistent storage (primary storage)
     await influxDBService.storeDataPoint(timeSeriesPoint);
+    
+    // Also store in local memory for immediate chart access
+    timeSeriesService.addDataPoint(timeSeriesPoint);
 
     return poolData;
   }

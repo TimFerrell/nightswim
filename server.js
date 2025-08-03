@@ -7,6 +7,7 @@ require('dotenv').config();
 
 // Import routes
 const poolRoutes = require('./src/routes/poolRoutes');
+const cronRoutes = require('./src/routes/cronRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -69,6 +70,7 @@ app.get('/api/health', (req, res) => {
 
 // Routes
 app.use('/api/pool', poolRoutes);
+app.use('/api/cron', cronRoutes);
 
 // GET / - Main pool data page
 app.get('/', (req, res) => {
