@@ -10,6 +10,7 @@ const {
 const { POOL_CONSTANTS, buildSystemUrl, buildDashboardUrl } = require('../utils/constants');
 const timeSeriesService = require('./timeSeriesService');
 const influxDBService = require('./influxDBService');
+const pumpStateTracker = require('./pumpStateTracker');
 
 /**
  * @typedef {object} PoolData
@@ -92,7 +93,8 @@ const poolDataService = {
       saltInstant: poolData.chlorinator?.salt?.instant || null,
       cellTemp: poolData.chlorinator?.cell?.temperature?.value || null,
       cellVoltage: poolData.chlorinator?.cell?.voltage || null,
-      waterTemp: poolData.dashboard?.temperature?.actual || null
+      waterTemp: poolData.dashboard?.temperature?.actual || null,
+      pumpStatus: poolData.filter?.status || null
     };
 
     // Store in InfluxDB for persistent storage (primary storage)
@@ -100,6 +102,11 @@ const poolDataService = {
     
     // Also store in local memory for immediate chart access
     timeSeriesService.addDataPoint(timeSeriesPoint);
+
+    // Check for pump state changes and generate annotations
+    if (poolData.filter && poolData.filter.status !== null && poolData.filter.status !== undefined) {
+      await pumpStateTracker.checkStateChange(poolData.filter.status, poolData.timestamp);
+    }
 
     return poolData;
   }

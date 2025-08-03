@@ -3,6 +3,7 @@ const sessionManager = require('../services/sessionManager');
 const poolDataService = require('../services/poolDataService');
 const timeSeriesService = require('../services/timeSeriesService');
 const influxDBService = require('../services/influxDBService');
+const pumpStateTracker = require('../services/pumpStateTracker');
 const credentials = require('../utils/credentials');
 
 /** @type {import('express').Router} */
@@ -215,6 +216,35 @@ router.get('/influxdb/stats', async (req, res) => {
   } catch (error) {
     console.error('InfluxDB stats fetch error:', error);
     res.status(500).json({ error: 'Failed to fetch InfluxDB statistics' });
+  }
+});
+
+// Get pump state information and recent annotations
+router.get('/pump/state', async (req, res) => {
+  try {
+    const currentState = pumpStateTracker.getCurrentState();
+    
+    // Get recent pump-related annotations
+    const hours = parseInt(req.query.hours) || 24;
+    const endTime = new Date();
+    const startTime = new Date(endTime.getTime() - (hours * 60 * 60 * 1000));
+    
+    const annotations = await influxDBService.queryAnnotations(startTime, endTime);
+    const pumpAnnotations = annotations.filter(ann => 
+      ann.category === 'pump_state_change' || 
+      ann.title?.includes('Pump') ||
+      ann.description?.includes('pump')
+    );
+    
+    res.json({
+      success: true,
+      currentState,
+      pumpAnnotations,
+      hours
+    });
+  } catch (error) {
+    console.error('Pump state fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch pump state information' });
   }
 });
 
