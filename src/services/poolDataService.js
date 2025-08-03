@@ -94,6 +94,7 @@ const poolDataService = {
       cellTemp: poolData.chlorinator?.cell?.temperature?.value || null,
       cellVoltage: poolData.chlorinator?.cell?.voltage || null,
       waterTemp: poolData.dashboard?.temperature?.actual || null,
+      airTemp: poolData.dashboard?.airTemperature || null,
       pumpStatus: poolData.filter?.status || null
     };
 

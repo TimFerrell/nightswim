@@ -50,6 +50,14 @@ const initializeChart = () => {
           backgroundColor: 'rgba(69, 183, 209, 0.1)',
           tension: 0.4,
           yAxisID: 'y'
+        },
+        {
+          label: 'Air Temperature (°F)',
+          data: [],
+          borderColor: '#ffa726',
+          backgroundColor: 'rgba(255, 167, 38, 0.1)',
+          tension: 0.4,
+          yAxisID: 'y'
         }
       ]
     },
@@ -160,6 +168,7 @@ const updateChart = async () => {
     const cellTempData = result.data.map(point => point.cellTemp);
     const cellVoltageData = result.data.map(point => point.cellVoltage);
     const waterTempData = result.data.map(point => point.waterTemp);
+    const airTempData = result.data.map(point => point.airTemp);
     
     // Update chart data
     poolChart.data.labels = labels;
@@ -167,6 +176,7 @@ const updateChart = async () => {
     poolChart.data.datasets[1].data = cellTempData;
     poolChart.data.datasets[2].data = cellVoltageData;
     poolChart.data.datasets[3].data = waterTempData;
+    poolChart.data.datasets[4].data = airTempData;
     
     poolChart.update('none'); // Update without animation for better performance
     
@@ -197,6 +207,7 @@ const appendDataPoint = (dataPoint) => {
   poolChart.data.datasets[1].data.push(dataPoint.cellTemp);
   poolChart.data.datasets[2].data.push(dataPoint.cellVoltage);
   poolChart.data.datasets[3].data.push(dataPoint.waterTemp);
+  poolChart.data.datasets[4].data.push(dataPoint.airTemp);
   
   // Remove old data points if we exceed the time range
   const timeRange = parseInt(document.getElementById('timeRange').value);
@@ -208,6 +219,7 @@ const appendDataPoint = (dataPoint) => {
     poolChart.data.datasets[1].data.shift();
     poolChart.data.datasets[2].data.shift();
     poolChart.data.datasets[3].data.shift();
+    poolChart.data.datasets[4].data.shift();
   }
   
   // Update chart with smooth animation
@@ -309,7 +321,8 @@ const formatPoolData = (data) => {
             <div class="card">
                 <h2>🌡️ Temperature</h2>
                 <div class="temp">Target: ${data.dashboard.temperature.target || '--'}°F</div>
-                <div class="temp">Actual: ${data.dashboard.temperature.actual || '--'}°F</div>
+                <div class="temp">Water: ${data.dashboard.temperature.actual || '--'}°F</div>
+                <div class="temp">Air: ${data.dashboard.airTemperature || '--'}°F</div>
             </div>
         `;
   }
@@ -447,7 +460,8 @@ const loadPoolData = async () => {
         saltInstant: data.chlorinator?.salt?.instant || null,
         cellTemp: data.chlorinator?.cell?.temperature?.value || null,
         cellVoltage: data.chlorinator?.cell?.voltage || null,
-        waterTemp: data.dashboard?.temperature?.actual || null
+        waterTemp: data.dashboard?.temperature?.actual || null,
+        airTemp: data.dashboard?.airTemperature || null
       };
       appendDataPoint(timeSeriesPoint);
     }
@@ -494,17 +508,18 @@ const refreshPoolData = async () => {
     // Update just the data display without showing loading screen
     poolDataDiv.innerHTML = formatPoolData(data);
 
-    // Add new data point to chart if chart exists
-    if (poolChart) {
-      const timeSeriesPoint = {
-        timestamp: data.timestamp,
-        saltInstant: data.chlorinator?.salt?.instant || null,
-        cellTemp: data.chlorinator?.cell?.temperature?.value || null,
-        cellVoltage: data.chlorinator?.cell?.voltage || null,
-        waterTemp: data.dashboard?.temperature?.actual || null
-      };
-      appendDataPoint(timeSeriesPoint);
-    }
+          // Add new data point to chart if chart exists
+      if (poolChart) {
+        const timeSeriesPoint = {
+          timestamp: data.timestamp,
+          saltInstant: data.chlorinator?.salt?.instant || null,
+          cellTemp: data.chlorinator?.cell?.temperature?.value || null,
+          cellVoltage: data.chlorinator?.cell?.voltage || null,
+          waterTemp: data.dashboard?.temperature?.actual || null,
+          airTemp: data.dashboard?.airTemperature || null
+        };
+        appendDataPoint(timeSeriesPoint);
+      }
 
     // Hide any existing errors
     error.style.display = 'none';

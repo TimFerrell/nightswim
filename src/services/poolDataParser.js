@@ -92,6 +92,50 @@ const parseDashboardData = (html) => {
       })(),
       unit: POOL_CONSTANTS.UNITS.TEMPERATURE
     },
+    airTemperature: (() => {
+      // Try multiple selectors for air temperature
+      const airTempSelectors = [
+        '[id*="lblAirTemp"]',
+        '[id*="AirTemp"]',
+        '[id*="airTemp"]',
+        '[id*="air_temp"]',
+        '[id*="lblOutdoorTemp"]',
+        '[id*="OutdoorTemp"]',
+        '[id*="outdoorTemp"]',
+        '[id*="lblAmbientTemp"]',
+        '[id*="AmbientTemp"]',
+        '[id*="ambientTemp"]',
+        '[id*="lblWeatherTemp"]',
+        '[id*="WeatherTemp"]',
+        '[id*="weatherTemp"]'
+      ];
+      
+      for (const selector of airTempSelectors) {
+        const temp = $(selector).text().trim();
+        if (temp) {
+          // Extract numeric temperature value (whole numbers or decimals)
+          const match = temp.match(/(\d+(?:\.\d+)?)/);
+          if (match) {
+            return parseFloat(match[1]);
+          }
+        }
+      }
+      
+      // Also try looking for text containing "air" or "outdoor" near temperature values
+      const allElements = $('*');
+      for (let i = 0; i < allElements.length; i++) {
+        const element = allElements.eq(i);
+        const text = element.text().trim();
+        if (text && (text.toLowerCase().includes('air') || text.toLowerCase().includes('outdoor'))) {
+          const tempMatch = text.match(/(\d+(?:\.\d+)?)/);
+          if (tempMatch) {
+            return parseFloat(tempMatch[1]);
+          }
+        }
+      }
+      
+      return null;
+    })(),
     systemStatus: POOL_CONSTANTS.DEFAULTS.SYSTEM_STATUS
   };
 };

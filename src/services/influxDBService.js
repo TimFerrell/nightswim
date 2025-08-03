@@ -119,6 +119,7 @@ class InfluxDBService {
         .floatField('cell_temp', dataPoint.cellTemp)
         .floatField('cell_voltage', dataPoint.cellVoltage)
         .floatField('water_temp', dataPoint.waterTemp)
+        .floatField('air_temp', dataPoint.airTemp)
         .booleanField('pump_status', dataPoint.pumpStatus)
         .tag('source', 'hayward_omnilogic');
 
