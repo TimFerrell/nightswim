@@ -37,7 +37,8 @@ nightswim/
 │   └── constants.test.js
 ├── server.js               # Main application entry point
 ├── package.json
-└── eslint.config.js        # ESLint configuration
+├── eslint.config.js        # ESLint configuration
+└── env.example             # Example environment variables file
 ```
 
 ## 🛠️ Installation
@@ -54,6 +55,28 @@ nightswim/
    ```
 
 3. **Configure credentials**
+   
+   **Option A: Environment Variables (Recommended)**
+   
+   **Method 1: Direct export**
+   ```bash
+   export HAYWARD_USERNAME='your-email@example.com'
+   export HAYWARD_PASSWORD='your-password'
+   ```
+   
+   **Method 2: Using .env file**
+   ```bash
+   # Copy the example file
+   cp env.example .env
+   
+   # Edit .env with your credentials
+   nano .env
+   
+   # Load environment variables (if using dotenv)
+   source .env
+   ```
+   
+   **Option B: Direct File Configuration**
    Create `src/utils/credentials.js` with your Hayward OmniLogic credentials:
    ```javascript
    module.exports = {
@@ -61,6 +84,8 @@ nightswim/
      password: 'your-password'
    };
    ```
+   
+   **Note**: Environment variables take precedence over the credentials file.
 
 4. **Start the server**
    ```bash
@@ -288,9 +313,10 @@ This script validates sample data against the defined types and demonstrates how
 
 ## 🔒 Security
 
-- Credentials are stored in a separate file that's gitignored
-- Sessions are managed securely with proper cleanup
-- All external requests use proper headers and timeouts
+- **Environment Variables**: Credentials can be set via `HAYWARD_USERNAME` and `HAYWARD_PASSWORD` environment variables
+- **Fallback File**: Credentials file is stored separately and gitignored
+- **Session Management**: Sessions are managed securely with proper cleanup
+- **Request Security**: All external requests use proper headers and timeouts
 
 ## 📝 License
 
