@@ -781,6 +781,9 @@ const updateStatusCards = (data) => {
   if (timestamp) {
     timestamp.textContent = `Last updated: ${new Date().toLocaleString()}`;
   }
+  
+  // Update spark lines during refresh
+  updateSparklines();
 };
 
 /**
@@ -807,12 +810,17 @@ const loadPoolData = async () => {
       initializeTempChart();
       initializeElectricalChart();
       initializeChemistryChart();
-      initializeSparklines();
-      updateAllCharts();
-      updateSparklines();
       
       // Format and display the data (initial load)
       formatPoolData(result.data);
+      
+      // Initialize spark lines after cards are created
+      setTimeout(() => {
+        initializeSparklines();
+        updateSparklines();
+      }, 100);
+      
+      updateAllCharts();
     } else {
       // Update existing cards without recreating them (refresh)
       updateStatusCards(result.data);
@@ -845,112 +853,116 @@ const loadPoolData = async () => {
  * Initialize spark line charts
  */
 const initializeSparklines = () => {
-  // Initialize salt spark line
-  const saltCanvas = document.getElementById('saltSparkline');
-  if (saltCanvas && !saltSparkline) {
-    const ctx = saltCanvas.getContext('2d');
-    saltSparkline = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: [],
-        datasets: [{
-          data: [],
-          borderColor: '#8b9bb4',
-          backgroundColor: 'rgba(139, 155, 180, 0.1)',
-          borderWidth: 1.5,
-          tension: 0.4,
-          fill: false,
-          pointRadius: 0,
-          pointHoverRadius: 0
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: { enabled: false }
+  try {
+    // Initialize salt spark line
+    const saltCanvas = document.getElementById('saltSparkline');
+    if (saltCanvas && !saltSparkline) {
+      const ctx = saltCanvas.getContext('2d');
+      saltSparkline = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [{
+            data: [],
+            borderColor: '#8b9bb4',
+            backgroundColor: 'rgba(139, 155, 180, 0.1)',
+            borderWidth: 1.5,
+            tension: 0.4,
+            fill: false,
+            pointRadius: 0,
+            pointHoverRadius: 0
+          }]
         },
-        scales: {
-          x: { display: false },
-          y: { display: false }
-        },
-        interaction: { intersect: false },
-        elements: { point: { radius: 0 } }
-      }
-    });
-  }
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: { enabled: false }
+          },
+          scales: {
+            x: { display: false },
+            y: { display: false }
+          },
+          interaction: { intersect: false },
+          elements: { point: { radius: 0 } }
+        }
+      });
+    }
 
-  // Initialize water temperature spark line
-  const waterTempCanvas = document.getElementById('waterTempSparkline');
-  if (waterTempCanvas && !waterTempSparkline) {
-    const ctx = waterTempCanvas.getContext('2d');
-    waterTempSparkline = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: [],
-        datasets: [{
-          data: [],
-          borderColor: '#8b9bb4',
-          backgroundColor: 'rgba(139, 155, 180, 0.1)',
-          borderWidth: 1.5,
-          tension: 0.4,
-          fill: false,
-          pointRadius: 0,
-          pointHoverRadius: 0
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: { enabled: false }
+    // Initialize water temperature spark line
+    const waterTempCanvas = document.getElementById('waterTempSparkline');
+    if (waterTempCanvas && !waterTempSparkline) {
+      const ctx = waterTempCanvas.getContext('2d');
+      waterTempSparkline = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [{
+            data: [],
+            borderColor: '#8b9bb4',
+            backgroundColor: 'rgba(139, 155, 180, 0.1)',
+            borderWidth: 1.5,
+            tension: 0.4,
+            fill: false,
+            pointRadius: 0,
+            pointHoverRadius: 0
+          }]
         },
-        scales: {
-          x: { display: false },
-          y: { display: false }
-        },
-        interaction: { intersect: false },
-        elements: { point: { radius: 0 } }
-      }
-    });
-  }
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: { enabled: false }
+          },
+          scales: {
+            x: { display: false },
+            y: { display: false }
+          },
+          interaction: { intersect: false },
+          elements: { point: { radius: 0 } }
+        }
+      });
+    }
 
-  // Initialize cell voltage spark line
-  const cellVoltageCanvas = document.getElementById('cellVoltageSparkline');
-  if (cellVoltageCanvas && !cellVoltageSparkline) {
-    const ctx = cellVoltageCanvas.getContext('2d');
-    cellVoltageSparkline = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: [],
-        datasets: [{
-          data: [],
-          borderColor: '#8b9bb4',
-          backgroundColor: 'rgba(139, 155, 180, 0.1)',
-          borderWidth: 1.5,
-          tension: 0.4,
-          fill: false,
-          pointRadius: 0,
-          pointHoverRadius: 0
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: { enabled: false }
+    // Initialize cell voltage spark line
+    const cellVoltageCanvas = document.getElementById('cellVoltageSparkline');
+    if (cellVoltageCanvas && !cellVoltageSparkline) {
+      const ctx = cellVoltageCanvas.getContext('2d');
+      cellVoltageSparkline = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [{
+            data: [],
+            borderColor: '#8b9bb4',
+            backgroundColor: 'rgba(139, 155, 180, 0.1)',
+            borderWidth: 1.5,
+            tension: 0.4,
+            fill: false,
+            pointRadius: 0,
+            pointHoverRadius: 0
+          }]
         },
-        scales: {
-          x: { display: false },
-          y: { display: false }
-        },
-        interaction: { intersect: false },
-        elements: { point: { radius: 0 } }
-      }
-    });
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: { enabled: false }
+          },
+          scales: {
+            x: { display: false },
+            y: { display: false }
+          },
+          interaction: { intersect: false },
+          elements: { point: { radius: 0 } }
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Error initializing spark lines:', error);
   }
 };
 
