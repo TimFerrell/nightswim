@@ -486,7 +486,7 @@ const startStatsAutoRefresh = () => {
   
   statsRefreshInterval = setInterval(() => {
     loadPoolData();
-  }, 60000); // Refresh every minute
+  }, 30000); // Refresh every 30 seconds (more frequent since no manual button)
 };
 
 /**
@@ -670,67 +670,6 @@ const loadPoolData = async () => {
   }
 };
 
-/**
- * Refresh pool data (AJAX update)
- */
-const refreshPoolData = async () => {
-  const refreshBtn = document.querySelector('.refresh-btn');
-  const originalText = refreshBtn.innerHTML;
-  
-  try {
-    // Update button state
-    refreshBtn.disabled = true;
-    refreshBtn.innerHTML = '<span>⏳</span><span>Refreshing...</span>';
-    
-    const response = await fetch('/api/pool/data', {
-      credentials: 'include'
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch pool data');
-    }
-    
-    const result = await response.json();
-    
-    if (!result.success) {
-      throw new Error(result.error || 'Failed to load pool data');
-    }
-    
-    // Format and display the data
-    formatPoolData(result.data);
-    
-    // Create time series data point
-    const timeSeriesPoint = {
-      timestamp: new Date().toISOString(),
-      saltInstant: result.data.chlorinator?.salt?.instant || null,
-      cellTemp: result.data.chlorinator?.cell?.temperature?.value || null,
-      cellVoltage: result.data.chlorinator?.cell?.voltage || null,
-      waterTemp: result.data.dashboard?.temperature?.actual || null,
-      airTemp: result.data.dashboard?.airTemperature || null
-    };
-    
-    // Append to charts
-    appendDataPoint(timeSeriesPoint);
-    
-    // Update button to show success
-    refreshBtn.innerHTML = '<span>✅</span><span>Updated!</span>';
-    setTimeout(() => {
-      refreshBtn.disabled = false;
-      refreshBtn.innerHTML = originalText;
-    }, 2000);
-    
-  } catch (error) {
-    console.error('Error refreshing pool data:', error);
-    
-    // Update button to show error
-    refreshBtn.innerHTML = '<span>❌</span><span>Error</span>';
-    setTimeout(() => {
-      refreshBtn.disabled = false;
-      refreshBtn.innerHTML = originalText;
-    }, 3000);
-  }
-};
-
 // Initialize dashboard when page loads
 document.addEventListener('DOMContentLoaded', () => {
   loadPoolData();
@@ -771,4 +710,3 @@ window.addEventListener('beforeunload', () => {
 
 // Make functions globally available
 window.updateAllCharts = updateAllCharts;
-window.refreshPoolData = refreshPoolData;
