@@ -1,363 +1,240 @@
-# Hayward Omnilogic Proxy Server
+# 🏊‍♂️ NightSwim - Hayward OmniLogic Pool Data Proxy
 
-A Node.js proxy server that forwards and authenticates requests to the Hayward Omnilogic ASP.NET WebForms application. This server handles session management, authentication, and provides data extraction capabilities using Cheerio for HTML parsing.
+A Node.js Express server that acts as a proxy to the Hayward OmniLogic pool control system, providing a clean JSON API for accessing pool data.
 
-## Features
+## 🚀 Features
 
-- **Secure Authentication**: Handles ASP.NET WebForms authentication with viewstate management
-- **Session Management**: Maintains user sessions with cookie persistence
-- **Proxy Functionality**: Forwards requests to Hayward Omnilogic while maintaining authentication
-- **Data Extraction**: Uses Cheerio to parse HTML and extract specific data from responses
-- **Custom Selectors**: Supports custom CSS selectors for targeted data extraction
-- **Error Handling**: Comprehensive error handling and logging
-- **Security**: Implements CORS, Helmet security headers, and session management
+- **Auto-authentication**: No manual login required - automatically authenticates with Hayward OmniLogic
+- **Comprehensive Data**: Fetches dashboard, filter, heater, chlorinator, lights, and schedule data
+- **Clean JSON API**: Returns structured JSON data for easy integration
+- **Session Management**: Handles authentication sessions automatically
+- **Browser Interface**: Simple web interface to view pool data
 
-## Installation
+## 📁 Project Structure
 
-1. Clone or initialize the repository:
-```bash
-git clone <repository-url>
-cd hayward-omnilogic-proxy
+```
+nightswim/
+├── src/
+│   ├── services/           # Business logic and external service interactions
+│   │   ├── HaywardSession.js      # Hayward OmniLogic session management
+│   │   ├── sessionManager.js      # User session management
+│   │   ├── poolDataService.js     # Pool data fetching operations
+│   │   └── poolDataParser.js      # HTML parsing for pool data
+│   ├── routes/             # Express route handlers
+│   │   └── poolRoutes.js   # Pool-related API endpoints
+│   ├── middleware/         # Express middleware
+│   │   └── auth.js         # Authentication middleware
+│   └── utils/              # Utility functions and constants
+│       ├── constants.js    # Application constants and configuration
+│       └── credentials.js  # Pool login credentials (gitignored)
+├── public/                 # Static files for web interface
+│   ├── index.html          # Main web page
+│   └── script.js           # Client-side JavaScript
+├── test/                   # Unit tests
+│   ├── poolDataParser.test.js
+│   └── constants.test.js
+├── server.js               # Main application entry point
+├── package.json
+└── eslint.config.js        # ESLint configuration
 ```
 
-2. Install dependencies:
-```bash
-npm install
-```
+## 🛠️ Installation
 
-3. Configure environment variables:
-```bash
-cp .env.example .env
-# Edit .env with your configuration
-```
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd nightswim
+   ```
 
-4. Start the server:
-```bash
-# Development mode with auto-reload
-npm run dev
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-# Production mode
-npm start
-```
+3. **Configure credentials**
+   Create `src/utils/credentials.js` with your Hayward OmniLogic credentials:
+   ```javascript
+   module.exports = {
+     username: 'your-email@example.com',
+     password: 'your-password'
+   };
+   ```
 
-## Environment Variables
+4. **Start the server**
+   ```bash
+   npm run dev
+   ```
 
-Create a `.env` file with the following variables:
+## 🚀 Usage
 
-```env
-# Server Configuration
-PORT=3000
-NODE_ENV=development
+### API Endpoints
 
-# Session Configuration
-SESSION_SECRET=your-secret-key-here-change-in-production
-
-# CORS Configuration
-CORS_ORIGIN=http://localhost:3000
-
-# Hayward Omnilogic URL
-HAYWARD_BASE_URL=https://haywardomnilogic.com
-```
-
-## API Endpoints
-
-### Authentication
-
-#### POST `/api/auth/login`
-Authenticate with Hayward Omnilogic credentials.
-
-**Request Body:**
-```json
-{
-  "username": "your-username",
-  "password": "your-password"
-}
-```
+#### `GET /api/pool/data`
+Returns all pool data in a single JSON payload. No authentication required - handles login automatically.
 
 **Response:**
 ```json
 {
-  "success": true,
-  "message": "Authentication successful"
-}
-```
-
-#### POST `/api/auth/logout`
-Logout and destroy session.
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Logged out successfully"
-}
-```
-
-#### GET `/api/auth/status`
-Check authentication status.
-
-**Response:**
-```json
-{
-  "authenticated": true
-}
-```
-
-### Proxy Endpoints
-
-#### ALL `/api/proxy/*`
-Forward requests to Hayward Omnilogic. Requires authentication.
-
-**Example:**
-```bash
-# GET request to a specific page
-curl -X GET http://localhost:3000/api/proxy/dashboard \
-  -H "Cookie: connect.sid=your-session-id"
-
-# POST request with data
-curl -X POST http://localhost:3000/api/proxy/some-action \
-  -H "Content-Type: application/json" \
-  -H "Cookie: connect.sid=your-session-id" \
-  -d '{"key": "value"}'
-```
-
-### Data Extraction
-
-#### GET `/api/extract/:page`
-Extract common data patterns from a page using Cheerio.
-
-**Example:**
-```bash
-curl -X GET http://localhost:3000/api/extract/dashboard \
-  -H "Cookie: connect.sid=your-session-id"
-```
-
-**Response:**
-```json
-{
-  "title": "Page Title",
-  "headings": [
-    {
-      "level": "h1",
-      "text": "Dashboard",
-      "id": "main-heading",
-      "class": "title"
-    }
-  ],
-  "forms": [
-    {
-      "id": "form1",
-      "action": "/submit",
-      "method": "POST",
-      "fields": [
-        {
-          "name": "username",
-          "type": "text",
-          "value": "",
-          "id": "txtUsername",
-          "class": "form-control"
-        }
-      ]
-    }
-  ],
-  "tables": [],
-  "links": [],
-  "images": [],
-  "meta": {}
-}
-```
-
-#### POST `/api/extract-custom`
-Extract specific data using custom CSS selectors.
-
-**Request Body:**
-```json
-{
-  "page": "dashboard",
-  "selectors": {
-    "poolTemperature": ".temperature-value",
-    "status": ".status-indicator",
-    "equipmentList": ".equipment-item"
-  }
-}
-```
-
-**Response:**
-```json
-{
-  "poolTemperature": {
-    "text": "78°F",
-    "html": "<span class=\"temperature-value\">78°F</span>",
-    "attributes": {
-      "class": "temperature-value",
-      "data-temp": "78"
-    }
+  "timestamp": "2025-08-03T03:47:30.070Z",
+  "system": {
+    "mspId": "DCEC367C6BDDCB06",
+    "bowId": "48A6C0EBC3808A94",
+    "bowSystemId": "BE1BF543BCC6BD40"
   },
-  "status": {
-    "text": "Online",
-    "html": "<div class=\"status-indicator online\">Online</div>",
-    "attributes": {
-      "class": "status-indicator online"
-    }
+  "dashboard": {
+    "temperature": {
+      "target": 75,
+      "actual": 85,
+      "unit": "°F"
+    },
+    "systemStatus": "online"
   },
-  "equipmentList": [
+  "filter": {
+    "status": true,
+    "diagnostic": "Filter Pump Running"
+  },
+  "heater": {
+    "temperature": {
+      "min": 55,
+      "current": 75,
+      "max": 90,
+      "actual": 85,
+      "unit": "°F"
+    },
+    "enabled": false
+  },
+  "chlorinator": {
+    "salt": {
+      "instant": 2884,
+      "average": "--",
+      "unit": "PPM"
+    },
+    "cell": {
+      "temperature": {
+        "value": 85.6,
+        "unit": "°F"
+      },
+      "voltage": 25.57,
+      "current": 6.18,
+      "type": "--"
+    },
+    "enabled": false
+  },
+  "lights": {
+    "status": null,
+    "brightness": null,
+    "enabled": false
+  },
+  "schedules": [
     {
-      "text": "Pool Pump",
-      "html": "<div class=\"equipment-item\">Pool Pump</div>",
-      "attributes": {
-        "class": "equipment-item",
-        "data-id": "pump1"
-      }
+      "name": "Filter Pump",
+      "startTime": "08:00 AM",
+      "endTime": "08:00 PM",
+      "setting": "--",
+      "repeat": "Weekdays",
+      "status": "Enable"
     }
   ]
 }
 ```
 
-### Health Check
+### Web Interface
 
-#### GET `/health`
-Server health and status information.
+Visit `http://localhost:3000` to view pool data in a user-friendly web interface.
 
-**Response:**
-```json
-{
-  "status": "ok",
-  "timestamp": "2024-01-15T10:30:00.000Z",
-  "activeSessions": 3
-}
-```
+## 🧪 Testing
 
-## Usage Examples
-
-### JavaScript/Node.js Client
-
-```javascript
-const axios = require('axios');
-
-const client = axios.create({
-  baseURL: 'http://localhost:3000',
-  withCredentials: true // Important for session cookies
-});
-
-async function example() {
-  try {
-    // Login
-    await client.post('/api/auth/login', {
-      username: 'your-username',
-      password: 'your-password'
-    });
-
-    // Extract data from dashboard
-    const dashboardData = await client.get('/api/extract/dashboard');
-    console.log('Dashboard data:', dashboardData.data);
-
-    // Custom data extraction
-    const customData = await client.post('/api/extract-custom', {
-      page: 'status',
-      selectors: {
-        temperature: '.pool-temp',
-        status: '.system-status'
-      }
-    });
-    console.log('Custom data:', customData.data);
-
-    // Proxy a specific request
-    const response = await client.get('/api/proxy/equipment-status');
-    console.log('Raw response:', response.data);
-
-  } catch (error) {
-    console.error('Error:', error.response?.data || error.message);
-  }
-}
-
-example();
-```
-
-### cURL Examples
-
+Run the test suite:
 ```bash
-# Login
-curl -c cookies.txt -X POST http://localhost:3000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username": "your-username", "password": "your-password"}'
-
-# Extract dashboard data
-curl -b cookies.txt -X GET http://localhost:3000/api/extract/dashboard
-
-# Custom extraction
-curl -b cookies.txt -X POST http://localhost:3000/api/extract-custom \
-  -H "Content-Type: application/json" \
-  -d '{
-    "page": "status", 
-    "selectors": {
-      "temperature": ".pool-temp",
-      "status": ".system-status"
-    }
-  }'
-
-# Proxy request
-curl -b cookies.txt -X GET http://localhost:3000/api/proxy/some-page
+npm test
 ```
 
-## Architecture
-
-### Session Management
-- Each user session is isolated with its own cookie jar
-- Sessions automatically expire after 24 hours of inactivity
-- Automatic cleanup of expired sessions
-
-### Authentication Flow
-1. Client sends credentials to `/api/auth/login`
-2. Server fetches Hayward login page and extracts ASP.NET WebForms viewstate
-3. Server submits login form with proper viewstate and credentials
-4. Server validates authentication success and stores session
-5. Subsequent requests use the authenticated session
-
-### Data Extraction
-- **Generic extraction** (`/api/extract/:page`): Extracts common HTML elements (headings, forms, tables, links, images, meta tags)
-- **Custom extraction** (`/api/extract-custom`): Uses provided CSS selectors to extract specific data
-- All extraction uses Cheerio for reliable HTML parsing
-
-## Security Considerations
-
-- Session secrets should be changed in production
-- HTTPS should be used in production environments
-- CORS is configured to restrict cross-origin requests
-- Helmet middleware provides security headers
-- Sessions are properly isolated per user
-
-## Error Handling
-
-The server provides comprehensive error handling:
-- Authentication failures return appropriate HTTP status codes
-- Network errors are caught and reported
-- Invalid selectors are handled gracefully
-- Session timeouts are detected and reported
-
-## Dependencies
-
-- **express**: Web server framework
-- **axios**: HTTP client for making requests to Hayward
-- **cheerio**: Server-side jQuery implementation for HTML parsing
-- **express-session**: Session management
-- **tough-cookie**: Cookie jar implementation
-- **helmet**: Security middleware
-- **cors**: Cross-origin resource sharing
-- **form-data**: Multipart form data handling
-
-## Development
-
+Run tests with coverage:
 ```bash
-# Install dependencies
-npm install
-
-# Run in development mode with auto-reload
-npm run dev
-
-# Run in production mode
-npm start
+npm run test:coverage
 ```
 
-## License
+## 🔧 Development
+
+### Code Quality
+
+The project uses ESLint for code quality and JSDoc for type enforcement. Run the linter:
+```bash
+npm run lint
+```
+
+Auto-fix linting issues:
+```bash
+npm run lint:fix
+```
+
+### Type Enforcement
+
+The project uses JSDoc type annotations to enforce types throughout the codebase. This provides TypeScript-like type safety without requiring a full TypeScript migration.
+
+#### Type Definitions
+
+All major data structures have comprehensive type definitions:
+
+- **DashboardData**: Temperature and system status information
+- **FilterData**: Filter pump status and diagnostic data
+- **HeaterData**: Heater temperature and status information
+- **ChlorinatorData**: Salt levels and cell information
+- **LightsData**: Lights status and brightness
+- **Schedule**: Schedule information with timing details
+
+#### Type Validation
+
+Run the type checking demonstration:
+```bash
+npm run type-check
+```
+
+This script validates sample data against the defined types and demonstrates how type checking works.
+
+#### Benefits
+
+- **Compile-time type checking** through ESLint JSDoc rules
+- **Runtime type validation** functions for critical data structures
+- **Better IDE support** with autocomplete and error detection
+- **Self-documenting code** with clear type definitions
+- **Reduced runtime errors** through type enforcement
+
+### Available Scripts
+
+- `npm start` - Start the production server
+- `npm run dev` - Start the development server with nodemon
+- `npm test` - Run unit tests
+- `npm run test:watch` - Run tests in watch mode
+- `npm run test:coverage` - Run tests with coverage report
+- `npm run lint` - Run ESLint
+- `npm run lint:fix` - Auto-fix ESLint issues
+- `npm run type-check` - Run type checking demonstration
+
+## 🏗️ Architecture
+
+### Services Layer
+- **HaywardSession**: Manages authentication and HTTP requests to Hayward OmniLogic
+- **SessionManager**: Handles user session lifecycle and cleanup
+- **PoolDataService**: Orchestrates data fetching from multiple pool components
+- **PoolDataParser**: Parses HTML responses from Hayward OmniLogic pages
+
+### Routes Layer
+- **PoolRoutes**: Defines API endpoints for pool data access
+
+### Middleware Layer
+- **AuthMiddleware**: Handles authentication and session management
+
+### Utils Layer
+- **Constants**: Centralized configuration and constants
+- **Credentials**: Secure credential management
+
+## 🔒 Security
+
+- Credentials are stored in a separate file that's gitignored
+- Sessions are managed securely with proper cleanup
+- All external requests use proper headers and timeouts
+
+## 📝 License
 
 MIT License
