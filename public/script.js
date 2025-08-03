@@ -164,7 +164,12 @@ const updateChart = async () => {
     
     poolChart.update('none'); // Update without animation for better performance
     
-    statusElement.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+    // Update status with data info
+    const dataCount = result.data.length;
+    const oldestTime = result.stats?.oldestTimestamp ? new Date(result.stats.oldestTimestamp).toLocaleTimeString() : 'N/A';
+    const newestTime = result.stats?.newestTimestamp ? new Date(result.stats.newestTimestamp).toLocaleTimeString() : 'N/A';
+    
+    statusElement.textContent = `${dataCount} data points | ${oldestTime} - ${newestTime} | Updated: ${new Date().toLocaleTimeString()}`;
     
   } catch (error) {
     console.error('Chart update error:', error);

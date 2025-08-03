@@ -61,15 +61,32 @@ router.get('/timeseries', (req, res) => {
   try {
     const hours = parseInt(req.query.hours) || 24;
     const dataPoints = timeSeriesService.getDataPoints(hours);
-
+    const stats = timeSeriesService.getStats();
+ 
     res.json({
       success: true,
       data: dataPoints,
-      hours
+      hours,
+      stats
     });
   } catch (error) {
     console.error('Time series data fetch error:', error);
     res.status(500).json({ error: 'Failed to fetch time series data' });
+  }
+});
+
+// Get time series statistics
+router.get('/timeseries/stats', (req, res) => {
+  try {
+    const stats = timeSeriesService.getStats();
+    
+    res.json({
+      success: true,
+      stats
+    });
+  } catch (error) {
+    console.error('Time series stats fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch time series statistics' });
   }
 });
 

@@ -7,6 +7,7 @@ A Node.js Express server that acts as a proxy to the Hayward OmniLogic pool cont
 - **Auto-authentication**: No manual login required - automatically authenticates with Hayward OmniLogic
 - **Comprehensive Data**: Fetches dashboard, filter, heater, chlorinator, lights, and schedule data
 - **Time Series Charts**: Beautiful line charts showing historical trends for chlorinator and temperature data
+- **Backend Data Retention**: Automatically stores and manages 24 hours of historical data on the server
 - **Clean JSON API**: Returns structured JSON data for easy integration
 - **Session Management**: Handles authentication sessions automatically
 - **Browser Interface**: Simple web interface to view pool data with interactive charts
@@ -89,7 +90,33 @@ Returns time series data for charting. Supports query parameter `hours` to speci
       "waterTemp": 85
     }
   ],
-  "hours": 24
+  "hours": 24,
+  "stats": {
+    "totalPoints": 10,
+    "retentionHours": 24,
+    "maxPoints": 1440,
+    "oldestTimestamp": "2025-08-03T04:38:01.446Z",
+    "newestTimestamp": "2025-08-03T04:38:35.079Z",
+    "dataAgeHours": 0.013
+  }
+}
+```
+
+#### `GET /api/pool/timeseries/stats`
+Returns statistics about the stored time series data.
+
+**Response:**
+```json
+{
+  "success": true,
+  "stats": {
+    "totalPoints": 10,
+    "retentionHours": 24,
+    "maxPoints": 1440,
+    "oldestTimestamp": "2025-08-03T04:38:01.446Z",
+    "newestTimestamp": "2025-08-03T04:38:35.079Z",
+    "dataAgeHours": 0.013
+  }
 }
 ```
 
@@ -169,6 +196,8 @@ Visit `http://localhost:3000` to view pool data in a user-friendly web interface
 - **Multiple Metrics**: Salt level, cell temperature, cell voltage, and water temperature
 - **Interactive Tooltips**: Hover for detailed values
 - **Responsive Design**: Works on desktop and mobile devices
+- **Backend Storage**: 24-hour data retention with automatic cleanup
+- **Data Statistics**: Shows data point count and time range information
 
 ## 🧪 Testing
 
