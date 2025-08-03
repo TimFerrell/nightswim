@@ -8,6 +8,7 @@ const {
   createPoolDataStructure
 } = require('./poolDataParser');
 const { POOL_CONSTANTS, buildSystemUrl, buildDashboardUrl } = require('../utils/constants');
+const timeSeriesService = require('./timeSeriesService');
 
 /**
  * @typedef {object} PoolData
@@ -83,6 +84,17 @@ const poolDataService = {
       console.error('Schedule fetch error:', error.message);
       poolData.schedules = { error: error.message };
     }
+
+    // Store time series data for charts
+    const timeSeriesPoint = {
+      timestamp: poolData.timestamp,
+      saltInstant: poolData.chlorinator?.salt?.instant || null,
+      cellTemp: poolData.chlorinator?.cell?.temperature?.value || null,
+      cellVoltage: poolData.chlorinator?.cell?.voltage || null,
+      waterTemp: poolData.dashboard?.temperature?.actual || null
+    };
+
+    timeSeriesService.addDataPoint(timeSeriesPoint);
 
     return poolData;
   }

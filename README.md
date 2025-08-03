@@ -6,9 +6,10 @@ A Node.js Express server that acts as a proxy to the Hayward OmniLogic pool cont
 
 - **Auto-authentication**: No manual login required - automatically authenticates with Hayward OmniLogic
 - **Comprehensive Data**: Fetches dashboard, filter, heater, chlorinator, lights, and schedule data
+- **Time Series Charts**: Beautiful line charts showing historical trends for chlorinator and temperature data
 - **Clean JSON API**: Returns structured JSON data for easy integration
 - **Session Management**: Handles authentication sessions automatically
-- **Browser Interface**: Simple web interface to view pool data
+- **Browser Interface**: Simple web interface to view pool data with interactive charts
 
 ## 📁 Project Structure
 
@@ -71,6 +72,26 @@ nightswim/
 
 #### `GET /api/pool/data`
 Returns all pool data in a single JSON payload. No authentication required - handles login automatically.
+
+#### `GET /api/pool/timeseries?hours=24`
+Returns time series data for charting. Supports query parameter `hours` to specify time range (default: 24 hours).
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "timestamp": "2025-08-03T03:47:30.070Z",
+      "saltInstant": 2879,
+      "cellTemp": 75,
+      "cellVoltage": 24.5,
+      "waterTemp": 85
+    }
+  ],
+  "hours": 24
+}
+```
 
 **Response:**
 ```json
@@ -140,7 +161,14 @@ Returns all pool data in a single JSON payload. No authentication required - han
 
 ### Web Interface
 
-Visit `http://localhost:3000` to view pool data in a user-friendly web interface.
+Visit `http://localhost:3000` to view pool data in a user-friendly web interface with interactive charts.
+
+**Chart Features:**
+- **Real-time Updates**: Charts refresh every 30 seconds
+- **Time Range Selection**: Choose from 1, 6, 24, or 48 hours of data
+- **Multiple Metrics**: Salt level, cell temperature, cell voltage, and water temperature
+- **Interactive Tooltips**: Hover for detailed values
+- **Responsive Design**: Works on desktop and mobile devices
 
 ## 🧪 Testing
 

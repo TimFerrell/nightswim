@@ -1,3 +1,202 @@
+// Global chart instance
+let poolChart = null;
+let chartUpdateInterval = null;
+
+/**
+ * Initialize the pool metrics chart
+ */
+const initializeChart = () => {
+  const ctx = document.getElementById('poolChart').getContext('2d');
+  
+  poolChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [
+        {
+          label: 'Salt Level (PPM)',
+          data: [],
+          borderColor: '#667eea',
+          backgroundColor: 'rgba(102, 126, 234, 0.1)',
+          tension: 0.4,
+          yAxisID: 'y'
+        },
+        {
+          label: 'Cell Temperature (°F)',
+          data: [],
+          borderColor: '#ff6b6b',
+          backgroundColor: 'rgba(255, 107, 107, 0.1)',
+          tension: 0.4,
+          yAxisID: 'y'
+        },
+        {
+          label: 'Cell Voltage (V)',
+          data: [],
+          borderColor: '#4ecdc4',
+          backgroundColor: 'rgba(78, 205, 196, 0.1)',
+          tension: 0.4,
+          yAxisID: 'y2'
+        },
+        {
+          label: 'Water Temperature (°F)',
+          data: [],
+          borderColor: '#45b7d1',
+          backgroundColor: 'rgba(69, 183, 209, 0.1)',
+          tension: 0.4,
+          yAxisID: 'y'
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: 'index',
+        intersect: false
+      },
+      plugins: {
+        title: {
+          display: false
+        },
+        legend: {
+          position: 'top',
+          labels: {
+            usePointStyle: true,
+            padding: 20
+          }
+        },
+        tooltip: {
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          titleColor: 'white',
+          bodyColor: 'white',
+          borderColor: '#667eea',
+          borderWidth: 1,
+          cornerRadius: 8,
+          displayColors: true
+        }
+      },
+      scales: {
+        x: {
+          type: 'time',
+          time: {
+            unit: 'hour',
+            displayFormats: {
+              hour: 'MMM d, h:mm a'
+            }
+          },
+          title: {
+            display: true,
+            text: 'Time'
+          },
+          grid: {
+            color: 'rgba(0, 0, 0, 0.1)'
+          }
+        },
+        y: {
+          type: 'linear',
+          display: true,
+          position: 'left',
+          title: {
+            display: true,
+            text: 'Temperature (°F) / Salt (PPM)'
+          },
+          grid: {
+            color: 'rgba(0, 0, 0, 0.1)'
+          }
+        },
+        y2: {
+          type: 'linear',
+          display: true,
+          position: 'right',
+          title: {
+            display: true,
+            text: 'Voltage (V)'
+          },
+          grid: {
+            drawOnChartArea: false
+          }
+        }
+      }
+    }
+  });
+};
+
+/**
+ * Update the chart with new data
+ */
+const updateChart = async () => {
+  if (!poolChart) return;
+  
+  const timeRange = document.getElementById('timeRange').value;
+  const statusElement = document.getElementById('chartStatus');
+  
+  try {
+    statusElement.textContent = 'Loading...';
+    
+    const response = await fetch(`/api/pool/timeseries?hours=${timeRange}`, {
+      credentials: 'include'
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch time series data');
+    }
+    
+    const result = await response.json();
+    
+    if (!result.success || !result.data || result.data.length === 0) {
+      statusElement.textContent = 'No data available';
+      return;
+    }
+    
+    // Process data for chart
+    const labels = result.data.map(point => new Date(point.timestamp));
+    const saltData = result.data.map(point => point.saltInstant);
+    const cellTempData = result.data.map(point => point.cellTemp);
+    const cellVoltageData = result.data.map(point => point.cellVoltage);
+    const waterTempData = result.data.map(point => point.waterTemp);
+    
+    // Update chart data
+    poolChart.data.labels = labels;
+    poolChart.data.datasets[0].data = saltData;
+    poolChart.data.datasets[1].data = cellTempData;
+    poolChart.data.datasets[2].data = cellVoltageData;
+    poolChart.data.datasets[3].data = waterTempData;
+    
+    poolChart.update('none'); // Update without animation for better performance
+    
+    statusElement.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+    
+  } catch (error) {
+    console.error('Chart update error:', error);
+    statusElement.textContent = 'Error loading data';
+  }
+};
+
+/**
+ * Start automatic chart refresh every 30 seconds
+ */
+const startChartAutoRefresh = () => {
+  // Clear any existing interval
+  if (chartUpdateInterval) {
+    clearInterval(chartUpdateInterval);
+  }
+  
+  // Update every 30 seconds
+  chartUpdateInterval = setInterval(() => {
+    updateChart();
+  }, 30000);
+};
+
+/**
+ * Stop automatic chart refresh
+ */
+const stopChartAutoRefresh = () => {
+  if (chartUpdateInterval) {
+    clearInterval(chartUpdateInterval);
+    chartUpdateInterval = null;
+  }
+};
+
 const formatPoolData = (data) => {
   let html = '';
 
@@ -145,6 +344,11 @@ const loadPoolData = async () => {
     // Display raw JSON
     jsonDataDiv.textContent = JSON.stringify(data, null, 2);
 
+    // Initialize and update chart
+    initializeChart();
+    updateChart();
+    startChartAutoRefresh();
+
     loading.style.display = 'none';
     content.style.display = 'block';
 
@@ -157,3 +361,8 @@ const loadPoolData = async () => {
 
 // Load data when page loads
 window.onload = loadPoolData;
+
+// Clean up when page is unloaded
+window.onbeforeunload = () => {
+  stopChartAutoRefresh();
+};

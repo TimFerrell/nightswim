@@ -244,4 +244,4 @@ module.exports = {
   isValidChlorinatorData,
   isValidLightsData,
   isValidSchedule
-}; 
+};

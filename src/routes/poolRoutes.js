@@ -1,6 +1,7 @@
 const express = require('express');
 const sessionManager = require('../services/sessionManager');
 const poolDataService = require('../services/poolDataService');
+const timeSeriesService = require('../services/timeSeriesService');
 const credentials = require('../utils/credentials');
 
 /** @type {import('express').Router} */
@@ -52,6 +53,23 @@ router.get('/data', async (req, res) => {
   } catch (error) {
     console.error('Pool data fetch error:', error);
     res.status(500).json({ error: 'Failed to fetch pool data' });
+  }
+});
+
+// Get time series data for charts
+router.get('/timeseries', (req, res) => {
+  try {
+    const hours = parseInt(req.query.hours) || 24;
+    const dataPoints = timeSeriesService.getDataPoints(hours);
+
+    res.json({
+      success: true,
+      data: dataPoints,
+      hours
+    });
+  } catch (error) {
+    console.error('Time series data fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch time series data' });
   }
 });
 
