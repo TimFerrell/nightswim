@@ -47,12 +47,23 @@ app.use(session({
   }
 }));
 
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  const hasCredentials = !!(process.env.HAYWARD_USERNAME && process.env.HAYWARD_PASSWORD);
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    hasCredentials,
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
 // Routes
 app.use('/api/pool', poolRoutes);
 
 // GET / - Main pool data page
 app.get('/', (req, res) => {
-  res.sendFile(`${__dirname  }/public/index.html`);
+  res.sendFile(`${__dirname}/public/index.html`);
 });
 
 // Error handling middleware
