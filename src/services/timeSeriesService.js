@@ -5,6 +5,7 @@
  * @property {number|null} cellTemp - Cell temperature value
  * @property {number|null} cellVoltage - Cell voltage value
  * @property {number|null} waterTemp - Water temperature value
+ * @property {number|null} airTemp - Air temperature value
  */
 
 /**

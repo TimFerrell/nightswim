@@ -172,10 +172,10 @@ const initializeTempChart = () => {
           label: 'Water Temperature (°F)',
           data: [],
           borderColor: '#45b7d1',
-          backgroundColor: 'rgba(69, 183, 209, 0.15)',
+          backgroundColor: 'rgba(69, 183, 209, 0.1)',
           borderWidth: 3,
           tension: 0.4,
-          fill: true,
+          fill: false,
           pointRadius: 4,
           pointHoverRadius: 6
         },
@@ -183,10 +183,10 @@ const initializeTempChart = () => {
           label: 'Air Temperature (°F)',
           data: [],
           borderColor: '#ffa726',
-          backgroundColor: 'rgba(255, 167, 38, 0.15)',
+          backgroundColor: 'rgba(255, 167, 38, 0.1)',
           borderWidth: 3,
           tension: 0.4,
-          fill: true,
+          fill: false,
           pointRadius: 4,
           pointHoverRadius: 6
         },
@@ -194,10 +194,10 @@ const initializeTempChart = () => {
           label: 'Cell Temperature (°F)',
           data: [],
           borderColor: '#ff6b6b',
-          backgroundColor: 'rgba(255, 107, 107, 0.15)',
+          backgroundColor: 'rgba(255, 107, 107, 0.1)',
           borderWidth: 3,
           tension: 0.4,
-          fill: true,
+          fill: false,
           pointRadius: 4,
           pointHoverRadius: 6
         }
@@ -226,10 +226,10 @@ const initializeElectricalChart = () => {
           label: 'Cell Voltage (V)',
           data: [],
           borderColor: '#4ecdc4',
-          backgroundColor: 'rgba(78, 205, 196, 0.15)',
+          backgroundColor: 'rgba(78, 205, 196, 0.1)',
           borderWidth: 3,
           tension: 0.4,
-          fill: true,
+          fill: false,
           pointRadius: 4,
           pointHoverRadius: 6
         }
@@ -258,10 +258,10 @@ const initializeChemistryChart = () => {
           label: 'Salt Level (PPM)',
           data: [],
           borderColor: '#667eea',
-          backgroundColor: 'rgba(102, 126, 234, 0.15)',
+          backgroundColor: 'rgba(102, 126, 234, 0.1)',
           borderWidth: 3,
           tension: 0.4,
-          fill: true,
+          fill: false,
           pointRadius: 4,
           pointHoverRadius: 6
         }
@@ -302,6 +302,17 @@ const updateAllCharts = async () => {
     const cellTempData = result.data.map(point => point.cellTemp);
     const cellVoltageData = result.data.map(point => point.cellVoltage);
     const saltData = result.data.map(point => point.saltInstant);
+    
+    // Debug logging
+    console.log('Chart data debug:', {
+      dataPoints: result.data.length,
+      waterTemp: waterTempData.filter(v => v !== null && v !== undefined).length,
+      airTemp: airTempData.filter(v => v !== null && v !== undefined).length,
+      cellTemp: cellTempData.filter(v => v !== null && v !== undefined).length,
+      sampleWaterTemp: waterTempData.slice(0, 3),
+      sampleAirTemp: airTempData.slice(0, 3),
+      sampleCellTemp: cellTempData.slice(0, 3)
+    });
     
     // Update temperature chart
     if (tempChart) {
