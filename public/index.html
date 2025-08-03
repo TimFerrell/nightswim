@@ -1,185 +1,486 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>🏊‍♂️ Pool Data</title>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NightSwim - Pool Monitoring Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
-            margin: 0; 
-            padding: 20px; 
-            background: #f5f5f5; 
+        :root {
+            /* Post-corporate Memphis color palette */
+            --color-background: #fafbfc;
+            --color-surface: #ffffff;
+            --color-border: #e1e5e9;
+            --color-text-primary: #1a1f36;
+            --color-text-secondary: #697386;
+            --color-text-muted: #8b9bb4;
+            --color-accent: #635bff;
+            --color-accent-light: #f0f0ff;
+            --color-success: #0a2540;
+            --color-warning: #ff6b35;
+            --color-error: #e53e3e;
+            
+            /* Typography */
+            --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --font-size-xs: 0.75rem;
+            --font-size-sm: 0.875rem;
+            --font-size-base: 1rem;
+            --font-size-lg: 1.125rem;
+            --font-size-xl: 1.25rem;
+            --font-size-2xl: 1.5rem;
+            --font-size-3xl: 1.875rem;
+            --font-size-4xl: 2.25rem;
+            
+            /* Spacing */
+            --space-1: 0.25rem;
+            --space-2: 0.5rem;
+            --space-3: 0.75rem;
+            --space-4: 1rem;
+            --space-6: 1.5rem;
+            --space-8: 2rem;
+            --space-12: 3rem;
+            --space-16: 4rem;
+            
+            /* Border radius */
+            --radius-sm: 0.375rem;
+            --radius-md: 0.5rem;
+            --radius-lg: 0.75rem;
+            --radius-xl: 1rem;
+            
+            /* Shadows */
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
-        .container { 
-            max-width: 1200px; 
-            margin: 0 auto; 
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        .header { 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-            color: white; 
-            padding: 20px; 
-            border-radius: 10px; 
-            margin-bottom: 20px; 
-            text-align: center;
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--color-background);
+            color: var(--color-text-primary);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
-        .status { 
-            display: inline-block; 
-            padding: 4px 12px; 
-            border-radius: 20px; 
-            font-weight: bold; 
-            font-size: 0.9em; 
-            margin: 5px;
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 var(--space-4);
         }
-        .status.on { background: #d4edda; color: #155724; }
-        .status.off { background: #f8d7da; color: #721c24; }
-        .status.enabled { background: #d1ecf1; color: #0c5460; }
-        .temp { 
-            font-size: 1.2em; 
-            font-weight: bold; 
-            color: #667eea; 
-            margin: 5px 0;
+
+        /* Header */
+        .header {
+            background: var(--color-surface);
+            border-bottom: 1px solid var(--color-border);
+            padding: var(--space-6) 0;
+            margin-bottom: var(--space-8);
         }
-        .card { 
-            background: white; 
-            border-radius: 10px; 
-            padding: 20px; 
-            margin: 10px 0;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-        .card h2 { 
-            margin-top: 0; 
-            color: #333; 
-            border-bottom: 2px solid #667eea; 
-            padding-bottom: 10px; 
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            text-decoration: none;
+            color: var(--color-text-primary);
         }
-        .schedule-item { 
-            background: #f8f9fa; 
-            padding: 10px; 
-            margin: 5px 0; 
-            border-radius: 5px; 
-            border-left: 4px solid #667eea; 
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--color-accent), #8b5cf6);
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: var(--font-size-lg);
         }
-        .schedule-time { 
-            font-weight: bold; 
-            color: #495057; 
+
+        .logo-text {
+            font-size: var(--font-size-xl);
+            font-weight: 600;
+            letter-spacing: -0.025em;
         }
-        .schedule-status { 
-            font-size: 0.9em; 
+
+        .refresh-btn {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            color: var(--color-text-primary);
+            padding: var(--space-2) var(--space-4);
+            border-radius: var(--radius-md);
+            font-size: var(--font-size-sm);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
         }
-        .error { 
-            background: #f8d7da; 
-            color: #721c24; 
-            padding: 10px; 
-            border-radius: 5px; 
-            margin: 10px 0; 
+
+        .refresh-btn:hover {
+            background: var(--color-accent-light);
+            border-color: var(--color-accent);
+            color: var(--color-accent);
         }
-        .loading { 
-            text-align: center; 
-            padding: 50px; 
-            font-size: 1.2em; 
-            color: #666; 
+
+        .refresh-btn:disabled {
+            background: var(--color-background);
+            color: var(--color-text-muted);
+            cursor: not-allowed;
+            border-color: var(--color-border);
         }
-        .refresh-btn { 
-            background: #667eea; 
-            color: white; 
-            border: none; 
-            padding: 10px 20px; 
-            border-radius: 5px; 
-            cursor: pointer; 
-            font-size: 1em; 
-            margin: 10px 0;
+
+        /* Main content */
+        .main {
+            padding-bottom: var(--space-16);
         }
-        .refresh-btn:hover { 
-            background: #5a6fd8; 
+
+        .page-title {
+            font-size: var(--font-size-4xl);
+            font-weight: 700;
+            color: var(--color-text-primary);
+            margin-bottom: var(--space-2);
+            letter-spacing: -0.025em;
         }
-        .refresh-btn:disabled { 
-            background: #ccc; 
-            cursor: not-allowed; 
+
+        .page-subtitle {
+            font-size: var(--font-size-lg);
+            color: var(--color-text-secondary);
+            margin-bottom: var(--space-8);
+            font-weight: 400;
         }
-        .timestamp { 
-            opacity: 0.8; 
-            font-size: 0.9em; 
-            margin-top: 10px;
+
+        /* Status cards */
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--space-6);
+            margin-bottom: var(--space-12);
+        }
+
+        .status-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: var(--space-6);
+            transition: all 0.2s ease;
+        }
+
+        .status-card:hover {
+            box-shadow: var(--shadow-md);
+            border-color: var(--color-accent);
+        }
+
+        .status-card h3 {
+            font-size: var(--font-size-sm);
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: var(--space-3);
+        }
+
+        .status-value {
+            font-size: var(--font-size-3xl);
+            font-weight: 700;
+            color: var(--color-text-primary);
+            margin-bottom: var(--space-2);
+            letter-spacing: -0.025em;
+        }
+
+        .status-unit {
+            font-size: var(--font-size-sm);
+            color: var(--color-text-muted);
+            font-weight: 500;
+        }
+
+        .status-details {
+            margin-top: var(--space-4);
+            padding-top: var(--space-4);
+            border-top: 1px solid var(--color-border);
+        }
+
+        .status-detail {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--space-2);
+        }
+
+        .status-detail:last-child {
+            margin-bottom: 0;
+        }
+
+        .status-detail-label {
+            font-size: var(--font-size-sm);
+            color: var(--color-text-secondary);
+        }
+
+        .status-detail-value {
+            font-size: var(--font-size-sm);
+            font-weight: 600;
+            color: var(--color-text-primary);
+        }
+
+        /* Charts section */
+        .charts-section {
+            margin-bottom: var(--space-12);
+        }
+
+        .section-title {
+            font-size: var(--font-size-2xl);
+            font-weight: 600;
+            color: var(--color-text-primary);
+            margin-bottom: var(--space-6);
+            letter-spacing: -0.025em;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: var(--space-8);
         }
 
         .chart-container {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            margin: 10px 0;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            position: relative;
-            height: 500px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: var(--space-6);
+            transition: all 0.2s ease;
         }
+
+        .chart-container:hover {
+            box-shadow: var(--shadow-md);
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--space-6);
+        }
+
+        .chart-title {
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+            color: var(--color-text-primary);
+            letter-spacing: -0.025em;
+        }
+
         .chart-controls {
             display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
             align-items: center;
+            gap: var(--space-4);
         }
+
         .time-selector {
-            padding: 8px 12px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            background: white;
-            font-size: 14px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            padding: var(--space-2) var(--space-3);
+            font-size: var(--font-size-sm);
+            color: var(--color-text-primary);
+            cursor: pointer;
+            transition: all 0.2s ease;
         }
+
+        .time-selector:hover {
+            border-color: var(--color-accent);
+        }
+
+        .time-selector:focus {
+            outline: none;
+            border-color: var(--color-accent);
+            box-shadow: 0 0 0 3px var(--color-accent-light);
+        }
+
         .chart-status {
-            font-size: 0.9em;
-            color: #666;
-            margin-left: auto;
+            font-size: var(--font-size-sm);
+            color: var(--color-text-muted);
+            font-weight: 500;
+        }
+
+        .chart-canvas {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+
+        /* Timestamp */
+        .timestamp {
+            text-align: center;
+            font-size: var(--font-size-sm);
+            color: var(--color-text-muted);
+            margin-top: var(--space-8);
+            padding: var(--space-4);
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+        }
+
+        /* Loading states */
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 var(--space-3);
+            }
+            
+            .header-content {
+                flex-direction: column;
+                gap: var(--space-4);
+                text-align: center;
+            }
+            
+            .page-title {
+                font-size: var(--font-size-3xl);
+            }
+            
+            .page-subtitle {
+                font-size: var(--font-size-base);
+            }
+            
+            .status-grid {
+                grid-template-columns: 1fr;
+                gap: var(--space-4);
+            }
+            
+            .chart-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: var(--space-3);
+            }
+            
+            .chart-controls {
+                width: 100%;
+                justify-content: space-between;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .status-card,
+        .chart-container {
+            animation: fadeIn 0.3s ease-out;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🏊‍♂️ Pool Data</h1>
-            <button class="refresh-btn" onclick="refreshPoolData()">🔄 Refresh Data</button>
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <a href="/" class="logo">
+                    <div class="logo-icon">🏊</div>
+                    <span class="logo-text">NightSwim</span>
+                </a>
+                <button class="refresh-btn" onclick="refreshPoolData()">
+                    <span>🔄</span>
+                    <span>Refresh Data</span>
+                </button>
+            </div>
         </div>
-        
-        <div id="loading" class="loading">
-            🔐 Logging in and fetching pool data...
-        </div>
-        
-        <div id="content" style="display: none;">
-            <div id="poolData"></div>
-            
-            <div class="chart-container">
-                <h2>🌡️ Temperature Metrics</h2>
-                <div class="chart-controls">
-                    <label for="timeRange">Time Range:</label>
-                    <select id="timeRange" class="time-selector" onchange="updateAllCharts()">
-                        <option value="1">Last Hour</option>
-                        <option value="6">Last 6 Hours</option>
-                        <option value="24" selected>Last 24 Hours</option>
-                        <option value="48">Last 48 Hours</option>
-                    </select>
-                    <div class="chart-status" id="tempChartStatus">Loading...</div>
-                </div>
-                <canvas id="tempChart"></canvas>
+    </header>
+
+    <main class="main">
+        <div class="container">
+            <div class="page-header">
+                <h1 class="page-title">Pool Monitoring Dashboard</h1>
+                <p class="page-subtitle">Real-time insights into your pool's performance and water quality</p>
             </div>
 
-            <div class="chart-container">
-                <h2>⚡ Electrical Metrics</h2>
-                <div class="chart-controls">
-                    <div class="chart-status" id="electricalChartStatus">Loading...</div>
-                </div>
-                <canvas id="electricalChart"></canvas>
+            <!-- Current Status -->
+            <div class="status-grid" id="statusGrid">
+                <!-- Status cards will be populated by JavaScript -->
             </div>
 
-            <div class="chart-container">
-                <h2>🧂 Water Chemistry</h2>
-                <div class="chart-controls">
-                    <div class="chart-status" id="chemistryChartStatus">Loading...</div>
+            <!-- Charts Section -->
+            <div class="charts-section">
+                <h2 class="section-title">Performance Analytics</h2>
+                
+                <div class="charts-grid">
+                    <!-- Temperature Metrics -->
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3 class="chart-title">Temperature Metrics</h3>
+                            <div class="chart-controls">
+                                <label for="timeRange">Time Range:</label>
+                                <select id="timeRange" class="time-selector" onchange="updateAllCharts()">
+                                    <option value="1">Last Hour</option>
+                                    <option value="6">Last 6 Hours</option>
+                                    <option value="24" selected>Last 24 Hours</option>
+                                    <option value="48">Last 48 Hours</option>
+                                </select>
+                                <div class="chart-status" id="tempChartStatus">Loading...</div>
+                            </div>
+                        </div>
+                        <div class="chart-canvas">
+                            <canvas id="tempChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Electrical Metrics -->
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3 class="chart-title">Electrical Metrics</h3>
+                            <div class="chart-controls">
+                                <div class="chart-status" id="electricalChartStatus">Loading...</div>
+                            </div>
+                        </div>
+                        <div class="chart-canvas">
+                            <canvas id="electricalChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Water Chemistry -->
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3 class="chart-title">Water Chemistry</h3>
+                            <div class="chart-controls">
+                                <div class="chart-status" id="chemistryChartStatus">Loading...</div>
+                            </div>
+                        </div>
+                        <div class="chart-canvas">
+                            <canvas id="chemistryChart"></canvas>
+                        </div>
+                    </div>
                 </div>
-                <canvas id="chemistryChart"></canvas>
+            </div>
+
+            <!-- Timestamp -->
+            <div class="timestamp" id="timestamp">
+                Last updated: Loading...
             </div>
         </div>
-        
-        <div id="error" class="error" style="display: none;"></div>
-    </div>
+    </main>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>

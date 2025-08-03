@@ -1,12 +1,14 @@
-// Global chart instances
+// Chart instances
 let tempChart = null;
 let electricalChart = null;
 let chemistryChart = null;
-let chartUpdateInterval = null;
-let statsUpdateInterval = null;
+
+// Auto-refresh intervals
+let chartRefreshInterval = null;
+let statsRefreshInterval = null;
 
 /**
- * Common chart configuration
+ * Get chart configuration based on type
  */
 const getChartConfig = (type) => {
   const baseConfig = {
@@ -26,25 +28,28 @@ const getChartConfig = (type) => {
           usePointStyle: true,
           padding: 20,
           font: {
-            size: 12
+            size: 12,
+            family: 'Inter, sans-serif'
           }
         }
       },
       tooltip: {
-        backgroundColor: 'rgba(0, 0, 0, 0.9)',
+        backgroundColor: 'rgba(26, 31, 54, 0.95)',
         titleColor: 'white',
         bodyColor: 'white',
-        borderColor: '#667eea',
-        borderWidth: 2,
-        cornerRadius: 12,
+        borderColor: '#635bff',
+        borderWidth: 1,
+        cornerRadius: 8,
         displayColors: true,
         padding: 12,
         titleFont: {
           size: 14,
-          weight: 'bold'
+          weight: '600',
+          family: 'Inter, sans-serif'
         },
         bodyFont: {
-          size: 13
+          size: 13,
+          family: 'Inter, sans-serif'
         }
       }
     },
@@ -62,17 +67,21 @@ const getChartConfig = (type) => {
           text: 'Time',
           font: {
             size: 14,
-            weight: 'bold'
-          }
+            weight: '600',
+            family: 'Inter, sans-serif'
+          },
+          color: '#697386'
         },
         grid: {
-          color: 'rgba(0, 0, 0, 0.08)',
+          color: 'rgba(225, 229, 233, 0.5)',
           drawBorder: false
         },
         ticks: {
           font: {
-            size: 11
-          }
+            size: 11,
+            family: 'Inter, sans-serif'
+          },
+          color: '#8b9bb4'
         }
       }
     }
@@ -89,17 +98,21 @@ const getChartConfig = (type) => {
         text: 'Temperature (°F)',
         font: {
           size: 14,
-          weight: 'bold'
-        }
+          weight: '600',
+          family: 'Inter, sans-serif'
+        },
+        color: '#697386'
       },
       grid: {
-        color: 'rgba(0, 0, 0, 0.08)',
+        color: 'rgba(225, 229, 233, 0.5)',
         drawBorder: false
       },
       ticks: {
         font: {
-          size: 11
-        }
+          size: 11,
+          family: 'Inter, sans-serif'
+        },
+        color: '#8b9bb4'
       }
     };
   } else if (type === 'electrical') {
@@ -112,17 +125,21 @@ const getChartConfig = (type) => {
         text: 'Voltage (V)',
         font: {
           size: 14,
-          weight: 'bold'
-        }
+          weight: '600',
+          family: 'Inter, sans-serif'
+        },
+        color: '#697386'
       },
       grid: {
-        color: 'rgba(0, 0, 0, 0.08)',
+        color: 'rgba(225, 229, 233, 0.5)',
         drawBorder: false
       },
       ticks: {
         font: {
-          size: 11
-        }
+          size: 11,
+          family: 'Inter, sans-serif'
+        },
+        color: '#8b9bb4'
       }
     };
   } else if (type === 'chemistry') {
@@ -135,17 +152,21 @@ const getChartConfig = (type) => {
         text: 'Salt Level (PPM)',
         font: {
           size: 14,
-          weight: 'bold'
-        }
+          weight: '600',
+          family: 'Inter, sans-serif'
+        },
+        color: '#697386'
       },
       grid: {
-        color: 'rgba(0, 0, 0, 0.08)',
+        color: 'rgba(225, 229, 233, 0.5)',
         drawBorder: false
       },
       ticks: {
         font: {
-          size: 11
-        }
+          size: 11,
+          family: 'Inter, sans-serif'
+        },
+        color: '#8b9bb4'
       }
     };
   }
@@ -408,52 +429,33 @@ const appendDataPoint = (dataPoint) => {
     
     chemistryChart.update('active');
   }
-  
-  // Update status for all charts
-  const dataCount = tempChart ? tempChart.data.labels.length : 0;
-  const oldestTime = tempChart && tempChart.data.labels[0] ? tempChart.data.labels[0].toLocaleTimeString() : 'N/A';
-  const newestTime = tempChart && tempChart.data.labels[tempChart.data.labels.length - 1] ? 
-    tempChart.data.labels[tempChart.data.labels.length - 1].toLocaleTimeString() : 'N/A';
-  const statusText = `${dataCount} data points | ${oldestTime} - ${newestTime} | Updated: ${new Date().toLocaleTimeString()}`;
-  
-  document.getElementById('tempChartStatus').textContent = statusText;
-  document.getElementById('electricalChartStatus').textContent = statusText;
-  document.getElementById('chemistryChartStatus').textContent = statusText;
 };
 
 /**
- * Start automatic chart refresh every 2 minutes
- * Data is collected by cron every 5 minutes, so we refresh slightly more frequently
+ * Start automatic chart refresh
  */
 const startChartAutoRefresh = () => {
-  // Clear any existing interval
-  if (chartUpdateInterval) {
-    clearInterval(chartUpdateInterval);
+  if (chartRefreshInterval) {
+    clearInterval(chartRefreshInterval);
   }
   
-  // Update every 2 minutes (data collected by cron every 5 minutes)
-  chartUpdateInterval = setInterval(async () => {
-    try {
-      // Just refresh the charts with existing data from InfluxDB
-      updateAllCharts();
-    } catch (error) {
-      console.error('Chart refresh error:', error);
-    }
-  }, 120000); // 2 minutes
+  chartRefreshInterval = setInterval(() => {
+    updateAllCharts();
+  }, 30000); // Refresh every 30 seconds
 };
 
 /**
  * Stop automatic chart refresh
  */
 const stopChartAutoRefresh = () => {
-  if (chartUpdateInterval) {
-    clearInterval(chartUpdateInterval);
-    chartUpdateInterval = null;
+  if (chartRefreshInterval) {
+    clearInterval(chartRefreshInterval);
+    chartRefreshInterval = null;
   }
 };
 
 /**
- * Clean up chart resources
+ * Clean up chart instances
  */
 const cleanupChart = () => {
   if (tempChart) {
@@ -471,286 +473,272 @@ const cleanupChart = () => {
 };
 
 /**
- * Start automatic stats refresh every 2 minutes
- * Data is collected by cron every 5 minutes
+ * Start automatic stats refresh
  */
 const startStatsAutoRefresh = () => {
-  // Clear any existing interval
-  if (statsUpdateInterval) {
-    clearInterval(statsUpdateInterval);
+  if (statsRefreshInterval) {
+    clearInterval(statsRefreshInterval);
   }
   
-  // Update every 2 minutes (data collected by cron every 5 minutes)
-  statsUpdateInterval = setInterval(() => {
-    refreshPoolData();
-  }, 120000); // 2 minutes
+  statsRefreshInterval = setInterval(() => {
+    loadPoolData();
+  }, 60000); // Refresh every minute
 };
 
 /**
  * Stop automatic stats refresh
  */
 const stopStatsAutoRefresh = () => {
-  if (statsUpdateInterval) {
-    clearInterval(statsUpdateInterval);
-    statsUpdateInterval = null;
+  if (statsRefreshInterval) {
+    clearInterval(statsRefreshInterval);
+    statsRefreshInterval = null;
   }
-};
-
-const formatPoolData = (data) => {
-  let html = '';
-
-  // System Info
-  html += `
-        <div class="card">
-            <h2>📊 System Info</h2>
-            <div class="timestamp">Last updated: ${new Date(data.timestamp).toLocaleString()}</div>
-            <div>MSP ID: ${data.system.mspId}</div>
-            <div>Bow ID: ${data.system.bowId}</div>
-        </div>
-    `;
-
-  // Temperature
-  if (data.dashboard.temperature) {
-    html += `
-            <div class="card">
-                <h2>🌡️ Temperature</h2>
-                <div class="temp">Target: ${data.dashboard.temperature.target || '--'}°F</div>
-                <div class="temp">Water: ${data.dashboard.temperature.actual || '--'}°F</div>
-                <div class="temp">Air: ${data.dashboard.airTemperature || '--'}°F</div>
-            </div>
-        `;
-  }
-
-  // Filter Pump
-  if (data.dashboard.filterStatus) {
-    const statusClass = data.dashboard.filterStatus.toLowerCase() === 'on' ? 'on' : 'off';
-    html += `
-            <div class="card">
-                <h2>🔧 Filter Pump</h2>
-                <div class="status ${statusClass}">${data.dashboard.filterStatus.toUpperCase()}</div>
-            </div>
-        `;
-  }
-
-  // Heater
-  if (data.heater.temperature) {
-    const enabledClass = data.heater.enabled ? 'enabled' : 'off';
-    html += `
-            <div class="card">
-                <h2>🔥 Heater</h2>
-                <div class="temp">Current: ${data.heater.temperature.current || '--'}</div>
-                <div class="temp">Actual: ${data.heater.temperature.actual || '--'}</div>
-                <div class="status ${enabledClass}">${data.heater.enabled ? 'ENABLED' : 'DISABLED'}</div>
-            </div>
-        `;
-  }
-
-  // Chlorinator
-  if (data.chlorinator.salt || data.chlorinator.cell) {
-    const enabledClass = data.chlorinator.enabled ? 'enabled' : 'off';
-    html += `
-            <div class="card">
-                <h2>🧂 Chlorinator</h2>
-                <div class="temp">Salt: ${data.chlorinator.salt?.instant || '--'} PPM</div>
-                <div class="temp">Cell Temp: ${data.chlorinator.cell?.temperature?.value || '--'}${data.chlorinator.cell?.temperature?.unit || ''}</div>
-                <div class="temp">Cell Voltage: ${data.chlorinator.cell?.voltage || '--'}V</div>
-                <div class="status ${enabledClass}">${data.chlorinator.enabled ? 'ENABLED' : 'DISABLED'}</div>
-            </div>
-        `;
-  }
-
-  // Lights
-  if (data.lights) {
-    const enabledClass = data.lights.enabled ? 'enabled' : 'off';
-    html += `
-            <div class="card">
-                <h2>💡 Lights</h2>
-                <div class="status ${enabledClass}">${data.lights.enabled ? 'ENABLED' : 'DISABLED'}</div>
-            </div>
-        `;
-  }
-
-  // Water Features
-  if (data.waterFeatures) {
-    const enabledClass = data.waterFeatures.enabled ? 'enabled' : 'off';
-    html += `
-            <div class="card">
-                <h2>🌊 Water Features</h2>
-                <div class="status ${enabledClass}">${data.waterFeatures.enabled ? 'ENABLED' : 'DISABLED'}</div>
-            </div>
-        `;
-  }
-
-  // Cleaner
-  if (data.cleaner) {
-    const enabledClass = data.cleaner.enabled ? 'enabled' : 'off';
-    html += `
-            <div class="card">
-                <h2>🤖 Cleaner</h2>
-                <div class="status ${enabledClass}">${data.cleaner.enabled ? 'ENABLED' : 'DISABLED'}</div>
-            </div>
-        `;
-  }
-
-  // Schedules
-  if (data.schedules && data.schedules.length > 0) {
-    html += `
-            <div class="card">
-                <h2>⏰ Schedules</h2>
-        `;
-
-    data.schedules.forEach(schedule => {
-      html += `
-                <div class="schedule-item">
-                    <strong>${schedule.name}</strong><br>
-                    <span class="schedule-time">${schedule.startTime} - ${schedule.endTime}</span><br>
-                    <span class="schedule-status">${schedule.repeat} | ${schedule.status}</span>
-                </div>
-            `;
-    });
-
-    html += '</div>';
-  }
-
-  return html;
 };
 
 /**
- * Initial page load - shows loading screen and loads everything
+ * Format pool data for display
+ */
+const formatPoolData = (data) => {
+  const statusGrid = document.getElementById('statusGrid');
+  
+  // Create status cards
+  const cards = [];
+  
+  // Water Temperature Card
+  if (data.dashboard?.temperature) {
+    cards.push(`
+      <div class="status-card">
+        <h3>Water Temperature</h3>
+        <div class="status-value">${data.dashboard.temperature.actual || '--'}</div>
+        <div class="status-unit">°F</div>
+        <div class="status-details">
+          <div class="status-detail">
+            <span class="status-detail-label">Target</span>
+            <span class="status-detail-value">${data.dashboard.temperature.target || '--'}°F</span>
+          </div>
+        </div>
+      </div>
+    `);
+  }
+  
+  // Air Temperature Card
+  if (data.dashboard?.airTemperature) {
+    cards.push(`
+      <div class="status-card">
+        <h3>Air Temperature</h3>
+        <div class="status-value">${data.dashboard.airTemperature || '--'}</div>
+        <div class="status-unit">°F</div>
+      </div>
+    `);
+  }
+  
+  // Salt Level Card
+  if (data.chlorinator?.salt) {
+    cards.push(`
+      <div class="status-card">
+        <h3>Salt Level</h3>
+        <div class="status-value">${data.chlorinator.salt.instant || '--'}</div>
+        <div class="status-unit">PPM</div>
+        <div class="status-details">
+          <div class="status-detail">
+            <span class="status-detail-label">Average</span>
+            <span class="status-detail-value">${data.chlorinator.salt.average || '--'} PPM</span>
+          </div>
+        </div>
+      </div>
+    `);
+  }
+  
+  // Cell Voltage Card
+  if (data.chlorinator?.cell?.voltage) {
+    cards.push(`
+      <div class="status-card">
+        <h3>Cell Voltage</h3>
+        <div class="status-value">${data.chlorinator.cell.voltage || '--'}</div>
+        <div class="status-unit">V</div>
+        <div class="status-details">
+          <div class="status-detail">
+            <span class="status-detail-label">Temperature</span>
+            <span class="status-detail-value">${data.chlorinator.cell.temperature?.value || '--'}°F</span>
+          </div>
+        </div>
+      </div>
+    `);
+  }
+  
+  // Filter Status Card
+  if (data.filter) {
+    const filterStatus = data.filter.status ? 'Running' : 'Stopped';
+    const statusClass = data.filter.status ? 'status-on' : 'status-off';
+    
+    cards.push(`
+      <div class="status-card">
+        <h3>Filter Pump</h3>
+        <div class="status-value">${filterStatus}</div>
+        <div class="status-unit">Status</div>
+        <div class="status-details">
+          <div class="status-detail">
+            <span class="status-detail-label">Speed</span>
+            <span class="status-detail-value">${data.filter.speed || '--'} RPM</span>
+          </div>
+        </div>
+      </div>
+    `);
+  }
+  
+  // Heater Status Card
+  if (data.heater) {
+    const heaterStatus = data.heater.status ? 'Active' : 'Inactive';
+    
+    cards.push(`
+      <div class="status-card">
+        <h3>Heater</h3>
+        <div class="status-value">${heaterStatus}</div>
+        <div class="status-unit">Status</div>
+        <div class="status-details">
+          <div class="status-detail">
+            <span class="status-detail-label">Target</span>
+            <span class="status-detail-value">${data.heater.target || '--'}°F</span>
+          </div>
+        </div>
+      </div>
+    `);
+  }
+  
+  // Update the status grid
+  statusGrid.innerHTML = cards.join('');
+  
+  // Update timestamp
+  const timestamp = document.getElementById('timestamp');
+  timestamp.textContent = `Last updated: ${new Date().toLocaleString()}`;
+};
+
+/**
+ * Load pool data and initialize dashboard
  */
 const loadPoolData = async () => {
-  const loading = document.getElementById('loading');
-  const content = document.getElementById('content');
-  const error = document.getElementById('error');
-  const poolDataDiv = document.getElementById('poolData');
-
-  loading.style.display = 'block';
-  content.style.display = 'none';
-  error.style.display = 'none';
-
   try {
-    // Get pool data (authentication handled automatically)
-    const dataResponse = await fetch('/api/pool/data', {
+    const response = await fetch('/api/pool/data', {
       credentials: 'include'
     });
-
-    if (!dataResponse.ok) {
+    
+    if (!response.ok) {
       throw new Error('Failed to fetch pool data');
     }
-
-    const data = await dataResponse.json();
-
-    // Display formatted data
-    poolDataDiv.innerHTML = formatPoolData(data);
-
-    // Initialize charts only once, then just update them
+    
+    const result = await response.json();
+    
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to load pool data');
+    }
+    
+    // Format and display the data
+    formatPoolData(result.data);
+    
+    // Create time series data point
+    const timeSeriesPoint = {
+      timestamp: new Date().toISOString(),
+      saltInstant: result.data.chlorinator?.salt?.instant || null,
+      cellTemp: result.data.chlorinator?.cell?.temperature?.value || null,
+      cellVoltage: result.data.chlorinator?.cell?.voltage || null,
+      waterTemp: result.data.dashboard?.temperature?.actual || null,
+      airTemp: result.data.dashboard?.airTemperature || null
+    };
+    
+    // Append to charts
+    appendDataPoint(timeSeriesPoint);
+    
+    // Initialize charts if not already done
     if (!tempChart) {
       initializeTempChart();
       initializeElectricalChart();
       initializeChemistryChart();
-      updateAllCharts(); // Load initial historical data
-    } else {
-      // Append the new data point to the existing charts
-      const timeSeriesPoint = {
-        timestamp: data.timestamp,
-        saltInstant: data.chlorinator?.salt?.instant || null,
-        cellTemp: data.chlorinator?.cell?.temperature?.value || null,
-        cellVoltage: data.chlorinator?.cell?.voltage || null,
-        waterTemp: data.dashboard?.temperature?.actual || null,
-        airTemp: data.dashboard?.airTemperature || null
-      };
-      appendDataPoint(timeSeriesPoint);
+      updateAllCharts();
     }
-
-    // Start auto-refresh for chart and stats (data now collected by cron)
+    
+    // Start auto-refresh
     startChartAutoRefresh();
     startStatsAutoRefresh();
-
-    loading.style.display = 'none';
-    content.style.display = 'block';
-
-  } catch (err) {
-    loading.style.display = 'none';
-    error.style.display = 'block';
-    error.textContent = `❌ Error: ${err.message}`;
+    
+  } catch (error) {
+    console.error('Error loading pool data:', error);
+    document.getElementById('timestamp').textContent = `Error: ${error.message}`;
   }
 };
 
 /**
- * Refresh just the pool data without reloading the page
+ * Refresh pool data (AJAX update)
  */
 const refreshPoolData = async () => {
-  const poolDataDiv = document.getElementById('poolData');
-  const error = document.getElementById('error');
   const refreshBtn = document.querySelector('.refresh-btn');
-
+  const originalText = refreshBtn.innerHTML;
+  
   try {
-    // Show refreshing state
-    const originalText = refreshBtn.textContent;
-    refreshBtn.textContent = '⏳ Refreshing...';
+    // Update button state
     refreshBtn.disabled = true;
-
-    // Get pool data (authentication handled automatically)
-    const dataResponse = await fetch('/api/pool/data', {
+    refreshBtn.innerHTML = '<span>⏳</span><span>Refreshing...</span>';
+    
+    const response = await fetch('/api/pool/data', {
       credentials: 'include'
     });
-
-    if (!dataResponse.ok) {
+    
+    if (!response.ok) {
       throw new Error('Failed to fetch pool data');
     }
-
-    const data = await dataResponse.json();
-
-    // Update just the data display without showing loading screen
-    poolDataDiv.innerHTML = formatPoolData(data);
-
-          // Add new data point to charts if they exist
-      if (tempChart) {
-        const timeSeriesPoint = {
-          timestamp: data.timestamp,
-          saltInstant: data.chlorinator?.salt?.instant || null,
-          cellTemp: data.chlorinator?.cell?.temperature?.value || null,
-          cellVoltage: data.chlorinator?.cell?.voltage || null,
-          waterTemp: data.dashboard?.temperature?.actual || null,
-          airTemp: data.dashboard?.airTemperature || null
-        };
-        appendDataPoint(timeSeriesPoint);
-      }
-
-    // Hide any existing errors
-    error.style.display = 'none';
-
-    // Show success state briefly
-    refreshBtn.textContent = '✅ Updated!';
+    
+    const result = await response.json();
+    
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to load pool data');
+    }
+    
+    // Format and display the data
+    formatPoolData(result.data);
+    
+    // Create time series data point
+    const timeSeriesPoint = {
+      timestamp: new Date().toISOString(),
+      saltInstant: result.data.chlorinator?.salt?.instant || null,
+      cellTemp: result.data.chlorinator?.cell?.temperature?.value || null,
+      cellVoltage: result.data.chlorinator?.cell?.voltage || null,
+      waterTemp: result.data.dashboard?.temperature?.actual || null,
+      airTemp: result.data.dashboard?.airTemperature || null
+    };
+    
+    // Append to charts
+    appendDataPoint(timeSeriesPoint);
+    
+    // Update button to show success
+    refreshBtn.innerHTML = '<span>✅</span><span>Updated!</span>';
     setTimeout(() => {
-      refreshBtn.textContent = originalText;
       refreshBtn.disabled = false;
-    }, 1000);
-
-  } catch (err) {
-    console.error('Refresh error:', err);
-    // Show error state briefly
-    refreshBtn.textContent = '❌ Error';
-    setTimeout(() => {
-      refreshBtn.textContent = originalText;
-      refreshBtn.disabled = false;
+      refreshBtn.innerHTML = originalText;
     }, 2000);
+    
+  } catch (error) {
+    console.error('Error refreshing pool data:', error);
+    
+    // Update button to show error
+    refreshBtn.innerHTML = '<span>❌</span><span>Error</span>';
+    setTimeout(() => {
+      refreshBtn.disabled = false;
+      refreshBtn.innerHTML = originalText;
+    }, 3000);
   }
 };
 
-// Load data when page loads
-window.onload = loadPoolData;
+// Initialize dashboard when page loads
+document.addEventListener('DOMContentLoaded', () => {
+  loadPoolData();
+});
 
-// Handle time range changes
-window.updateAllCharts = () => {
-  if (tempChart) {
-    updateAllCharts(); // Reload full dataset for new time range
-  }
-};
-
-// Clean up when page is unloaded
-window.onbeforeunload = () => {
+// Clean up on page unload
+window.addEventListener('beforeunload', () => {
   stopChartAutoRefresh();
   stopStatsAutoRefresh();
   cleanupChart();
-};
+});
+
+// Make functions globally available
+window.updateAllCharts = updateAllCharts;
+window.refreshPoolData = refreshPoolData;
