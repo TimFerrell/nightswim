@@ -276,7 +276,7 @@ const startStatsAutoRefresh = () => {
   
   // Update every 2 minutes (data collected by cron every 5 minutes)
   statsUpdateInterval = setInterval(() => {
-    loadPoolData();
+    refreshPoolData();
   }, 120000); // 2 minutes
 };
 
@@ -408,6 +408,9 @@ const formatPoolData = (data) => {
   return html;
 };
 
+/**
+ * Initial page load - shows loading screen and loads everything
+ */
 const loadPoolData = async () => {
   const loading = document.getElementById('loading');
   const content = document.getElementById('content');
@@ -460,6 +463,67 @@ const loadPoolData = async () => {
     loading.style.display = 'none';
     error.style.display = 'block';
     error.textContent = `❌ Error: ${err.message}`;
+  }
+};
+
+/**
+ * Refresh just the pool data without reloading the page
+ */
+const refreshPoolData = async () => {
+  const poolDataDiv = document.getElementById('poolData');
+  const error = document.getElementById('error');
+  const refreshBtn = document.querySelector('.refresh-btn');
+
+  try {
+    // Show refreshing state
+    const originalText = refreshBtn.textContent;
+    refreshBtn.textContent = '⏳ Refreshing...';
+    refreshBtn.disabled = true;
+
+    // Get pool data (authentication handled automatically)
+    const dataResponse = await fetch('/api/pool/data', {
+      credentials: 'include'
+    });
+
+    if (!dataResponse.ok) {
+      throw new Error('Failed to fetch pool data');
+    }
+
+    const data = await dataResponse.json();
+
+    // Update just the data display without showing loading screen
+    poolDataDiv.innerHTML = formatPoolData(data);
+
+    // Add new data point to chart if chart exists
+    if (poolChart) {
+      const timeSeriesPoint = {
+        timestamp: data.timestamp,
+        saltInstant: data.chlorinator?.salt?.instant || null,
+        cellTemp: data.chlorinator?.cell?.temperature?.value || null,
+        cellVoltage: data.chlorinator?.cell?.voltage || null,
+        waterTemp: data.dashboard?.temperature?.actual || null
+      };
+      appendDataPoint(timeSeriesPoint);
+    }
+
+    // Hide any existing errors
+    error.style.display = 'none';
+
+    // Show success state briefly
+    refreshBtn.textContent = '✅ Updated!';
+    setTimeout(() => {
+      refreshBtn.textContent = originalText;
+      refreshBtn.disabled = false;
+    }, 1000);
+
+  } catch (err) {
+    console.error('Refresh error:', err);
+    // Show error state briefly
+    refreshBtn.textContent = '❌ Error';
+    setTimeout(() => {
+      refreshBtn.textContent = originalText;
+      refreshBtn.disabled = false;
+    }, 2000);
   }
 };
 

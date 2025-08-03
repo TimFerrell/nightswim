@@ -93,6 +93,10 @@
         .refresh-btn:hover { 
             background: #5a6fd8; 
         }
+        .refresh-btn:disabled { 
+            background: #ccc; 
+            cursor: not-allowed; 
+        }
         .timestamp { 
             opacity: 0.8; 
             font-size: 0.9em; 
@@ -132,7 +136,7 @@
     <div class="container">
         <div class="header">
             <h1>🏊‍♂️ Pool Data</h1>
-            <button class="refresh-btn" onclick="loadPoolData()">🔄 Refresh Data</button>
+            <button class="refresh-btn" onclick="refreshPoolData()">🔄 Refresh Data</button>
         </div>
         
         <div id="loading" class="loading">
