@@ -184,6 +184,46 @@ const updateChart = async () => {
 };
 
 /**
+ * Append a single data point to the chart
+ */
+const appendDataPoint = (dataPoint) => {
+  if (!poolChart) return;
+  
+  const timestamp = new Date(dataPoint.timestamp);
+  
+  // Add new data point to each dataset
+  poolChart.data.labels.push(timestamp);
+  poolChart.data.datasets[0].data.push(dataPoint.saltInstant);
+  poolChart.data.datasets[1].data.push(dataPoint.cellTemp);
+  poolChart.data.datasets[2].data.push(dataPoint.cellVoltage);
+  poolChart.data.datasets[3].data.push(dataPoint.waterTemp);
+  
+  // Remove old data points if we exceed the time range
+  const timeRange = parseInt(document.getElementById('timeRange').value);
+  const cutoffTime = new Date(Date.now() - (timeRange * 60 * 60 * 1000));
+  
+  while (poolChart.data.labels.length > 0 && poolChart.data.labels[0] < cutoffTime) {
+    poolChart.data.labels.shift();
+    poolChart.data.datasets[0].data.shift();
+    poolChart.data.datasets[1].data.shift();
+    poolChart.data.datasets[2].data.shift();
+    poolChart.data.datasets[3].data.shift();
+  }
+  
+  // Update chart with smooth animation
+  poolChart.update('active');
+  
+  // Update status
+  const statusElement = document.getElementById('chartStatus');
+  const dataCount = poolChart.data.labels.length;
+  const oldestTime = poolChart.data.labels[0] ? poolChart.data.labels[0].toLocaleTimeString() : 'N/A';
+  const newestTime = poolChart.data.labels[poolChart.data.labels.length - 1] ? 
+    poolChart.data.labels[poolChart.data.labels.length - 1].toLocaleTimeString() : 'N/A';
+  
+  statusElement.textContent = `${dataCount} data points | ${oldestTime} - ${newestTime} | Updated: ${new Date().toLocaleTimeString()}`;
+};
+
+/**
  * Start automatic chart refresh every 30 seconds
  */
 const startChartAutoRefresh = () => {
@@ -193,8 +233,27 @@ const startChartAutoRefresh = () => {
   }
   
   // Update every 30 seconds
-  chartUpdateInterval = setInterval(() => {
-    updateChart();
+  chartUpdateInterval = setInterval(async () => {
+    try {
+      // Get latest pool data and append to chart
+      const dataResponse = await fetch('/api/pool/data', {
+        credentials: 'include'
+      });
+      
+      if (dataResponse.ok) {
+        const data = await dataResponse.json();
+        const timeSeriesPoint = {
+          timestamp: data.timestamp,
+          saltInstant: data.chlorinator?.salt?.instant || null,
+          cellTemp: data.chlorinator?.cell?.temperature?.value || null,
+          cellVoltage: data.chlorinator?.cell?.voltage || null,
+          waterTemp: data.dashboard?.temperature?.actual || null
+        };
+        appendDataPoint(timeSeriesPoint);
+      }
+    } catch (error) {
+      console.error('Auto-refresh error:', error);
+    }
   }, 30000);
 };
 
@@ -389,8 +448,18 @@ const loadPoolData = async () => {
     // Initialize chart only once, then just update it
     if (!poolChart) {
       initializeChart();
+      updateChart(); // Load initial historical data
+    } else {
+      // Append the new data point to the existing chart
+      const timeSeriesPoint = {
+        timestamp: data.timestamp,
+        saltInstant: data.chlorinator?.salt?.instant || null,
+        cellTemp: data.chlorinator?.cell?.temperature?.value || null,
+        cellVoltage: data.chlorinator?.cell?.voltage || null,
+        waterTemp: data.dashboard?.temperature?.actual || null
+      };
+      appendDataPoint(timeSeriesPoint);
     }
-    updateChart();
 
     // Start auto-refresh for chart and stats
     startChartAutoRefresh();
@@ -408,6 +477,13 @@ const loadPoolData = async () => {
 
 // Load data when page loads
 window.onload = loadPoolData;
+
+// Handle time range changes
+window.updateChart = () => {
+  if (poolChart) {
+    updateChart(); // Reload full dataset for new time range
+  }
+};
 
 // Clean up when page is unloaded
 window.onbeforeunload = () => {
