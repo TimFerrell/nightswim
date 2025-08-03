@@ -11,6 +11,9 @@ let statsRefreshInterval = null;
  * Get chart configuration based on type
  */
 const getChartConfig = (type) => {
+  // Detect dark mode
+  const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  
   const baseConfig = {
     responsive: true,
     maintainAspectRatio: false,
@@ -30,14 +33,15 @@ const getChartConfig = (type) => {
           font: {
             size: 12,
             family: 'Inter, sans-serif'
-          }
+          },
+          color: isDarkMode ? '#ffffff' : '#1a1f36'
         }
       },
       tooltip: {
-        backgroundColor: 'rgba(26, 31, 54, 0.95)',
+        backgroundColor: isDarkMode ? 'rgba(26, 26, 26, 0.95)' : 'rgba(26, 31, 54, 0.95)',
         titleColor: 'white',
         bodyColor: 'white',
-        borderColor: '#635bff',
+        borderColor: isDarkMode ? '#8b5cf6' : '#635bff',
         borderWidth: 1,
         cornerRadius: 8,
         displayColors: true,
@@ -70,10 +74,10 @@ const getChartConfig = (type) => {
             weight: '600',
             family: 'Inter, sans-serif'
           },
-          color: '#697386'
+          color: isDarkMode ? '#a0a0a0' : '#697386'
         },
         grid: {
-          color: 'rgba(225, 229, 233, 0.5)',
+          color: isDarkMode ? 'rgba(42, 42, 42, 0.5)' : 'rgba(225, 229, 233, 0.5)',
           drawBorder: false
         },
         ticks: {
@@ -81,7 +85,7 @@ const getChartConfig = (type) => {
             size: 11,
             family: 'Inter, sans-serif'
           },
-          color: '#8b9bb4'
+          color: isDarkMode ? '#666666' : '#8b9bb4'
         }
       }
     }
@@ -101,10 +105,10 @@ const getChartConfig = (type) => {
           weight: '600',
           family: 'Inter, sans-serif'
         },
-        color: '#697386'
+        color: isDarkMode ? '#a0a0a0' : '#697386'
       },
       grid: {
-        color: 'rgba(225, 229, 233, 0.5)',
+        color: isDarkMode ? 'rgba(42, 42, 42, 0.5)' : 'rgba(225, 229, 233, 0.5)',
         drawBorder: false
       },
       ticks: {
@@ -112,7 +116,7 @@ const getChartConfig = (type) => {
           size: 11,
           family: 'Inter, sans-serif'
         },
-        color: '#8b9bb4'
+        color: isDarkMode ? '#666666' : '#8b9bb4'
       }
     };
   } else if (type === 'electrical') {
@@ -128,10 +132,10 @@ const getChartConfig = (type) => {
           weight: '600',
           family: 'Inter, sans-serif'
         },
-        color: '#697386'
+        color: isDarkMode ? '#a0a0a0' : '#697386'
       },
       grid: {
-        color: 'rgba(225, 229, 233, 0.5)',
+        color: isDarkMode ? 'rgba(42, 42, 42, 0.5)' : 'rgba(225, 229, 233, 0.5)',
         drawBorder: false
       },
       ticks: {
@@ -139,7 +143,7 @@ const getChartConfig = (type) => {
           size: 11,
           family: 'Inter, sans-serif'
         },
-        color: '#8b9bb4'
+        color: isDarkMode ? '#666666' : '#8b9bb4'
       }
     };
   } else if (type === 'chemistry') {
@@ -155,10 +159,10 @@ const getChartConfig = (type) => {
           weight: '600',
           family: 'Inter, sans-serif'
         },
-        color: '#697386'
+        color: isDarkMode ? '#a0a0a0' : '#697386'
       },
       grid: {
-        color: 'rgba(225, 229, 233, 0.5)',
+        color: isDarkMode ? 'rgba(42, 42, 42, 0.5)' : 'rgba(225, 229, 233, 0.5)',
         drawBorder: false
       },
       ticks: {
@@ -166,7 +170,7 @@ const getChartConfig = (type) => {
           size: 11,
           family: 'Inter, sans-serif'
         },
-        color: '#8b9bb4'
+        color: isDarkMode ? '#666666' : '#8b9bb4'
       }
     };
   }
@@ -730,7 +734,33 @@ const refreshPoolData = async () => {
 // Initialize dashboard when page loads
 document.addEventListener('DOMContentLoaded', () => {
   loadPoolData();
+  
+  // Listen for dark mode changes
+  const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  darkModeMediaQuery.addEventListener('change', handleDarkModeChange);
 });
+
+/**
+ * Handle dark mode changes
+ */
+const handleDarkModeChange = (e) => {
+  // Reinitialize charts with new color scheme
+  if (tempChart) {
+    tempChart.destroy();
+    initializeTempChart();
+  }
+  if (electricalChart) {
+    electricalChart.destroy();
+    initializeElectricalChart();
+  }
+  if (chemistryChart) {
+    chemistryChart.destroy();
+    initializeChemistryChart();
+  }
+  
+  // Update charts with current data
+  updateAllCharts();
+};
 
 // Clean up on page unload
 window.addEventListener('beforeunload', () => {

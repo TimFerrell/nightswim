@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NightSwim - Pool Monitoring Dashboard</title>
+    <title>Night Swim - Pool Monitoring Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"></noscript>
     <style>
         :root {
-            /* Post-corporate Memphis color palette */
+            /* Light mode colors */
             --color-background: #fafbfc;
             --color-surface: #ffffff;
             --color-border: #e1e5e9;
@@ -56,6 +56,28 @@
             --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
 
+        /* Dark mode colors */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --color-background: #0a0a0a;
+                --color-surface: #1a1a1a;
+                --color-border: #2a2a2a;
+                --color-text-primary: #ffffff;
+                --color-text-secondary: #a0a0a0;
+                --color-text-muted: #666666;
+                --color-accent: #8b5cf6;
+                --color-accent-light: #1a1a2e;
+                --color-success: #10b981;
+                --color-warning: #f59e0b;
+                --color-error: #ef4444;
+                
+                /* Dark mode shadows */
+                --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+                --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+                --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+            }
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -69,6 +91,7 @@
             line-height: 1.6;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         .container {
@@ -83,6 +106,7 @@
             border-bottom: 1px solid var(--color-border);
             padding: var(--space-6) 0;
             margin-bottom: var(--space-8);
+            transition: background-color 0.3s ease, border-color 0.3s ease;
         }
 
         .header-content {
@@ -97,6 +121,7 @@
             gap: var(--space-3);
             text-decoration: none;
             color: var(--color-text-primary);
+            transition: color 0.3s ease;
         }
 
         .logo-icon {
@@ -157,6 +182,7 @@
             color: var(--color-text-primary);
             margin-bottom: var(--space-2);
             letter-spacing: -0.025em;
+            transition: color 0.3s ease;
         }
 
         .page-subtitle {
@@ -164,6 +190,7 @@
             color: var(--color-text-secondary);
             margin-bottom: var(--space-8);
             font-weight: 400;
+            transition: color 0.3s ease;
         }
 
         /* Status cards */
@@ -194,6 +221,7 @@
             text-transform: uppercase;
             letter-spacing: 0.05em;
             margin-bottom: var(--space-3);
+            transition: color 0.3s ease;
         }
 
         .status-value {
@@ -202,18 +230,21 @@
             color: var(--color-text-primary);
             margin-bottom: var(--space-2);
             letter-spacing: -0.025em;
+            transition: color 0.3s ease;
         }
 
         .status-unit {
             font-size: var(--font-size-sm);
             color: var(--color-text-muted);
             font-weight: 500;
+            transition: color 0.3s ease;
         }
 
         .status-details {
             margin-top: var(--space-4);
             padding-top: var(--space-4);
             border-top: 1px solid var(--color-border);
+            transition: border-color 0.3s ease;
         }
 
         .status-detail {
@@ -230,12 +261,14 @@
         .status-detail-label {
             font-size: var(--font-size-sm);
             color: var(--color-text-secondary);
+            transition: color 0.3s ease;
         }
 
         .status-detail-value {
             font-size: var(--font-size-sm);
             font-weight: 600;
             color: var(--color-text-primary);
+            transition: color 0.3s ease;
         }
 
         /* Charts section */
@@ -249,6 +282,7 @@
             color: var(--color-text-primary);
             margin-bottom: var(--space-6);
             letter-spacing: -0.025em;
+            transition: color 0.3s ease;
         }
 
         .charts-grid {
@@ -281,6 +315,7 @@
             font-weight: 600;
             color: var(--color-text-primary);
             letter-spacing: -0.025em;
+            transition: color 0.3s ease;
         }
 
         .chart-controls {
@@ -314,6 +349,7 @@
             font-size: var(--font-size-sm);
             color: var(--color-text-muted);
             font-weight: 500;
+            transition: color 0.3s ease;
         }
 
         .chart-canvas {
@@ -332,6 +368,7 @@
             background: var(--color-surface);
             border: 1px solid var(--color-border);
             border-radius: var(--radius-md);
+            transition: all 0.3s ease;
         }
 
         /* Loading states */
@@ -401,7 +438,7 @@
             <div class="header-content">
                 <a href="/" class="logo">
                     <div class="logo-icon">🏊</div>
-                    <span class="logo-text">NightSwim</span>
+                    <span class="logo-text">Night Swim</span>
                 </a>
                 <button class="refresh-btn" onclick="refreshPoolData()">
                     <span>🔄</span>
