@@ -83,15 +83,22 @@ app.get('/script.js', (req, res) => {
   res.sendFile(`${__dirname}/public/script.js`);
 });
 
+// Handle favicon requests
+app.get('/favicon.ico', (req, res) => {
+  res.status(204).end(); // No content
+});
+
 // 404 handler
-app.use((req, res) => {
+app.use((req, res, next) => {
   res.status(404).json({ error: 'Endpoint not found' });
 });
 
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
-  res.status(500).json({ error: 'Internal server error' });
+  if (res && typeof res.status === 'function') {
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 app.listen(PORT, () => {
