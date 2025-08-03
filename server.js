@@ -83,15 +83,15 @@ app.get('/script.js', (req, res) => {
   res.sendFile(`${__dirname}/public/script.js`);
 });
 
-// Error handling middleware
-app.use((err, req, res) => {
-  console.error('Unhandled error:', err);
-  res.status(500).json({ error: 'Internal server error' });
-});
-
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({ error: 'Endpoint not found' });
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  res.status(500).json({ error: 'Internal server error' });
 });
 
 app.listen(PORT, () => {
