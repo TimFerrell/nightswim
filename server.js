@@ -34,7 +34,16 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-app.use(express.static('public'));
+// Serve static files with proper MIME types
+app.use(express.static('public', {
+  setHeaders: (res, path) => {
+    if (path.endsWith('.js')) {
+      res.setHeader('Content-Type', 'application/javascript');
+    } else if (path.endsWith('.css')) {
+      res.setHeader('Content-Type', 'text/css');
+    }
+  }
+}));
 app.use(session({
   secret: process.env.SESSION_SECRET || 'hayward-proxy-secret-key',
   resave: true,
@@ -64,6 +73,12 @@ app.use('/api/pool', poolRoutes);
 // GET / - Main pool data page
 app.get('/', (req, res) => {
   res.sendFile(`${__dirname}/public/index.html`);
+});
+
+// GET /script.js - Serve JavaScript file with correct MIME type
+app.get('/script.js', (req, res) => {
+  res.setHeader('Content-Type', 'application/javascript');
+  res.sendFile(`${__dirname}/public/script.js`);
 });
 
 // Error handling middleware
