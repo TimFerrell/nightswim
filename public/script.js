@@ -559,6 +559,16 @@ const formatPoolData = (data) => {
   
   // Salt Level Card
   if (data.chlorinator?.salt) {
+    // Calculate 24-hour moving average from time series data
+    let average24H = '--';
+    if (saltSparkline && saltSparkline.data.datasets[0].data.length > 0) {
+      const saltData = saltSparkline.data.datasets[0].data.filter(v => v !== null && v !== undefined);
+      if (saltData.length > 0) {
+        const sum = saltData.reduce((acc, val) => acc + val, 0);
+        average24H = Math.round(sum / saltData.length);
+      }
+    }
+    
     cards.push(`
       <div class="status-card">
         <h3>Salt Level</h3>
@@ -569,8 +579,8 @@ const formatPoolData = (data) => {
         </div>
         <div class="status-details">
           <div class="status-detail">
-            <span class="status-detail-label">Average</span>
-            <span class="status-detail-value">${data.chlorinator.salt.average || '--'} PPM</span>
+            <span class="status-detail-label">Average 24H</span>
+            <span class="status-detail-value">${average24H} PPM</span>
           </div>
         </div>
       </div>
@@ -663,8 +673,15 @@ const loadPoolData = async () => {
       throw new Error(result.error || 'Failed to load pool data');
     }
     
-    // Format and display the data
-    formatPoolData(result.data);
+    // Initialize charts if not already done
+    if (!tempChart) {
+      initializeTempChart();
+      initializeElectricalChart();
+      initializeChemistryChart();
+      initializeSparklines();
+      updateAllCharts();
+      updateSparklines();
+    }
     
     // Create time series data point
     const timeSeriesPoint = {
@@ -679,15 +696,8 @@ const loadPoolData = async () => {
     // Append to charts
     appendDataPoint(timeSeriesPoint);
     
-    // Initialize charts if not already done
-    if (!tempChart) {
-      initializeTempChart();
-      initializeElectricalChart();
-      initializeChemistryChart();
-      initializeSparklines();
-      updateAllCharts();
-      updateSparklines();
-    }
+    // Format and display the data (after spark lines are updated)
+    formatPoolData(result.data);
     
     // Start auto-refresh
     startChartAutoRefresh();
