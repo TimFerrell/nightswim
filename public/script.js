@@ -3,6 +3,11 @@ let tempChart = null;
 let electricalChart = null;
 let chemistryChart = null;
 
+// Spark line chart instances
+let saltSparkline = null;
+let waterTempSparkline = null;
+let cellVoltageSparkline = null;
+
 // Auto-refresh intervals
 let chartRefreshInterval = null;
 let statsRefreshInterval = null;
@@ -445,6 +450,7 @@ const startChartAutoRefresh = () => {
   
   chartRefreshInterval = setInterval(() => {
     updateAllCharts();
+    updateSparklines();
   }, 30000); // Refresh every 30 seconds
 };
 
@@ -473,6 +479,18 @@ const cleanupChart = () => {
   if (chemistryChart) {
     chemistryChart.destroy();
     chemistryChart = null;
+  }
+  if (saltSparkline) {
+    saltSparkline.destroy();
+    saltSparkline = null;
+  }
+  if (waterTempSparkline) {
+    waterTempSparkline.destroy();
+    waterTempSparkline = null;
+  }
+  if (cellVoltageSparkline) {
+    cellVoltageSparkline.destroy();
+    cellVoltageSparkline = null;
   }
 };
 
@@ -515,6 +533,9 @@ const formatPoolData = (data) => {
         <h3>Water Temperature</h3>
         <div class="status-value">${data.dashboard.temperature.actual || '--'}</div>
         <div class="status-unit">°F</div>
+        <div class="sparkline-container">
+          <canvas id="waterTempSparkline" class="sparkline-canvas"></canvas>
+        </div>
         <div class="status-details">
           <div class="status-detail">
             <span class="status-detail-label">Target</span>
@@ -543,6 +564,9 @@ const formatPoolData = (data) => {
         <h3>Salt Level</h3>
         <div class="status-value">${data.chlorinator.salt.instant || '--'}</div>
         <div class="status-unit">PPM</div>
+        <div class="sparkline-container">
+          <canvas id="saltSparkline" class="sparkline-canvas"></canvas>
+        </div>
         <div class="status-details">
           <div class="status-detail">
             <span class="status-detail-label">Average</span>
@@ -560,6 +584,9 @@ const formatPoolData = (data) => {
         <h3>Cell Voltage</h3>
         <div class="status-value">${data.chlorinator.cell.voltage || '--'}</div>
         <div class="status-unit">V</div>
+        <div class="sparkline-container">
+          <canvas id="cellVoltageSparkline" class="sparkline-canvas"></canvas>
+        </div>
         <div class="status-details">
           <div class="status-detail">
             <span class="status-detail-label">Temperature</span>
@@ -657,7 +684,9 @@ const loadPoolData = async () => {
       initializeTempChart();
       initializeElectricalChart();
       initializeChemistryChart();
+      initializeSparklines();
       updateAllCharts();
+      updateSparklines();
     }
     
     // Start auto-refresh
@@ -667,6 +696,169 @@ const loadPoolData = async () => {
   } catch (error) {
     console.error('Error loading pool data:', error);
     document.getElementById('timestamp').textContent = `Error: ${error.message}`;
+  }
+};
+
+/**
+ * Initialize spark line charts
+ */
+const initializeSparklines = () => {
+  // Initialize salt spark line
+  const saltCanvas = document.getElementById('saltSparkline');
+  if (saltCanvas && !saltSparkline) {
+    const ctx = saltCanvas.getContext('2d');
+    saltSparkline = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [{
+          data: [],
+          borderColor: '#8b9bb4',
+          backgroundColor: 'rgba(139, 155, 180, 0.1)',
+          borderWidth: 1.5,
+          tension: 0.4,
+          fill: false,
+          pointRadius: 0,
+          pointHoverRadius: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { enabled: false }
+        },
+        scales: {
+          x: { display: false },
+          y: { display: false }
+        },
+        interaction: { intersect: false },
+        elements: { point: { radius: 0 } }
+      }
+    });
+  }
+
+  // Initialize water temperature spark line
+  const waterTempCanvas = document.getElementById('waterTempSparkline');
+  if (waterTempCanvas && !waterTempSparkline) {
+    const ctx = waterTempCanvas.getContext('2d');
+    waterTempSparkline = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [{
+          data: [],
+          borderColor: '#8b9bb4',
+          backgroundColor: 'rgba(139, 155, 180, 0.1)',
+          borderWidth: 1.5,
+          tension: 0.4,
+          fill: false,
+          pointRadius: 0,
+          pointHoverRadius: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { enabled: false }
+        },
+        scales: {
+          x: { display: false },
+          y: { display: false }
+        },
+        interaction: { intersect: false },
+        elements: { point: { radius: 0 } }
+      }
+    });
+  }
+
+  // Initialize cell voltage spark line
+  const cellVoltageCanvas = document.getElementById('cellVoltageSparkline');
+  if (cellVoltageCanvas && !cellVoltageSparkline) {
+    const ctx = cellVoltageCanvas.getContext('2d');
+    cellVoltageSparkline = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [{
+          data: [],
+          borderColor: '#8b9bb4',
+          backgroundColor: 'rgba(139, 155, 180, 0.1)',
+          borderWidth: 1.5,
+          tension: 0.4,
+          fill: false,
+          pointRadius: 0,
+          pointHoverRadius: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { enabled: false }
+        },
+        scales: {
+          x: { display: false },
+          y: { display: false }
+        },
+        interaction: { intersect: false },
+        elements: { point: { radius: 0 } }
+      }
+    });
+  }
+};
+
+/**
+ * Update spark lines with new data
+ */
+const updateSparklines = async () => {
+  try {
+    const response = await fetch('/api/pool/timeseries?hours=24', {
+      credentials: 'include'
+    });
+    
+    if (!response.ok) return;
+    
+    const result = await response.json();
+    
+    if (!result.success || !result.data || result.data.length === 0) return;
+    
+    // Update salt spark line
+    if (saltSparkline) {
+      const saltData = result.data.map(point => point.saltInstant).filter(v => v !== null && v !== undefined);
+      if (saltData.length > 0) {
+        saltSparkline.data.labels = Array(saltData.length).fill('');
+        saltSparkline.data.datasets[0].data = saltData;
+        saltSparkline.update('none');
+      }
+    }
+    
+    // Update water temperature spark line
+    if (waterTempSparkline) {
+      const waterTempData = result.data.map(point => point.waterTemp).filter(v => v !== null && v !== undefined);
+      if (waterTempData.length > 0) {
+        waterTempSparkline.data.labels = Array(waterTempData.length).fill('');
+        waterTempSparkline.data.datasets[0].data = waterTempData;
+        waterTempSparkline.update('none');
+      }
+    }
+    
+    // Update cell voltage spark line
+    if (cellVoltageSparkline) {
+      const cellVoltageData = result.data.map(point => point.cellVoltage).filter(v => v !== null && v !== undefined);
+      if (cellVoltageData.length > 0) {
+        cellVoltageSparkline.data.labels = Array(cellVoltageData.length).fill('');
+        cellVoltageSparkline.data.datasets[0].data = cellVoltageData;
+        cellVoltageSparkline.update('none');
+      }
+    }
+    
+  } catch (error) {
+    console.error('Spark line update error:', error);
   }
 };
 
@@ -696,9 +888,25 @@ const handleDarkModeChange = (e) => {
     chemistryChart.destroy();
     initializeChemistryChart();
   }
+  if (saltSparkline) {
+    saltSparkline.destroy();
+    saltSparkline = null;
+  }
+  if (waterTempSparkline) {
+    waterTempSparkline.destroy();
+    waterTempSparkline = null;
+  }
+  if (cellVoltageSparkline) {
+    cellVoltageSparkline.destroy();
+    cellVoltageSparkline = null;
+  }
+  
+  // Reinitialize spark lines
+  initializeSparklines();
   
   // Update charts with current data
   updateAllCharts();
+  updateSparklines();
 };
 
 // Clean up on page unload
