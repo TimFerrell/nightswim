@@ -56,36 +56,21 @@ nightswim/
 
 3. **Configure credentials**
    
-   **Option A: Environment Variables (Recommended)**
-   
-   **Method 1: Direct export**
-   ```bash
-   export HAYWARD_USERNAME='your-email@example.com'
-   export HAYWARD_PASSWORD='your-password'
-   ```
-   
-   **Method 2: Using .env file**
+   **Local Development:**
    ```bash
    # Copy the example file
    cp env.example .env
    
    # Edit .env with your credentials
    nano .env
-   
-   # Load environment variables (if using dotenv)
-   source .env
    ```
    
-   **Option B: Direct File Configuration**
-   Create `src/utils/credentials.js` with your Hayward OmniLogic credentials:
-   ```javascript
-   module.exports = {
-     username: 'your-email@example.com',
-     password: 'your-password'
-   };
-   ```
+   **Production/Deployment:**
+   Set the following environment variables in your deployment platform:
+   - `HAYWARD_USERNAME`: Your Hayward OmniLogic email
+   - `HAYWARD_PASSWORD`: Your Hayward OmniLogic password
    
-   **Note**: Environment variables take precedence over the credentials file.
+   **Note**: The application will throw an error if credentials are not provided.
 
 4. **Start the server**
    ```bash
@@ -313,8 +298,9 @@ This script validates sample data against the defined types and demonstrates how
 
 ## 🔒 Security
 
-- **Environment Variables**: Credentials can be set via `HAYWARD_USERNAME` and `HAYWARD_PASSWORD` environment variables
-- **Fallback File**: Credentials file is stored separately and gitignored
+- **Environment Variables**: Credentials are sourced from `HAYWARD_USERNAME` and `HAYWARD_PASSWORD` environment variables
+- **Local Development**: Uses `.env` file for local development (gitignored)
+- **Production**: Requires environment variables to be set in deployment platform
 - **Session Management**: Sessions are managed securely with proper cleanup
 - **Request Security**: All external requests use proper headers and timeouts
 
