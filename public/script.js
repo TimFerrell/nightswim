@@ -1,6 +1,6 @@
 // Global chart variables
 let tempChart, electricalChart, chemistryChart;
-let saltSparkline, waterTempSparkline, cellVoltageSparkline, weatherSparkline;
+let saltSparkline, waterTempSparkline, cellVoltageSparkline, weatherSparkline, filterPumpSparkline;
 
 // Auto-refresh intervals
 let chartRefreshInterval = null;
@@ -546,6 +546,29 @@ const updateStatusCards = (data) => {
     }
   }
 
+  // Update filter pump card
+  if (data.filter?.status !== null && data.filter?.status !== undefined) {
+    const filterPumpValue = document.getElementById('filterPumpValue');
+    const filterPumpState = document.getElementById('filterPumpState');
+    
+    if (filterPumpValue) {
+      filterPumpValue.textContent = data.filter.status ? 'ON' : 'OFF';
+      filterPumpValue.classList.remove('skeleton-value');
+    }
+    
+    if (filterPumpState) {
+      filterPumpState.textContent = data.filter.status ? 'Running' : 'Stopped';
+      filterPumpState.classList.remove('skeleton-text');
+    }
+    
+    // Add pulse animation and mark as loaded
+    const filterPumpCard = document.getElementById('filterPumpCard');
+    if (filterPumpCard) {
+      filterPumpCard.classList.add('pulse', 'loaded');
+      setTimeout(() => filterPumpCard.classList.remove('pulse'), 600);
+    }
+  }
+
   // Update weather temperature card
   if (data.weather && data.weather.temperature !== null && data.weather.temperature !== undefined) {
     const weatherTempValue = document.getElementById('weatherTempValue');
@@ -646,6 +669,7 @@ const initializeSparklines = () => {
     cleanupChart(waterTempSparkline);
     cleanupChart(cellVoltageSparkline);
     cleanupChart(weatherSparkline);
+    cleanupChart(filterPumpSparkline);
 
     // Initialize salt spark line
     const saltCanvas = document.getElementById('saltSparkline');
@@ -766,6 +790,36 @@ const initializeSparklines = () => {
         }
       });
     }
+
+    // Initialize filter pump spark line
+    const filterPumpCanvas = document.getElementById('filterPumpSparkline');
+    if (filterPumpCanvas) {
+      filterPumpSparkline = new Chart(filterPumpCanvas, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [{
+            data: [],
+            borderColor: getComputedStyle(document.documentElement).getPropertyValue('--color-primary'),
+            borderWidth: 2,
+            fill: false,
+            tension: 0.4,
+            pointRadius: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { display: false },
+            y: { display: false }
+          },
+          interaction: { intersect: false },
+          elements: { point: { radius: 0 } }
+        }
+      });
+    }
   } catch (error) {
     console.error('Error initializing spark lines:', error);
   }
@@ -822,6 +876,14 @@ const updateSparklines = async () => {
       weatherSparkline.data.labels = Array(weatherData.length).fill('');
       weatherSparkline.data.datasets[0].data = weatherData;
       weatherSparkline.update('none');
+    }
+
+    // Update filter pump spark line
+    if (filterPumpSparkline) {
+      const filterPumpData = data.map(point => point.filterPumpStatus).filter(v => v !== null && v !== undefined);
+      filterPumpSparkline.data.labels = Array(filterPumpData.length).fill('');
+      filterPumpSparkline.data.datasets[0].data = filterPumpData;
+      filterPumpSparkline.update('none');
     }
   } catch (error) {
     console.error('Error updating spark lines:', error);
@@ -901,6 +963,10 @@ const handleDarkModeChange = (e) => {
   if (cellVoltageSparkline) {
     cellVoltageSparkline.destroy();
     cellVoltageSparkline = null;
+  }
+  if (filterPumpSparkline) {
+    filterPumpSparkline.destroy();
+    filterPumpSparkline = null;
   }
   
   // Reinitialize spark lines
