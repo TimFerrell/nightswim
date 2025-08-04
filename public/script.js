@@ -570,10 +570,13 @@ const updateStatusCards = (data) => {
 };
 
 /**
- * Load and display pool data
+ * Load and display pool data from InfluxDB
  */
 const loadPoolData = async () => {
   try {
+    console.log('🚀 Loading pool data from InfluxDB...');
+    const startTime = Date.now();
+
     const response = await fetch('/api/pool/data', {
       credentials: 'include'
     });
@@ -588,6 +591,8 @@ const loadPoolData = async () => {
     }
 
     const data = result.data;
+    const loadTime = Date.now() - startTime;
+    console.log(`✅ Pool data loaded in ${loadTime}ms from ${result.source}`);
 
     // Initialize charts if not already done
     if (!tempChart) {
@@ -608,7 +613,7 @@ const loadPoolData = async () => {
       startStatsAutoRefresh();
     }
 
-    // Update status cards with real data
+    // Update status cards with data
     updateStatusCards(data);
 
     // Update spark lines with 24-hour data

@@ -8,7 +8,7 @@ const weatherService = require('./weatherService');
 
 // Simple in-memory cache for API responses
 const apiCache = new Map();
-const CACHE_TTL = 30 * 1000; // 30 seconds cache
+const CACHE_TTL = 15 * 1000; // 15 seconds cache (reduced from 30)
 
 /**
  * Get cached data or null if expired
@@ -196,4 +196,10 @@ const poolDataService = {
   }
 };
 
-module.exports = poolDataService;
+// Export both the service and cache functions
+module.exports = {
+  ...poolDataService,
+  getCachedData,
+  setCachedData,
+  cleanupCache
+};

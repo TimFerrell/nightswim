@@ -1,174 +1,78 @@
 const express = require('express');
-const sessionManager = require('../services/sessionManager');
-const poolDataService = require('../services/poolDataService');
-const timeSeriesService = require('../services/timeSeriesService');
 const influxDBService = require('../services/influxDBService');
+const timeSeriesService = require('../services/timeSeriesService');
 const pumpStateTracker = require('../services/pumpStateTracker');
-const credentials = require('../utils/credentials');
-const { POOL_CONSTANTS } = require('../utils/constants');
-const { buildDashboardUrl, buildSystemUrl } = require('../utils/constants');
-const { parseDashboardData, parseChlorinatorData } = require('../services/poolDataParser');
-const weatherService = require('../services/weatherService');
 
 /** @type {import('express').Router} */
 const router = express.Router();
 
-// Get all Hayward data in a single JSON payload
+// Get current pool data from InfluxDB (fastest response)
 router.get('/data', async (req, res) => {
   try {
-    // Ensure we have a session ID (Express will create one if it doesn't exist)
-    if (!req.sessionID) {
-      req.session = {};
+    console.log('📊 Fetching current pool data from InfluxDB...');
+    const startTime = Date.now();
+
+    // Get the most recent data point from InfluxDB
+    const endTime = new Date();
+    const queryStartTime = new Date(endTime.getTime() - (1 * 60 * 60 * 1000)); // Last hour
+    
+    const dataPoints = await influxDBService.queryDataPoints(queryStartTime, endTime);
+    
+    if (dataPoints.length === 0) {
+      return res.status(404).json({ 
+        error: 'No data available',
+        message: 'Pool data not yet collected. Check cron job status.'
+      });
     }
 
-    // Check both Express session and our custom session
-    const expressSessionAuthenticated = req.session && req.session.authenticated;
-    const haywardSessionId = req.session && req.session.haywardSessionId;
-    let session = sessionManager.getSession(haywardSessionId || req.sessionID);
-
-    // If not authenticated, automatically authenticate
-    if (!expressSessionAuthenticated || !session || !session.authenticated) {
-      console.log('🔐 Auto-authenticating for pool data request...');
-
-      // Create a new session
-      const sessionId = req.sessionID;
-      session = sessionManager.getSession(sessionId);
-
-      // Authenticate using hardcoded credentials
-      const authResult = await session.authenticate(credentials.username, credentials.password);
-
-      if (!authResult.success) {
-        return res.status(401).json({ error: `Authentication failed: ${authResult.message}` });
+    // Get the most recent data point
+    const latestData = dataPoints[dataPoints.length - 1];
+    
+    // Format the response to match expected structure
+    const poolData = {
+      timestamp: latestData.timestamp,
+      dashboard: {
+        temperature: {
+          actual: latestData.waterTemp,
+          unit: '°F'
+        },
+        airTemperature: latestData.airTemp
+      },
+      chlorinator: {
+        salt: {
+          instant: latestData.saltInstant,
+          unit: 'PPM'
+        },
+        cell: {
+          voltage: latestData.cellVoltage,
+          temperature: {
+            value: latestData.cellTemp,
+            unit: '°F'
+          }
+        }
+      },
+      filter: {
+        status: latestData.pumpStatus
+      },
+      weather: {
+        temperature: latestData.weatherTemp,
+        unit: '°F'
       }
+    };
 
-      // Store the session
-      sessionManager.setSession(sessionId, session);
-
-      // Mark session as authenticated in Express session
-      req.session.authenticated = true;
-      req.session.haywardSessionId = sessionId;
-
-      console.log('✅ Auto-authentication successful');
-    }
-
-    // Fetch all pool data
-    const poolData = await poolDataService.fetchAllPoolData(session);
+    const loadTime = Date.now() - startTime;
+    console.log(`✅ Pool data loaded from InfluxDB in ${loadTime}ms`);
 
     res.json({
       success: true,
       data: poolData,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      source: 'influxdb'
     });
 
   } catch (error) {
     console.error('Pool data fetch error:', error);
-    res.status(500).json({ error: 'Failed to fetch pool data' });
-  }
-});
-
-// Get essential pool data only (for faster initial load)
-router.get('/data/quick', async (req, res) => {
-  try {
-    // Ensure we have a session ID (Express will create one if it doesn't exist)
-    if (!req.sessionID) {
-      req.session = {};
-    }
-
-    // Check both Express session and our custom session
-    const expressSessionAuthenticated = req.session && req.session.authenticated;
-    const haywardSessionId = req.session && req.session.haywardSessionId;
-    let session = sessionManager.getSession(haywardSessionId || req.sessionID);
-
-    // If not authenticated, automatically authenticate
-    if (!expressSessionAuthenticated || !session || !session.authenticated) {
-      console.log('🔐 Auto-authenticating for quick pool data request...');
-
-      // Create a new session
-      const sessionId = req.sessionID;
-      session = sessionManager.getSession(sessionId);
-
-      // Authenticate using hardcoded credentials
-      const authResult = await session.authenticate(credentials.username, credentials.password);
-
-      if (!authResult.success) {
-        return res.status(401).json({ error: `Authentication failed: ${authResult.message}` });
-      }
-
-      // Store the session
-      sessionManager.setSession(sessionId, session);
-
-      // Mark session as authenticated in Express session
-      req.session.authenticated = true;
-      req.session.haywardSessionId = sessionId;
-
-      console.log('✅ Auto-authentication successful');
-    }
-
-    // Fetch only essential data (dashboard and chlorinator for main metrics)
-    const essentialData = {
-      timestamp: new Date().toISOString(),
-      dashboard: null,
-      chlorinator: null,
-      weather: null
-    };
-
-    // Parallel requests for essential data only
-    const requests = [
-      // Dashboard data (water temp, air temp)
-      session.makeRequest(buildDashboardUrl()).then(response => ({
-        type: 'dashboard',
-        data: parseDashboardData(response.data)
-      })).catch(error => ({
-        type: 'dashboard',
-        error: error.message
-      })),
-
-      // Chlorinator data (salt level, cell voltage)
-      session.makeRequest(buildSystemUrl(POOL_CONSTANTS.ENDPOINTS.CHLORINATOR_SETTINGS)).then(response => ({
-        type: 'chlorinator',
-        data: parseChlorinatorData(response.data)
-      })).catch(error => ({
-        type: 'chlorinator',
-        error: error.message
-      })),
-
-      // Weather data
-      weatherService.getCurrentWeather().then(data => ({
-        type: 'weather',
-        data: data
-      })).catch(error => ({
-        type: 'weather',
-        error: error.message
-      }))
-    ];
-
-    // Execute essential requests in parallel
-    const results = await Promise.allSettled(requests);
-    
-    // Process results
-    results.forEach(result => {
-      if (result.status === 'fulfilled') {
-        const { type, data, error } = result.value;
-        if (error) {
-          console.error(`${type} fetch error:`, error);
-          essentialData[type] = { error };
-        } else {
-          essentialData[type] = data;
-        }
-      } else {
-        console.error('Request failed:', result.reason);
-      }
-    });
-
-    res.json({
-      success: true,
-      data: essentialData,
-      timestamp: new Date().toISOString()
-    });
-
-  } catch (error) {
-    console.error('Quick pool data fetch error:', error);
-    res.status(500).json({ error: 'Failed to fetch quick pool data' });
+    res.status(500).json({ error: 'Failed to fetch pool data from InfluxDB' });
   }
 });
 

@@ -159,14 +159,39 @@ class HaywardSession {
       throw new Error('Not authenticated');
     }
 
-    const response = await this.axiosInstance({
-      url: path,
-      method: options.method || 'GET',
-      data: options.data,
-      headers: options.headers
-    });
-
-    return response;
+    const startTime = Date.now();
+    console.log(`🌐 Making request to: ${path}`);
+    
+    try {
+      // Add timeout to prevent hanging requests
+      const timeout = 10000; // 10 seconds timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
+      
+      const response = await this.axiosInstance({
+        url: path,
+        method: options.method || 'GET',
+        data: options.data,
+        headers: options.headers,
+        signal: controller.signal,
+        timeout: timeout
+      });
+      
+      clearTimeout(timeoutId);
+      const requestTime = Date.now() - startTime;
+      console.log(`✅ Request completed in ${requestTime}ms: ${path}`);
+      
+      return response;
+    } catch (error) {
+      const requestTime = Date.now() - startTime;
+      if (error.name === 'AbortError') {
+        console.error(`⏰ Request timed out after ${requestTime}ms: ${path}`);
+        throw new Error(`Request timed out after ${timeout}ms`);
+      } else {
+        console.error(`❌ Request failed after ${requestTime}ms: ${path}`, error.message);
+        throw error;
+      }
+    }
   }
 
   /**
