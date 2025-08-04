@@ -39,54 +39,73 @@ class InfluxDBService {
   /**
    * Initialize InfluxDB connection
    */
-  initialize() {
-    console.log('🔍 Initializing InfluxDB connection...');
-    console.log('📋 Configuration check:');
-    console.log(`   URL: ${this.config.url ? '✅ Set' : '❌ Missing'}`);
-    console.log(`   Token: ${this.config.token ? '✅ Set' : '❌ Missing'}`);
-    console.log(`   Org: ${this.config.org ? '✅ Set' : '❌ Missing'}`);
-    console.log(`   Bucket: ${this.config.bucket || 'pool_metrics'}`);
+  async initialize() {
+    const initStartTime = Date.now();
+    console.log('🔌 Initializing InfluxDB connection...');
     
-    if (!this.config.url || !this.config.token || !this.config.org) {
-      console.warn('❌ InfluxDB configuration missing. Time series storage disabled.');
-      console.warn('   Missing variables:', {
-        url: !!this.config.url,
-        token: !!this.config.token,
-        org: !!this.config.org
-      });
-      return;
-    }
-
     try {
-      console.log('🔌 Creating InfluxDB client...');
+      // Check if we have the required configuration
+      if (!this.config.url || !this.config.token || !this.config.org || !this.config.bucket) {
+        console.error('❌ InfluxDB configuration missing:', {
+          hasUrl: !!this.config.url,
+          hasToken: !!this.config.token,
+          hasOrg: !!this.config.org,
+          hasBucket: !!this.config.bucket
+        });
+        return false;
+      }
+
+      console.log(`🔌 Connecting to InfluxDB at ${this.config.url}...`);
+      const connectionStartTime = Date.now();
+      
       this.client = new InfluxDB({
         url: this.config.url,
-        token: this.config.token
+        token: this.config.token,
+        timeout: 10000
       });
-      console.log('✅ InfluxDB client created');
 
-      console.log('📝 Setting up write API...');
-      this.writeApi = this.client.getWriteApi(this.config.org, this.config.bucket, 'ms');
-      console.log('✅ Write API configured');
+      const connectionTime = Date.now() - connectionStartTime;
+      console.log(`✅ InfluxDB client created in ${connectionTime}ms`);
 
-      console.log('🔍 Setting up query API...');
+      // Test the connection
+      console.log('🔍 Testing InfluxDB connection...');
+      const testStartTime = Date.now();
+      
       this.queryApi = this.client.getQueryApi(this.config.org);
-      console.log('✅ Query API configured');
+      this.writeApi = this.client.getWriteApi(this.config.org, this.config.bucket, 'ms');
+      
+      const testTime = Date.now() - testStartTime;
+      console.log(`✅ InfluxDB APIs initialized in ${testTime}ms`);
+
+      // Test a simple query to verify connection
+      console.log('🔍 Testing InfluxDB query capability...');
+      const queryTestStart = Date.now();
+      
+      const testQuery = `from(bucket: "${this.config.bucket}") |> range(start: -1m) |> limit(n: 1)`;
+      let testResult = false;
+      
+      try {
+        for await (const {values, tableMeta} of this.queryApi.iterateRows(testQuery)) {
+          testResult = true;
+          break;
+        }
+      } catch (queryError) {
+        console.warn('⚠️ Test query failed (this might be normal if no data exists):', queryError.message);
+      }
+      
+      const queryTestTime = Date.now() - queryTestStart;
+      console.log(`✅ InfluxDB query test completed in ${queryTestTime}ms (success: ${testResult})`);
 
       this.isConnected = true;
-      console.log('🎉 InfluxDB connected successfully');
+      const totalInitTime = Date.now() - initStartTime;
+      console.log(`🎉 InfluxDB initialization completed successfully in ${totalInitTime}ms`);
+      
+      return true;
     } catch (error) {
-      console.error('❌ InfluxDB connection failed:', error);
-      console.error('   Error details:', {
-        message: error.message,
-        stack: error.stack,
-        config: {
-          url: this.config.url,
-          org: this.config.org,
-          bucket: this.config.bucket
-        }
-      });
+      const totalInitTime = Date.now() - initStartTime;
+      console.error(`❌ InfluxDB initialization failed after ${totalInitTime}ms:`, error);
       this.isConnected = false;
+      return false;
     }
   }
 
@@ -96,21 +115,29 @@ class InfluxDBService {
    * @returns {Promise<boolean>} Success status
    */
   async storeDataPoint(dataPoint) {
+    const writeStartTime = Date.now();
+    console.log(`💾 Storing data point: ${dataPoint.timestamp}`);
+    
     if (!this.isConnected) {
       console.warn('❌ InfluxDB not connected, skipping data point storage');
-      console.log('   Connection status:', this.isConnected);
       return false;
     }
 
     try {
-      console.log('📊 Attempting to store data point...');
-      console.log('   Data:', JSON.stringify(dataPoint, null, 2));
-
+      // Validate data point
+      const validationStart = Date.now();
+      if (!dataPoint.timestamp) {
+        console.error('❌ Data point missing timestamp');
+        return false;
+      }
+      const validationTime = Date.now() - validationStart;
+      
+      // Create InfluxDB point
+      const pointCreationStart = Date.now();
       const point = new Point('pool_metrics')
-        .timestamp(new Date(dataPoint.timestamp))
-        .tag('source', 'hayward_omnilogic');
+        .timestamp(new Date(dataPoint.timestamp));
 
-      // Only add float fields if they have valid numeric values
+      // Add fields conditionally to avoid null values
       if (dataPoint.saltInstant !== null && dataPoint.saltInstant !== undefined) {
         point.floatField('salt_instant', dataPoint.saltInstant);
       }
@@ -133,13 +160,28 @@ class InfluxDBService {
         point.booleanField('pump_status', dataPoint.pumpStatus);
       }
 
+      const pointCreationTime = Date.now() - pointCreationStart;
+      console.log(`📝 Point created in ${pointCreationTime}ms with ${Object.keys(point.fields).length} fields`);
+
+      // Write to InfluxDB
+      const writeStart = Date.now();
       await this.writeApi.writePoint(point);
+      const writeTime = Date.now() - writeStart;
+      console.log(`✍️ Point written in ${writeTime}ms`);
+
+      // Flush to ensure data is persisted
+      const flushStart = Date.now();
       await this.writeApi.flush();
+      const flushTime = Date.now() - flushStart;
+      console.log(`🔄 Flush completed in ${flushTime}ms`);
+
+      const totalTime = Date.now() - writeStartTime;
+      console.log(`✅ Data point stored successfully in ${totalTime}ms (validation: ${validationTime}ms, creation: ${pointCreationTime}ms, write: ${writeTime}ms, flush: ${flushTime}ms)`);
       
-      console.log('✅ Data point stored successfully');
       return true;
     } catch (error) {
-      console.error('❌ Failed to store data point:', error);
+      const totalTime = Date.now() - writeStartTime;
+      console.error(`❌ Failed to store data point after ${totalTime}ms:`, error);
       return false;
     }
   }
@@ -263,8 +305,11 @@ class InfluxDBService {
    * @returns {Promise<Array>} Array of data points
    */
   async queryDataPoints(startTime, endTime) {
+    const queryStartTime = Date.now();
+    console.log(`🔍 InfluxDB Query Start: ${startTime.toISOString()} to ${endTime.toISOString()}`);
+    
     if (!this.isConnected) {
-      console.warn('InfluxDB not connected, cannot query data points');
+      console.warn('❌ InfluxDB not connected, cannot query data points');
       return [];
     }
 
@@ -276,10 +321,17 @@ class InfluxDBService {
           |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
       `;
 
+      console.log(`📝 Executing Flux query: ${fluxQuery.substring(0, 100)}...`);
+      const queryExecutionStart = Date.now();
+      
       const dataPoints = [];
+      let rowCount = 0;
       
       for await (const {values, tableMeta} of this.queryApi.iterateRows(fluxQuery)) {
+        const rowStart = Date.now();
         const o = tableMeta.toObject(values);
+        const rowProcessTime = Date.now() - rowStart;
+        
         dataPoints.push({
           timestamp: o._time,
           saltInstant: o.salt_instant || null,
@@ -290,12 +342,33 @@ class InfluxDBService {
           weatherTemp: o.weather_temp || null,
           pumpStatus: o.pump_status || null
         });
+        
+        rowCount++;
+        if (rowCount % 100 === 0) {
+          console.log(`📊 Processed ${rowCount} rows, last row took ${rowProcessTime}ms`);
+        }
       }
 
-      console.log(`📊 Queried ${dataPoints.length} data points from InfluxDB`);
+      const queryExecutionTime = Date.now() - queryExecutionStart;
+      const totalTime = Date.now() - queryStartTime;
+      
+      console.log(`📊 InfluxDB Query Complete:`);
+      console.log(`   - Total time: ${totalTime}ms`);
+      console.log(`   - Query execution: ${queryExecutionTime}ms`);
+      console.log(`   - Data processing: ${totalTime - queryExecutionTime}ms`);
+      console.log(`   - Rows returned: ${dataPoints.length}`);
+      console.log(`   - Time range: ${Math.round((endTime - startTime) / (1000 * 60))} minutes`);
+      
+      if (dataPoints.length > 0) {
+        const firstTimestamp = new Date(dataPoints[0].timestamp);
+        const lastTimestamp = new Date(dataPoints[dataPoints.length - 1].timestamp);
+        console.log(`   - Data range: ${firstTimestamp.toISOString()} to ${lastTimestamp.toISOString()}`);
+      }
+
       return dataPoints;
     } catch (error) {
-      console.error('Error querying data points:', error);
+      const totalTime = Date.now() - queryStartTime;
+      console.error(`❌ InfluxDB Query Error after ${totalTime}ms:`, error);
       return [];
     }
   }

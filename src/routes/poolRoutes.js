@@ -8,37 +8,28 @@ const router = express.Router();
 
 // Get current pool data from InfluxDB (fastest response)
 router.get('/data', async (req, res) => {
+  const requestStartTime = Date.now();
+  console.log('🚀 /api/pool/data request started');
+  
   try {
-    console.log('📊 Fetching current pool data...');
+    console.log('📊 Fetching current pool data from InfluxDB...');
     const startTime = Date.now();
 
-    // First, try to get data from in-memory storage (immediate access)
-    const { getMostRecentPoolData } = require('../services/poolDataService');
-    const inMemoryData = getMostRecentPoolData();
+    // Get the most recent data point from InfluxDB
+    const endTime = new Date();
+    const queryStartTime = new Date(endTime.getTime() - (1 * 60 * 60 * 1000)); // Last hour
     
-    if (inMemoryData) {
-      console.log('📦 Returning in-memory pool data (immediate access)');
-      const loadTime = Date.now() - startTime;
-      console.log(`✅ Pool data loaded from memory in ${loadTime}ms`);
-      
-      res.json({
-        success: true,
-        data: inMemoryData,
-        timestamp: new Date().toISOString(),
-        source: 'memory'
-      });
-      return;
-    }
-
-    // Fallback to time series data if no in-memory data available
-    console.log('📊 No in-memory data, fetching from time series...');
-    const timeSeriesResponse = await fetch(`${req.protocol}://${req.get('host')}/api/pool/timeseries?hours=1`);
-    if (!timeSeriesResponse.ok) {
-      throw new Error('Failed to fetch time series data');
-    }
+    console.log(`🔍 Querying InfluxDB for data from ${queryStartTime.toISOString()} to ${endTime.toISOString()}`);
+    const influxQueryStart = Date.now();
     
-    const timeSeriesResult = await timeSeriesResponse.json();
-    if (!timeSeriesResult.success || !timeSeriesResult.data || timeSeriesResult.data.length === 0) {
+    const dataPoints = await influxDBService.queryDataPoints(queryStartTime, endTime);
+    
+    const influxQueryTime = Date.now() - influxQueryStart;
+    console.log(`📊 InfluxDB query completed in ${influxQueryTime}ms, returned ${dataPoints.length} data points`);
+    
+    if (dataPoints.length === 0) {
+      const totalTime = Date.now() - requestStartTime;
+      console.log(`❌ No data available after ${totalTime}ms`);
       return res.status(404).json({ 
         error: 'No data available',
         message: 'Pool data not yet collected. Check cron job status.'
@@ -46,7 +37,8 @@ router.get('/data', async (req, res) => {
     }
 
     // Get the most recent data point
-    const latestData = timeSeriesResult.data[timeSeriesResult.data.length - 1];
+    const dataProcessingStart = Date.now();
+    const latestData = dataPoints[dataPoints.length - 1];
     
     // Format the response to match expected structure
     const poolData = {
@@ -80,19 +72,38 @@ router.get('/data', async (req, res) => {
       }
     };
 
-    const loadTime = Date.now() - startTime;
-    console.log(`✅ Pool data loaded from time series in ${loadTime}ms`);
+    const dataProcessingTime = Date.now() - dataProcessingStart;
+    const totalTime = Date.now() - requestStartTime;
+    
+    console.log(`📊 Data processing completed in ${dataProcessingTime}ms`);
+    console.log(`✅ Pool data loaded from InfluxDB in ${totalTime}ms`);
+    console.log(`📈 Response data:`, {
+      salt: poolData.chlorinator.salt.instant,
+      waterTemp: poolData.dashboard.temperature.actual,
+      cellVoltage: poolData.chlorinator.cell.voltage,
+      pumpStatus: poolData.filter.status,
+      weatherTemp: poolData.weather.temperature
+    });
 
     res.json({
       success: true,
       data: poolData,
       timestamp: new Date().toISOString(),
-      source: 'timeseries'
+      source: 'influxdb',
+      performance: {
+        totalTime,
+        influxQueryTime,
+        dataProcessingTime
+      }
     });
 
   } catch (error) {
-    console.error('Pool data fetch error:', error);
-    res.status(500).json({ error: 'Failed to fetch pool data from InfluxDB' });
+    const totalTime = Date.now() - requestStartTime;
+    console.error(`❌ Pool data fetch error after ${totalTime}ms:`, error);
+    res.status(500).json({ 
+      error: 'Failed to fetch pool data from InfluxDB',
+      performance: { totalTime }
+    });
   }
 });
 
