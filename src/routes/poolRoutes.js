@@ -289,4 +289,46 @@ router.get('/salt/average', async (req, res) => {
   }
 });
 
+// Debug endpoint for salt average calculation
+router.get('/salt/debug', async (req, res) => {
+  try {
+    const influxDBService = require('../services/influxDBService');
+    
+    // Test the connection
+    const isConnected = influxDBService.isConnected;
+    
+    // Get raw data points
+    const endTime = new Date();
+    const startTime = new Date(endTime.getTime() - (24 * 60 * 60 * 1000));
+    const dataPoints = await influxDBService.queryDataPoints(startTime, endTime);
+    
+    // Filter for salt data
+    const saltDataPoints = dataPoints.filter(dp => dp.saltInstant !== null && dp.saltInstant !== undefined);
+    
+    // Calculate average manually
+    let manualAverage = null;
+    if (saltDataPoints.length > 0) {
+      const sum = saltDataPoints.reduce((acc, dp) => acc + dp.saltInstant, 0);
+      manualAverage = Math.round(sum / saltDataPoints.length);
+    }
+    
+    res.json({
+      success: true,
+      isConnected,
+      totalDataPoints: dataPoints.length,
+      saltDataPoints: saltDataPoints.length,
+      manualAverage,
+      sampleSaltValues: saltDataPoints.slice(0, 5).map(dp => ({ timestamp: dp.timestamp, saltInstant: dp.saltInstant })),
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Salt debug error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 module.exports = router;
