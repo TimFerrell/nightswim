@@ -10,6 +10,9 @@ const weatherService = require('./weatherService');
 const apiCache = new Map();
 const CACHE_TTL = 15 * 1000; // 15 seconds cache (reduced from 30)
 
+// In-memory storage for most recent pool data (always available)
+let mostRecentPoolData = null;
+
 /**
  * Get cached data or null if expired
  */
@@ -41,6 +44,22 @@ const cleanupCache = () => {
       apiCache.delete(key);
     }
   }
+};
+
+/**
+ * Get the most recent pool data (always available)
+ * @returns {object|null} Most recent pool data or null if none available
+ */
+const getMostRecentPoolData = () => {
+  return mostRecentPoolData;
+};
+
+/**
+ * Set the most recent pool data
+ * @param {object} data - Pool data to store
+ */
+const setMostRecentPoolData = (data) => {
+  mostRecentPoolData = data;
 };
 
 // Clean up cache every minute
@@ -189,6 +208,9 @@ const poolDataService = {
     // Cache the result
     setCachedData(cacheKey, poolData);
 
+    // Store the most recent data for immediate access
+    setMostRecentPoolData(poolData);
+
     const endTime = Date.now();
     console.log(`✅ Pool data fetched in ${endTime - startTime}ms`);
 
@@ -201,5 +223,7 @@ module.exports = {
   ...poolDataService,
   getCachedData,
   setCachedData,
-  cleanupCache
+  cleanupCache,
+  getMostRecentPoolData,
+  setMostRecentPoolData
 };

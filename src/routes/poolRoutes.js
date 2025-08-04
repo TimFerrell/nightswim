@@ -9,10 +9,29 @@ const router = express.Router();
 // Get current pool data from InfluxDB (fastest response)
 router.get('/data', async (req, res) => {
   try {
-    console.log('📊 Fetching current pool data from InfluxDB...');
+    console.log('📊 Fetching current pool data...');
     const startTime = Date.now();
 
-    // Use the time series endpoint that we know works
+    // First, try to get data from in-memory storage (immediate access)
+    const { getMostRecentPoolData } = require('../services/poolDataService');
+    const inMemoryData = getMostRecentPoolData();
+    
+    if (inMemoryData) {
+      console.log('📦 Returning in-memory pool data (immediate access)');
+      const loadTime = Date.now() - startTime;
+      console.log(`✅ Pool data loaded from memory in ${loadTime}ms`);
+      
+      res.json({
+        success: true,
+        data: inMemoryData,
+        timestamp: new Date().toISOString(),
+        source: 'memory'
+      });
+      return;
+    }
+
+    // Fallback to time series data if no in-memory data available
+    console.log('📊 No in-memory data, fetching from time series...');
     const timeSeriesResponse = await fetch(`${req.protocol}://${req.get('host')}/api/pool/timeseries?hours=1`);
     if (!timeSeriesResponse.ok) {
       throw new Error('Failed to fetch time series data');
@@ -62,13 +81,13 @@ router.get('/data', async (req, res) => {
     };
 
     const loadTime = Date.now() - startTime;
-    console.log(`✅ Pool data loaded from InfluxDB in ${loadTime}ms`);
+    console.log(`✅ Pool data loaded from time series in ${loadTime}ms`);
 
     res.json({
       success: true,
       data: poolData,
       timestamp: new Date().toISOString(),
-      source: 'influxdb'
+      source: 'timeseries'
     });
 
   } catch (error) {

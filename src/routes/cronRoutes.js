@@ -88,6 +88,17 @@ router.get('/collect-weather', async (req, res) => {
     
     await influxDBService.storeDataPoint(timeSeriesPoint);
     
+    // Also store in memory for immediate access
+    const { getMostRecentPoolData, setMostRecentPoolData } = require('../services/poolDataService');
+    const currentData = getMostRecentPoolData();
+    if (currentData) {
+      currentData.weather = {
+        temperature: weatherData.temperature,
+        unit: '°F'
+      };
+      setMostRecentPoolData(currentData);
+    }
+    
     console.log(`✅ Weather cron job: Weather data stored successfully (${weatherData.temperature}°F from ${weatherData.source})`);
     
     res.json({
