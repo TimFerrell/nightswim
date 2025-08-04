@@ -115,13 +115,32 @@ class InfluxDBService {
       console.log('🏷️ Creating data point...');
       const point = new Point('pool_metrics')
         .timestamp(new Date(dataPoint.timestamp))
-        .floatField('salt_instant', dataPoint.saltInstant)
-        .floatField('cell_temp', dataPoint.cellTemp)
-        .floatField('cell_voltage', dataPoint.cellVoltage)
-        .floatField('water_temp', dataPoint.waterTemp)
-        .floatField('air_temp', dataPoint.airTemp)
-        .booleanField('pump_status', dataPoint.pumpStatus)
         .tag('source', 'hayward_omnilogic');
+
+      // Only add float fields if they have valid numeric values
+      if (dataPoint.saltInstant !== null && dataPoint.saltInstant !== undefined) {
+        point.floatField('salt_instant', dataPoint.saltInstant);
+      }
+      
+      if (dataPoint.cellTemp !== null && dataPoint.cellTemp !== undefined) {
+        point.floatField('cell_temp', dataPoint.cellTemp);
+      }
+      
+      if (dataPoint.cellVoltage !== null && dataPoint.cellVoltage !== undefined) {
+        point.floatField('cell_voltage', dataPoint.cellVoltage);
+      }
+      
+      if (dataPoint.waterTemp !== null && dataPoint.waterTemp !== undefined) {
+        point.floatField('water_temp', dataPoint.waterTemp);
+      }
+      
+      if (dataPoint.airTemp !== null && dataPoint.airTemp !== undefined) {
+        point.floatField('air_temp', dataPoint.airTemp);
+      }
+      
+      if (dataPoint.pumpStatus !== null && dataPoint.pumpStatus !== undefined) {
+        point.booleanField('pump_status', dataPoint.pumpStatus);
+      }
 
       console.log('📝 Writing point to InfluxDB...');
       await this.writeApi.writePoint(point);
@@ -201,7 +220,8 @@ class InfluxDBService {
           saltInstant: o.salt_instant || null,
           cellTemp: o.cell_temp || null,
           cellVoltage: o.cell_voltage || null,
-          waterTemp: o.water_temp || null
+          waterTemp: o.water_temp || null,
+          airTemp: o.air_temp || null
         });
       }
 
