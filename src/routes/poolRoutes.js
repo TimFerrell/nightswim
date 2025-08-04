@@ -12,13 +12,14 @@ router.get('/data', async (req, res) => {
     console.log('📊 Fetching current pool data from InfluxDB...');
     const startTime = Date.now();
 
-    // Get the most recent data point from InfluxDB
-    const endTime = new Date();
-    const queryStartTime = new Date(endTime.getTime() - (1 * 60 * 60 * 1000)); // Last hour
+    // Use the time series endpoint that we know works
+    const timeSeriesResponse = await fetch(`${req.protocol}://${req.get('host')}/api/pool/timeseries?hours=1`);
+    if (!timeSeriesResponse.ok) {
+      throw new Error('Failed to fetch time series data');
+    }
     
-    const dataPoints = await influxDBService.queryDataPoints(queryStartTime, endTime);
-    
-    if (dataPoints.length === 0) {
+    const timeSeriesResult = await timeSeriesResponse.json();
+    if (!timeSeriesResult.success || !timeSeriesResult.data || timeSeriesResult.data.length === 0) {
       return res.status(404).json({ 
         error: 'No data available',
         message: 'Pool data not yet collected. Check cron job status.'
@@ -26,7 +27,7 @@ router.get('/data', async (req, res) => {
     }
 
     // Get the most recent data point
-    const latestData = dataPoints[dataPoints.length - 1];
+    const latestData = timeSeriesResult.data[timeSeriesResult.data.length - 1];
     
     // Format the response to match expected structure
     const poolData = {
