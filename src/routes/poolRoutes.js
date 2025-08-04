@@ -270,13 +270,29 @@ router.get('/pump/state', async (req, res) => {
 router.get('/salt/average', async (req, res) => {
   try {
     const influxDBService = require('../services/influxDBService');
-    const rollingAverage = await influxDBService.getSaltRollingAverage();
-    const currentSalt = await influxDBService.getCurrentSalt();
+    
+    // Get time series data for the last 24 hours
+    const endTime = new Date();
+    const startTime = new Date(endTime.getTime() - (24 * 60 * 60 * 1000));
+    const dataPoints = await influxDBService.queryDataPoints(startTime, endTime);
+    
+    // Filter for salt data and calculate average
+    const saltDataPoints = dataPoints.filter(dp => dp.saltInstant !== null && dp.saltInstant !== undefined);
+    
+    let rollingAverage = null;
+    if (saltDataPoints.length > 0) {
+      const sum = saltDataPoints.reduce((acc, dp) => acc + dp.saltInstant, 0);
+      rollingAverage = Math.round(sum / saltDataPoints.length);
+    }
+    
+    // Get current salt value
+    const currentSalt = saltDataPoints.length > 0 ? saltDataPoints[saltDataPoints.length - 1].saltInstant : null;
     
     res.json({
       success: true,
       rollingAverage,
       currentSalt,
+      dataPointsCount: saltDataPoints.length,
       timestamp: new Date().toISOString()
     });
   } catch (error) {
