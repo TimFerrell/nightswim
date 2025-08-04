@@ -145,6 +145,47 @@ class InfluxDBService {
   }
 
   /**
+   * Get the most recent salt value from InfluxDB
+   * @returns {Promise<number|null>} Current salt value or null if not available
+   */
+  async getCurrentSalt() {
+    if (!this.isConnected) {
+      console.warn('InfluxDB not connected, cannot get current salt value');
+      return null;
+    }
+
+    try {
+      const endTime = new Date();
+      const startTime = new Date(endTime.getTime() - (1 * 60 * 60 * 1000)); // Last hour
+      
+      const fluxQuery = `
+        from(bucket: "${this.config.bucket}")
+          |> range(start: ${startTime.toISOString()}, stop: ${endTime.toISOString()})
+          |> filter(fn: (r) => r._measurement == "pool_metrics")
+          |> filter(fn: (r) => r._field == "salt_instant")
+          |> filter(fn: (r) => r._value != null)
+          |> last()
+      `;
+
+      let currentSalt = null;
+      
+      for await (const {values, tableMeta} of this.queryApi.iterateRows(fluxQuery)) {
+        const o = tableMeta.toObject(values);
+        if (o._value !== null && o._value !== undefined) {
+          currentSalt = Math.round(o._value);
+          break;
+        }
+      }
+
+      console.log(`📊 Current salt value: ${currentSalt}`);
+      return currentSalt;
+    } catch (error) {
+      console.error('Error getting current salt value:', error);
+      return null;
+    }
+  }
+
+  /**
    * Get 24-hour rolling average for salt levels
    * @returns {Promise<number|null>} Rolling average or null if no data
    */

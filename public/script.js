@@ -927,7 +927,7 @@ const updateSparklines = async () => {
 };
 
 /**
- * Fetch the 24-hour rolling average for salt level
+ * Fetch the 24-hour rolling average for salt level and calculate trend
  */
 const fetchSaltRollingAverage = async () => {
   try {
@@ -950,10 +950,25 @@ const fetchSaltRollingAverage = async () => {
       return;
     }
 
-    const average24H = result.rollingAverage || 'N/A';
+    const average24H = result.rollingAverage;
+    const currentSalt = result.currentSalt;
     const element = document.getElementById('saltAverage24H');
+    
     if (element) {
-      element.textContent = average24H === 'N/A' ? 'N/A' : `${average24H} PPM`;
+      if (average24H === null || average24H === undefined) {
+        element.textContent = 'N/A';
+      } else {
+        // Calculate trend if we have both current and average values
+        let trendText = '';
+        if (currentSalt !== null && currentSalt !== undefined && average24H !== null) {
+          const difference = currentSalt - average24H;
+          const trend = difference > 0 ? '↗' : difference < 0 ? '↘' : '→';
+          const absDifference = Math.abs(difference);
+          trendText = ` (${trend} ${absDifference} PPM)`;
+        }
+        
+        element.textContent = `${average24H} PPM${trendText}`;
+      }
     }
   } catch (error) {
     console.error('Error fetching salt rolling average:', error);

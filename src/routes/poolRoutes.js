@@ -271,10 +271,12 @@ router.get('/salt/average', async (req, res) => {
   try {
     const influxDBService = require('../services/influxDBService');
     const rollingAverage = await influxDBService.getSaltRollingAverage();
+    const currentSalt = await influxDBService.getCurrentSalt();
     
     res.json({
       success: true,
       rollingAverage,
+      currentSalt,
       timestamp: new Date().toISOString()
     });
   } catch (error) {
