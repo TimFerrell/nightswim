@@ -561,11 +561,10 @@ const updateStatusCards = (data) => {
     // Fetch updated rolling average
     fetchSaltRollingAverage();
     
-    // Add pulse animation and mark as loaded
+    // Mark as loaded
     const saltCard = document.getElementById('saltCard');
     if (saltCard) {
-      saltCard.classList.add('pulse', 'loaded');
-      setTimeout(() => saltCard.classList.remove('pulse'), 600);
+      saltCard.classList.add('loaded');
     }
   } else {
     console.warn('🧂 Salt data is missing or invalid:', data.chlorinator?.salt?.instant);
@@ -593,11 +592,10 @@ const updateStatusCards = (data) => {
       }
     }
     
-    // Add pulse animation and mark as loaded
+    // Mark as loaded
     const waterTempCard = document.getElementById('waterTempCard');
     if (waterTempCard) {
-      waterTempCard.classList.add('pulse', 'loaded');
-      setTimeout(() => waterTempCard.classList.remove('pulse'), 600);
+      waterTempCard.classList.add('loaded');
     }
   } else {
     console.warn('🌊 Water temp data is missing or invalid:', data.dashboard?.temperature?.actual);
@@ -621,11 +619,10 @@ const updateStatusCards = (data) => {
       }
     }
     
-    // Add pulse animation and mark as loaded
+    // Mark as loaded
     const cellVoltageCard = document.getElementById('cellVoltageCard');
     if (cellVoltageCard) {
-      cellVoltageCard.classList.add('pulse', 'loaded');
-      setTimeout(() => cellVoltageCard.classList.remove('pulse'), 600);
+      cellVoltageCard.classList.add('loaded');
     }
   }
 
@@ -644,11 +641,10 @@ const updateStatusCards = (data) => {
       filterPumpState.classList.remove('skeleton-text');
     }
     
-    // Add pulse animation and mark as loaded
+    // Mark as loaded
     const filterPumpCard = document.getElementById('filterPumpCard');
     if (filterPumpCard) {
-      filterPumpCard.classList.add('pulse', 'loaded');
-      setTimeout(() => filterPumpCard.classList.remove('pulse'), 600);
+      filterPumpCard.classList.add('loaded');
     }
   }
 
@@ -660,11 +656,10 @@ const updateStatusCards = (data) => {
       weatherTempValue.classList.remove('skeleton-value');
     }
     
-    // Add pulse animation and mark as loaded
+    // Mark as loaded
     const weatherCard = document.getElementById('weatherCard');
     if (weatherCard) {
-      weatherCard.classList.add('pulse', 'loaded');
-      setTimeout(() => weatherCard.classList.remove('pulse'), 600);
+      weatherCard.classList.add('loaded');
     }
   }
 
