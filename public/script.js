@@ -678,7 +678,7 @@ const updateStatusCards = (data) => {
 /**
  * Load and display pool data from InfluxDB
  */
-const loadPoolData = async () => {
+const loadPoolData = async (retryCount = 0) => {
   try {
     console.log('🚀 Loading pool data from InfluxDB...');
     const startTime = Date.now();
@@ -699,6 +699,17 @@ const loadPoolData = async () => {
     const data = result.data;
     const loadTime = Date.now() - startTime;
     console.log(`✅ Pool data loaded in ${loadTime}ms from ${result.source}`);
+
+    // Check if we have valid data
+    const hasValidData = data.chlorinator?.salt?.instant !== null || 
+                        data.dashboard?.temperature?.actual !== null ||
+                        data.chlorinator?.cell?.voltage !== null;
+
+    if (!hasValidData && retryCount < 3) {
+      console.log(`⚠️ No valid data received, retrying in 2 seconds... (attempt ${retryCount + 1}/3)`);
+      setTimeout(() => loadPoolData(retryCount + 1), 2000);
+      return;
+    }
 
     // Initialize charts if not already done
     if (!tempChart) {
@@ -729,7 +740,15 @@ const loadPoolData = async () => {
 
   } catch (error) {
     console.error('Error loading pool data:', error);
-    // Show error state
+    
+    // Retry on error if we haven't exceeded retry limit
+    if (retryCount < 3) {
+      console.log(`⚠️ Error occurred, retrying in 2 seconds... (attempt ${retryCount + 1}/3)`);
+      setTimeout(() => loadPoolData(retryCount + 1), 2000);
+      return;
+    }
+    
+    // Show error state after all retries failed
     const statusGrid = document.getElementById('statusGrid');
     if (statusGrid) {
       statusGrid.innerHTML = `
