@@ -1,6 +1,8 @@
 const express = require('express');
 const sessionManager = require('../services/sessionManager');
 const poolDataService = require('../services/poolDataService');
+const influxDBService = require('../services/influxDBService');
+const weatherService = require('../services/weatherService');
 const credentials = require('../utils/credentials');
 
 /** @type {import('express').Router} */
@@ -51,6 +53,58 @@ router.get('/collect-data', async (req, res) => {
     console.error('❌ Cron job: Data collection failed:', error);
     res.status(500).json({ 
       error: 'Data collection failed', 
+      message: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+/**
+ * Weather-only cron job endpoint for frequent weather updates
+ * Runs every 2 minutes via Vercel cron
+ */
+router.get('/collect-weather', async (req, res) => {
+  try {
+    console.log('🌤️ Weather cron job: Starting weather data collection...');
+    
+    // Fetch current weather data
+    const weatherData = await weatherService.getCurrentWeather();
+    
+    if (!weatherData) {
+      console.error('❌ Weather cron job: Failed to fetch weather data');
+      return res.status(500).json({ 
+        error: 'Weather data fetch failed',
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+    // Store weather data in InfluxDB
+    const timeSeriesPoint = {
+      timestamp: new Date().toISOString(),
+      weatherTemp: weatherData.temperature,
+      weatherHumidity: weatherData.humidity || null,
+      weatherSource: weatherData.source || 'unknown'
+    };
+    
+    await influxDBService.storeDataPoint(timeSeriesPoint);
+    
+    console.log(`✅ Weather cron job: Weather data stored successfully (${weatherData.temperature}°F from ${weatherData.source})`);
+    
+    res.json({
+      success: true,
+      message: 'Weather data collection completed',
+      timestamp: new Date().toISOString(),
+      weather: {
+        temperature: weatherData.temperature,
+        humidity: weatherData.humidity,
+        source: weatherData.source
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Weather cron job: Weather collection failed:', error);
+    res.status(500).json({ 
+      error: 'Weather collection failed', 
       message: error.message,
       timestamp: new Date().toISOString()
     });
