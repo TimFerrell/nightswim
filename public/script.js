@@ -996,6 +996,13 @@ const updateSparklines = async () => {
     }
 
     const data = result.data;
+    console.log('Chart data debug:', {
+      dataPoints: data.length,
+      waterTemp: data.filter(point => point.waterTemp !== null).length,
+      airTemp: data.filter(point => point.airTemp !== null).length,
+      cellTemp: data.filter(point => point.cellTemp !== null).length,
+      sampleWaterTemp: data.slice(0, 3).map(point => point.waterTemp)
+    });
 
     // Update salt spark line
     if (saltSparkline) {
@@ -1031,7 +1038,7 @@ const updateSparklines = async () => {
 
     // Update filter pump spark line
     if (filterPumpSparkline) {
-      const filterPumpData = data.map(point => point.filterPumpStatus).filter(v => v !== null && v !== undefined);
+      const filterPumpData = data.map(point => point.pumpStatus).filter(v => v !== null && v !== undefined);
       filterPumpSparkline.data.labels = Array(filterPumpData.length).fill('');
       filterPumpSparkline.data.datasets[0].data = filterPumpData;
       filterPumpSparkline.update('none');
