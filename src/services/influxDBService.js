@@ -318,13 +318,13 @@ class InfluxDBService {
         from(bucket: "${this.config.bucket}")
           |> range(start: ${startTime.toISOString()}, stop: ${endTime.toISOString()})
           |> filter(fn: (r) => r._measurement == "pool_metrics")
-          |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
       `;
 
       console.log(`📝 Executing Flux query: ${fluxQuery.substring(0, 100)}...`);
       const queryExecutionStart = Date.now();
       
-      const dataPoints = [];
+      // Group data by timestamp and combine fields
+      const dataByTimestamp = new Map();
       let rowCount = 0;
       
       for await (const {values, tableMeta} of this.queryApi.iterateRows(fluxQuery)) {
@@ -332,22 +332,59 @@ class InfluxDBService {
         const o = tableMeta.toObject(values);
         const rowProcessTime = Date.now() - rowStart;
         
-        dataPoints.push({
-          timestamp: o._time,
-          saltInstant: o.salt_instant || null,
-          cellTemp: o.cell_temp || null,
-          cellVoltage: o.cell_voltage || null,
-          waterTemp: o.water_temp || null,
-          airTemp: o.air_temp || null,
-          weatherTemp: o.weather_temp || null,
-          pumpStatus: o.pump_status || null
-        });
+        const timestamp = o._time;
+        const field = o._field;
+        const value = o._value;
+        
+        if (!dataByTimestamp.has(timestamp)) {
+          dataByTimestamp.set(timestamp, {
+            timestamp: timestamp,
+            saltInstant: null,
+            cellTemp: null,
+            cellVoltage: null,
+            waterTemp: null,
+            airTemp: null,
+            weatherTemp: null,
+            pumpStatus: null
+          });
+        }
+        
+        const dataPoint = dataByTimestamp.get(timestamp);
+        
+        // Map field names to our data structure
+        switch (field) {
+          case 'salt_instant':
+            dataPoint.saltInstant = value;
+            break;
+          case 'cell_temp':
+            dataPoint.cellTemp = value;
+            break;
+          case 'cell_voltage':
+            dataPoint.cellVoltage = value;
+            break;
+          case 'water_temp':
+            dataPoint.waterTemp = value;
+            break;
+          case 'air_temp':
+            dataPoint.airTemp = value;
+            break;
+          case 'weather_temp':
+            dataPoint.weatherTemp = value;
+            break;
+          case 'pump_status':
+            dataPoint.pumpStatus = value;
+            break;
+        }
         
         rowCount++;
         if (rowCount % 100 === 0) {
           console.log(`📊 Processed ${rowCount} rows, last row took ${rowProcessTime}ms`);
         }
       }
+
+      // Convert map to array and sort by timestamp
+      const dataPoints = Array.from(dataByTimestamp.values())
+        .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
       const queryExecutionTime = Date.now() - queryExecutionStart;
       const totalTime = Date.now() - queryStartTime;
@@ -356,13 +393,25 @@ class InfluxDBService {
       console.log(`   - Total time: ${totalTime}ms`);
       console.log(`   - Query execution: ${queryExecutionTime}ms`);
       console.log(`   - Data processing: ${totalTime - queryExecutionTime}ms`);
-      console.log(`   - Rows returned: ${dataPoints.length}`);
+      console.log(`   - Raw rows processed: ${rowCount}`);
+      console.log(`   - Combined data points: ${dataPoints.length}`);
       console.log(`   - Time range: ${Math.round((endTime - startTime) / (1000 * 60))} minutes`);
       
       if (dataPoints.length > 0) {
         const firstTimestamp = new Date(dataPoints[0].timestamp);
         const lastTimestamp = new Date(dataPoints[dataPoints.length - 1].timestamp);
         console.log(`   - Data range: ${firstTimestamp.toISOString()} to ${lastTimestamp.toISOString()}`);
+        
+        // Log the most recent data point for debugging
+        const latest = dataPoints[dataPoints.length - 1];
+        console.log(`   - Latest data point:`, {
+          timestamp: latest.timestamp,
+          saltInstant: latest.saltInstant,
+          waterTemp: latest.waterTemp,
+          cellVoltage: latest.cellVoltage,
+          pumpStatus: latest.pumpStatus,
+          weatherTemp: latest.weatherTemp
+        });
       }
 
       return dataPoints;
