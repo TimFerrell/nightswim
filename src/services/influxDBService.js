@@ -199,16 +199,14 @@ class InfluxDBService {
       const endTime = new Date();
       const startTime = new Date(endTime.getTime() - (24 * 60 * 60 * 1000)); // 24 hours ago
       
-      // Use InfluxDB's window function for true rolling average over 24h window
+      // Use a simpler approach - get all salt values and calculate average
       const fluxQuery = `
         from(bucket: "${this.config.bucket}")
           |> range(start: ${startTime.toISOString()}, stop: ${endTime.toISOString()})
           |> filter(fn: (r) => r._measurement == "pool_metrics")
           |> filter(fn: (r) => r._field == "salt_instant")
           |> filter(fn: (r) => r._value != null)
-          |> window(every: 24h, offset: 0h)
           |> mean()
-          |> last()
       `;
 
       let rollingAverage = null;
@@ -217,7 +215,7 @@ class InfluxDBService {
         const o = tableMeta.toObject(values);
         if (o._value !== null && o._value !== undefined) {
           rollingAverage = Math.round(o._value);
-          break; // Should only be one result from last() function
+          break;
         }
       }
 
