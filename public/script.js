@@ -2,6 +2,11 @@
 let tempChart, electricalChart, chemistryChart;
 let saltSparkline, waterTempSparkline, cellVoltageSparkline, weatherSparkline, filterPumpSparkline;
 
+// Register Chart.js plugins
+if (typeof annotationPlugin !== 'undefined') {
+  Chart.register(annotationPlugin);
+}
+
 // Auto-refresh intervals
 let chartRefreshInterval = null;
 let statsRefreshInterval = null;
@@ -739,7 +744,43 @@ const initializeSparklines = () => {
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
+          plugins: { 
+            legend: { display: false },
+            annotation: {
+              annotations: {
+                // Too low salt region (yellow)
+                tooLowRegion: {
+                  type: 'box',
+                  yMin: 2000,
+                  yMax: 2700,
+                  backgroundColor: 'rgba(255, 255, 0, 0.1)',
+                  borderColor: 'rgba(255, 255, 0, 0.3)',
+                  borderWidth: 1,
+                  drawTime: 'beforeDatasetsDraw'
+                },
+                // Safe operating region (green)
+                safeRegion: {
+                  type: 'box',
+                  yMin: 2700,
+                  yMax: 3400,
+                  backgroundColor: 'rgba(0, 255, 0, 0.1)',
+                  borderColor: 'rgba(0, 255, 0, 0.3)',
+                  borderWidth: 1,
+                  drawTime: 'beforeDatasetsDraw'
+                },
+                // Too high salt region (red)
+                tooHighRegion: {
+                  type: 'box',
+                  yMin: 3400,
+                  yMax: 4000,
+                  backgroundColor: 'rgba(255, 0, 0, 0.1)',
+                  borderColor: 'rgba(255, 0, 0, 0.3)',
+                  borderWidth: 1,
+                  drawTime: 'beforeDatasetsDraw'
+                }
+              }
+            }
+          },
           scales: {
             x: { display: false },
             y: { 
