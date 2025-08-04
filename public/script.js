@@ -790,9 +790,16 @@ const updateStatusCards = (data) => {
  */
 const loadPoolData = async () => {
   try {
+    // Show loading progress after a short delay
+    const loadingTimeout = setTimeout(() => {
+      showLoadingProgress();
+    }, 100);
+
     const response = await fetch('/api/pool/data', {
       credentials: 'include'
     });
+
+    clearTimeout(loadingTimeout);
 
     if (!response.ok) {
       throw new Error('Failed to load pool data');
@@ -804,6 +811,9 @@ const loadPoolData = async () => {
     }
 
     const data = result.data;
+
+    // Hide skeleton cards
+    hideSkeletonCards();
 
     // Initialize charts if not already done
     if (!tempChart) {
@@ -837,6 +847,16 @@ const loadPoolData = async () => {
 
   } catch (error) {
     console.error('Error loading pool data:', error);
+    // Show error state
+    const statusGrid = document.getElementById('statusGrid');
+    if (statusGrid) {
+      statusGrid.innerHTML = `
+        <div class="loading-progress">
+          <p style="color: var(--color-error);">Error loading data: ${error.message}</p>
+          <button onclick="loadPoolData()" style="margin-top: var(--spacing-4); padding: var(--spacing-2) var(--spacing-4); background: var(--color-primary); color: white; border: none; border-radius: var(--radius-sm); cursor: pointer;">Retry</button>
+        </div>
+      `;
+    }
   }
 };
 
@@ -1065,6 +1085,31 @@ const fetchSaltRollingAverage = async () => {
     console.error('Error fetching salt rolling average:', error);
     const element = document.getElementById('saltAverage24H');
     if (element) element.textContent = 'N/A';
+  }
+};
+
+/**
+ * Hide skeleton loading cards
+ */
+const hideSkeletonCards = () => {
+  const skeletonCards = document.querySelectorAll('.skeleton');
+  skeletonCards.forEach(card => {
+    card.classList.add('hidden');
+  });
+};
+
+/**
+ * Show loading progress
+ */
+const showLoadingProgress = () => {
+  const statusGrid = document.getElementById('statusGrid');
+  if (statusGrid) {
+    statusGrid.innerHTML = `
+      <div class="loading-progress">
+        <div class="loading-spinner"></div>
+        <p>Loading pool data...</p>
+      </div>
+    `;
   }
 };
 

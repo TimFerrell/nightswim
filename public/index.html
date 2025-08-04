@@ -9,18 +9,29 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            /* Light mode colors */
-            --color-background: #fafbfc;
-            --color-surface: #ffffff;
-            --color-border: #e1e5e9;
-            --color-text-primary: #1a1f36;
-            --color-text-secondary: #697386;
-            --color-text-muted: #8b9bb4;
-            --color-accent: #635bff;
-            --color-accent-light: #f0f0ff;
-            --color-success: #0a2540;
-            --color-warning: #ff6b35;
-            --color-error: #e53e3e;
+            /* Colors */
+            --color-primary: #6366f1;
+            --color-primary-hover: #4f46e5;
+            --color-secondary: #8b5cf6;
+            --color-accent: #06b6d4;
+            --color-success: #10b981;
+            --color-warning: #f59e0b;
+            --color-error: #ef4444;
+            --color-text: #1f2937;
+            --color-text-secondary: #6b7280;
+            --color-background: #ffffff;
+            --color-surface: #f9fafb;
+            --color-border: #e5e7eb;
+            --color-gray-50: #f9fafb;
+            --color-gray-100: #f3f4f6;
+            --color-gray-200: #e5e7eb;
+            --color-gray-300: #d1d5db;
+            --color-gray-400: #9ca3af;
+            --color-gray-500: #6b7280;
+            --color-gray-600: #4b5563;
+            --color-gray-700: #374151;
+            --color-gray-800: #1f2937;
+            --color-gray-900: #111827;
             
             /* Typography */
             --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
@@ -457,6 +468,96 @@
         .status-card.pulse {
             animation: pulse 0.6s ease-in-out;
         }
+
+        /* Skeleton loading animation */
+        .skeleton {
+            opacity: 0.7;
+        }
+        
+        .skeleton-header {
+            height: 20px;
+            background: linear-gradient(90deg, var(--color-gray-200) 25%, var(--color-gray-300) 50%, var(--color-gray-200) 75%);
+            background-size: 200% 100%;
+            animation: skeleton-loading 1.5s infinite;
+            border-radius: var(--radius-sm);
+            margin-bottom: var(--spacing-3);
+        }
+        
+        .skeleton-value {
+            height: 32px;
+            background: linear-gradient(90deg, var(--color-gray-200) 25%, var(--color-gray-300) 50%, var(--color-gray-200) 75%);
+            background-size: 200% 100%;
+            animation: skeleton-loading 1.5s infinite;
+            border-radius: var(--radius-sm);
+            margin-bottom: var(--spacing-2);
+        }
+        
+        .skeleton-unit {
+            height: 16px;
+            width: 60%;
+            background: linear-gradient(90deg, var(--color-gray-200) 25%, var(--color-gray-300) 50%, var(--color-gray-200) 75%);
+            background-size: 200% 100%;
+            animation: skeleton-loading 1.5s infinite;
+            border-radius: var(--radius-sm);
+            margin-bottom: var(--spacing-4);
+        }
+        
+        .skeleton-sparkline {
+            height: 40px;
+            background: linear-gradient(90deg, var(--color-gray-200) 25%, var(--color-gray-300) 50%, var(--color-gray-200) 75%);
+            background-size: 200% 100%;
+            animation: skeleton-loading 1.5s infinite;
+            border-radius: var(--radius-sm);
+            margin-bottom: var(--spacing-3);
+        }
+        
+        .skeleton-details {
+            height: 16px;
+            background: linear-gradient(90deg, var(--color-gray-200) 25%, var(--color-gray-300) 50%, var(--color-gray-200) 75%);
+            background-size: 200% 100%;
+            animation: skeleton-loading 1.5s infinite;
+            border-radius: var(--radius-sm);
+        }
+        
+        @keyframes skeleton-loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        
+        .skeleton.hidden {
+            display: none;
+        }
+        
+        /* Loading progress */
+        .loading-progress {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: var(--spacing-8);
+            text-align: center;
+        }
+        
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--color-gray-200);
+            border-top: 3px solid var(--color-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: var(--spacing-4);
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading-progress p {
+            color: var(--color-text-secondary);
+            font-size: var(--text-sm);
+            margin: 0;
+        }
     </style>
 </head>
 <body>
@@ -478,6 +579,35 @@
 
             <!-- Current Status -->
             <div class="status-grid" id="statusGrid">
+                <!-- Loading skeleton cards -->
+                <div class="status-card skeleton" id="skeletonCards">
+                  <div class="skeleton-header"></div>
+                  <div class="skeleton-value"></div>
+                  <div class="skeleton-unit"></div>
+                  <div class="skeleton-sparkline"></div>
+                  <div class="skeleton-details"></div>
+                </div>
+                <div class="status-card skeleton">
+                  <div class="skeleton-header"></div>
+                  <div class="skeleton-value"></div>
+                  <div class="skeleton-unit"></div>
+                  <div class="skeleton-sparkline"></div>
+                  <div class="skeleton-details"></div>
+                </div>
+                <div class="status-card skeleton">
+                  <div class="skeleton-header"></div>
+                  <div class="skeleton-value"></div>
+                  <div class="skeleton-unit"></div>
+                  <div class="skeleton-sparkline"></div>
+                  <div class="skeleton-details"></div>
+                </div>
+                <div class="status-card skeleton">
+                  <div class="skeleton-header"></div>
+                  <div class="skeleton-value"></div>
+                  <div class="skeleton-unit"></div>
+                  <div class="skeleton-sparkline"></div>
+                  <div class="skeleton-details"></div>
+                </div>
                 <!-- Status cards will be populated by JavaScript -->
             </div>
 

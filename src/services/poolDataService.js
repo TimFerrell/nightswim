@@ -6,6 +6,46 @@ const timeSeriesService = require('./timeSeriesService');
 const pumpStateTracker = require('./pumpStateTracker');
 const weatherService = require('./weatherService');
 
+// Simple in-memory cache for API responses
+const apiCache = new Map();
+const CACHE_TTL = 30 * 1000; // 30 seconds cache
+
+/**
+ * Get cached data or null if expired
+ */
+const getCachedData = (key) => {
+  const cached = apiCache.get(key);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.data;
+  }
+  return null;
+};
+
+/**
+ * Set cached data with timestamp
+ */
+const setCachedData = (key, data) => {
+  apiCache.set(key, {
+    data,
+    timestamp: Date.now()
+  });
+};
+
+/**
+ * Clear expired cache entries
+ */
+const cleanupCache = () => {
+  const now = Date.now();
+  for (const [key, value] of apiCache.entries()) {
+    if (now - value.timestamp > CACHE_TTL) {
+      apiCache.delete(key);
+    }
+  }
+};
+
+// Clean up cache every minute
+setInterval(cleanupCache, 60 * 1000);
+
 /**
  * @typedef {object} PoolData
  * @property {string} timestamp - ISO timestamp of when data was fetched
@@ -20,75 +60,107 @@ const weatherService = require('./weatherService');
 
 const poolDataService = {
   /**
-   * Fetch all pool data
+   * Fetch all pool data with parallel requests and caching
    * @param {import('./HaywardSession')} session - The authenticated session
    * @returns {Promise<PoolData>} Complete pool data
    */
   async fetchAllPoolData(session) {
     const poolData = createPoolDataStructure({});
+    const startTime = Date.now();
 
-    // Fetch Dashboard data
-    try {
-      const dashboardResponse = await session.makeRequest(buildDashboardUrl());
-      poolData.dashboard = parseDashboardData(dashboardResponse.data);
-    } catch (error) {
-      console.error('Dashboard fetch error:', error.message);
-      poolData.dashboard.error = error.message;
+    // Check cache first
+    const cacheKey = `pool_data_${session.sessionId}`;
+    const cachedData = getCachedData(cacheKey);
+    if (cachedData) {
+      console.log('📦 Returning cached pool data');
+      return cachedData;
     }
 
-    // Fetch Filter Pump data
-    try {
-      const filterResponse = await session.makeRequest(buildSystemUrl(POOL_CONSTANTS.ENDPOINTS.FILTER_SETTINGS));
-      poolData.filter = parseFilterData(filterResponse.data);
-    } catch (error) {
-      console.error('Filter fetch error:', error.message);
-      poolData.filter.error = error.message;
-    }
+    console.log('🚀 Fetching fresh pool data with parallel requests...');
 
-    // Fetch Heater data
-    try {
-      const heaterResponse = await session.makeRequest(buildSystemUrl(POOL_CONSTANTS.ENDPOINTS.HEATER_SETTINGS));
-      poolData.heater = parseHeaterData(heaterResponse.data);
-    } catch (error) {
-      console.error('Heater fetch error:', error.message);
-      poolData.heater.error = error.message;
-    }
+    // Prepare all API requests in parallel
+    const requests = [
+      // Dashboard data
+      session.makeRequest(buildDashboardUrl()).then(response => ({
+        type: 'dashboard',
+        data: parseDashboardData(response.data)
+      })).catch(error => ({
+        type: 'dashboard',
+        error: error.message
+      })),
 
-    // Fetch Chlorinator data
-    try {
-      const chlorinatorResponse = await session.makeRequest(buildSystemUrl(POOL_CONSTANTS.ENDPOINTS.CHLORINATOR_SETTINGS));
-      poolData.chlorinator = parseChlorinatorData(chlorinatorResponse.data);
-    } catch (error) {
-      console.error('Chlorinator fetch error:', error.message);
-      poolData.chlorinator.error = error.message;
-    }
+      // Filter Pump data
+      session.makeRequest(buildSystemUrl(POOL_CONSTANTS.ENDPOINTS.FILTER_SETTINGS)).then(response => ({
+        type: 'filter',
+        data: parseFilterData(response.data)
+      })).catch(error => ({
+        type: 'filter',
+        error: error.message
+      })),
 
-    // Fetch Light data
-    try {
-      const lightResponse = await session.makeRequest(buildSystemUrl(POOL_CONSTANTS.ENDPOINTS.LIGHTS_SETTINGS));
-      poolData.lights = parseLightsData(lightResponse.data);
-    } catch (error) {
-      console.error('Light fetch error:', error.message);
-      poolData.lights.error = error.message;
-    }
+      // Heater data
+      session.makeRequest(buildSystemUrl(POOL_CONSTANTS.ENDPOINTS.HEATER_SETTINGS)).then(response => ({
+        type: 'heater',
+        data: parseHeaterData(response.data)
+      })).catch(error => ({
+        type: 'heater',
+        error: error.message
+      })),
 
-    // Fetch Schedules
-    try {
-      const scheduleResponse = await session.makeRequest(`${POOL_CONSTANTS.ENDPOINTS.SCHEDULES}?mspID=${POOL_CONSTANTS.MSP_ID}&bowID=${POOL_CONSTANTS.BOW_ID}`);
-      poolData.schedules = parseSchedulesData(scheduleResponse.data);
-    } catch (error) {
-      console.error('Schedule fetch error:', error.message);
-      poolData.schedules = { error: error.message };
-    }
+      // Chlorinator data
+      session.makeRequest(buildSystemUrl(POOL_CONSTANTS.ENDPOINTS.CHLORINATOR_SETTINGS)).then(response => ({
+        type: 'chlorinator',
+        data: parseChlorinatorData(response.data)
+      })).catch(error => ({
+        type: 'chlorinator',
+        error: error.message
+      })),
 
-    // Fetch Weather data
-    try {
-      const weatherData = await weatherService.getCurrentWeather();
-      poolData.weather = weatherData;
-    } catch (error) {
-      console.error('Weather fetch error:', error.message);
-      poolData.weather = { error: error.message };
-    }
+      // Light data
+      session.makeRequest(buildSystemUrl(POOL_CONSTANTS.ENDPOINTS.LIGHTS_SETTINGS)).then(response => ({
+        type: 'lights',
+        data: parseLightsData(response.data)
+      })).catch(error => ({
+        type: 'lights',
+        error: error.message
+      })),
+
+      // Schedules
+      session.makeRequest(`${POOL_CONSTANTS.ENDPOINTS.SCHEDULES}?mspID=${POOL_CONSTANTS.MSP_ID}&bowID=${POOL_CONSTANTS.BOW_ID}`).then(response => ({
+        type: 'schedules',
+        data: parseSchedulesData(response.data)
+      })).catch(error => ({
+        type: 'schedules',
+        error: error.message
+      })),
+
+      // Weather data (non-blocking)
+      weatherService.getCurrentWeather().then(data => ({
+        type: 'weather',
+        data: data
+      })).catch(error => ({
+        type: 'weather',
+        error: error.message
+      }))
+    ];
+
+    // Execute all requests in parallel
+    const results = await Promise.allSettled(requests);
+    
+    // Process results
+    results.forEach(result => {
+      if (result.status === 'fulfilled') {
+        const { type, data, error } = result.value;
+        if (error) {
+          console.error(`${type} fetch error:`, error);
+          poolData[type] = { error };
+        } else {
+          poolData[type] = data;
+        }
+      } else {
+        console.error('Request failed:', result.reason);
+      }
+    });
 
     // Store time series data for charts
     const timeSeriesPoint = {
@@ -113,6 +185,12 @@ const poolDataService = {
     if (poolData.filter && poolData.filter.status !== null && poolData.filter.status !== undefined) {
       await pumpStateTracker.checkStateChange(poolData.filter.status, poolData.timestamp);
     }
+
+    // Cache the result
+    setCachedData(cacheKey, poolData);
+
+    const endTime = Date.now();
+    console.log(`✅ Pool data fetched in ${endTime - startTime}ms`);
 
     return poolData;
   }

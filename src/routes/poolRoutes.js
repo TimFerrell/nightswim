@@ -5,6 +5,10 @@ const timeSeriesService = require('../services/timeSeriesService');
 const influxDBService = require('../services/influxDBService');
 const pumpStateTracker = require('../services/pumpStateTracker');
 const credentials = require('../utils/credentials');
+const { POOL_CONSTANTS } = require('../utils/constants');
+const { buildDashboardUrl, buildSystemUrl } = require('../utils/constants');
+const { parseDashboardData, parseChlorinatorData } = require('../services/poolDataParser');
+const weatherService = require('../services/weatherService');
 
 /** @type {import('express').Router} */
 const router = express.Router();
@@ -59,6 +63,112 @@ router.get('/data', async (req, res) => {
   } catch (error) {
     console.error('Pool data fetch error:', error);
     res.status(500).json({ error: 'Failed to fetch pool data' });
+  }
+});
+
+// Get essential pool data only (for faster initial load)
+router.get('/data/quick', async (req, res) => {
+  try {
+    // Ensure we have a session ID (Express will create one if it doesn't exist)
+    if (!req.sessionID) {
+      req.session = {};
+    }
+
+    // Check both Express session and our custom session
+    const expressSessionAuthenticated = req.session && req.session.authenticated;
+    const haywardSessionId = req.session && req.session.haywardSessionId;
+    let session = sessionManager.getSession(haywardSessionId || req.sessionID);
+
+    // If not authenticated, automatically authenticate
+    if (!expressSessionAuthenticated || !session || !session.authenticated) {
+      console.log('🔐 Auto-authenticating for quick pool data request...');
+
+      // Create a new session
+      const sessionId = req.sessionID;
+      session = sessionManager.getSession(sessionId);
+
+      // Authenticate using hardcoded credentials
+      const authResult = await session.authenticate(credentials.username, credentials.password);
+
+      if (!authResult.success) {
+        return res.status(401).json({ error: `Authentication failed: ${authResult.message}` });
+      }
+
+      // Store the session
+      sessionManager.setSession(sessionId, session);
+
+      // Mark session as authenticated in Express session
+      req.session.authenticated = true;
+      req.session.haywardSessionId = sessionId;
+
+      console.log('✅ Auto-authentication successful');
+    }
+
+    // Fetch only essential data (dashboard and chlorinator for main metrics)
+    const essentialData = {
+      timestamp: new Date().toISOString(),
+      dashboard: null,
+      chlorinator: null,
+      weather: null
+    };
+
+    // Parallel requests for essential data only
+    const requests = [
+      // Dashboard data (water temp, air temp)
+      session.makeRequest(buildDashboardUrl()).then(response => ({
+        type: 'dashboard',
+        data: parseDashboardData(response.data)
+      })).catch(error => ({
+        type: 'dashboard',
+        error: error.message
+      })),
+
+      // Chlorinator data (salt level, cell voltage)
+      session.makeRequest(buildSystemUrl(POOL_CONSTANTS.ENDPOINTS.CHLORINATOR_SETTINGS)).then(response => ({
+        type: 'chlorinator',
+        data: parseChlorinatorData(response.data)
+      })).catch(error => ({
+        type: 'chlorinator',
+        error: error.message
+      })),
+
+      // Weather data
+      weatherService.getCurrentWeather().then(data => ({
+        type: 'weather',
+        data: data
+      })).catch(error => ({
+        type: 'weather',
+        error: error.message
+      }))
+    ];
+
+    // Execute essential requests in parallel
+    const results = await Promise.allSettled(requests);
+    
+    // Process results
+    results.forEach(result => {
+      if (result.status === 'fulfilled') {
+        const { type, data, error } = result.value;
+        if (error) {
+          console.error(`${type} fetch error:`, error);
+          essentialData[type] = { error };
+        } else {
+          essentialData[type] = data;
+        }
+      } else {
+        console.error('Request failed:', result.reason);
+      }
+    });
+
+    res.json({
+      success: true,
+      data: essentialData,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('Quick pool data fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch quick pool data' });
   }
 });
 
