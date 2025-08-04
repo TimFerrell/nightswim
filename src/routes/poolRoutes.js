@@ -269,15 +269,23 @@ router.get('/pump/state', async (req, res) => {
 // Get 24-hour rolling average for salt levels
 router.get('/salt/average', async (req, res) => {
   try {
-    const influxDBService = require('../services/influxDBService');
-    
-    // Get time series data for the last 24 hours
+    // Use the time series endpoint that we know works
     const endTime = new Date();
     const startTime = new Date(endTime.getTime() - (24 * 60 * 60 * 1000));
-    const dataPoints = await influxDBService.queryDataPoints(startTime, endTime);
+    
+    // Get data from the time series endpoint
+    const timeSeriesResponse = await fetch(`${req.protocol}://${req.get('host')}/api/pool/timeseries?hours=24`);
+    if (!timeSeriesResponse.ok) {
+      throw new Error('Failed to fetch time series data');
+    }
+    
+    const timeSeriesResult = await timeSeriesResponse.json();
+    if (!timeSeriesResult.success || !timeSeriesResult.data) {
+      throw new Error('Invalid time series response');
+    }
     
     // Filter for salt data and calculate average
-    const saltDataPoints = dataPoints.filter(dp => dp.saltInstant !== null && dp.saltInstant !== undefined);
+    const saltDataPoints = timeSeriesResult.data.filter(dp => dp.saltInstant !== null && dp.saltInstant !== undefined);
     
     let rollingAverage = null;
     if (saltDataPoints.length > 0) {
@@ -288,10 +296,21 @@ router.get('/salt/average', async (req, res) => {
     // Get current salt value
     const currentSalt = saltDataPoints.length > 0 ? saltDataPoints[saltDataPoints.length - 1].saltInstant : null;
     
+    // Calculate trend: current value vs value from 24 hours ago
+    let trend = null;
+    if (saltDataPoints.length > 0) {
+      // Get the oldest data point (closest to 24 hours ago)
+      const oldestSalt = saltDataPoints[0].saltInstant;
+      if (currentSalt !== null && oldestSalt !== null) {
+        trend = currentSalt - oldestSalt;
+      }
+    }
+    
     res.json({
       success: true,
       rollingAverage,
       currentSalt,
+      trend,
       dataPointsCount: saltDataPoints.length,
       timestamp: new Date().toISOString()
     });

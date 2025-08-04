@@ -952,19 +952,19 @@ const fetchSaltRollingAverage = async () => {
 
     const average24H = result.rollingAverage;
     const currentSalt = result.currentSalt;
+    const trend = result.trend;
     const element = document.getElementById('saltAverage24H');
     
     if (element) {
       if (average24H === null || average24H === undefined) {
         element.textContent = 'N/A';
       } else {
-        // Calculate trend if we have both current and average values
+        // Calculate trend indicator based on 24-hour change
         let trendText = '';
-        if (currentSalt !== null && currentSalt !== undefined && average24H !== null) {
-          const difference = currentSalt - average24H;
-          const trend = difference > 0 ? '↗' : difference < 0 ? '↘' : '→';
-          const absDifference = Math.abs(difference);
-          trendText = ` (${trend} ${absDifference} PPM)`;
+        if (trend !== null && trend !== undefined) {
+          const trendArrow = trend > 0 ? '↗' : trend < 0 ? '↘' : '→';
+          const absTrend = Math.abs(trend);
+          trendText = ` (${trendArrow} ${absTrend} PPM)`;
         }
         
         element.textContent = `${average24H} PPM${trendText}`;
