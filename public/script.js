@@ -699,11 +699,22 @@ const loadPoolData = async (retryCount = 0) => {
     const data = result.data;
     const loadTime = Date.now() - startTime;
     console.log(`✅ Pool data loaded in ${loadTime}ms from ${result.source}`);
+    
+    // Debug: Log the exact data structure
+    console.log('🔍 Raw data structure:', JSON.stringify(data, null, 2));
+    console.log('🔍 Salt instant value:', data.chlorinator?.salt?.instant, 'Type:', typeof data.chlorinator?.salt?.instant);
+    console.log('🔍 Water temp value:', data.dashboard?.temperature?.actual, 'Type:', typeof data.dashboard?.temperature?.actual);
+    console.log('🔍 Cell voltage value:', data.chlorinator?.cell?.voltage, 'Type:', typeof data.chlorinator?.cell?.voltage);
 
     // Check if we have valid data
     const hasValidData = data.chlorinator?.salt?.instant !== null || 
                         data.dashboard?.temperature?.actual !== null ||
                         data.chlorinator?.cell?.voltage !== null;
+
+    console.log('🔍 Has valid data check:', hasValidData);
+    console.log('🔍 Salt check:', data.chlorinator?.salt?.instant !== null);
+    console.log('🔍 Water temp check:', data.dashboard?.temperature?.actual !== null);
+    console.log('🔍 Cell voltage check:', data.chlorinator?.cell?.voltage !== null);
 
     if (!hasValidData && retryCount < 3) {
       console.log(`⚠️ No valid data received, retrying in 2 seconds... (attempt ${retryCount + 1}/3)`);
