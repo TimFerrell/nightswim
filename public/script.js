@@ -558,7 +558,7 @@ const formatPoolData = (data) => {
   }
   
   // Salt Level Card
-  if (data.chlorinator?.salt) {
+  if (data.chlorinator?.salt?.instant && data.chlorinator.salt.instant !== null && data.chlorinator.salt.instant !== '--') {
     // Calculate 24-hour moving average from time series data
     let average24H = '--';
     if (saltSparkline && saltSparkline.data.datasets[0].data.length > 0) {
@@ -572,7 +572,7 @@ const formatPoolData = (data) => {
     cards.push(`
       <div class="status-card">
         <h3>Salt Level</h3>
-        <div class="status-value">${data.chlorinator.salt.instant || '--'}</div>
+        <div class="status-value">${data.chlorinator.salt.instant}</div>
         <div class="status-unit">PPM</div>
         <div class="sparkline-container">
           <canvas id="saltSparkline" class="sparkline-canvas"></canvas>
@@ -660,10 +660,10 @@ const formatPoolData = (data) => {
 const updateStatusCards = (data) => {
   // Update salt level card
   const saltCard = document.querySelector('#saltSparkline')?.closest('.status-card');
-  if (saltCard && data.chlorinator?.salt) {
+  if (saltCard && data.chlorinator?.salt?.instant && data.chlorinator.salt.instant !== null && data.chlorinator.salt.instant !== '--') {
     const statusValue = saltCard.querySelector('.status-value');
     if (statusValue) {
-      statusValue.textContent = data.chlorinator.salt.instant || '--';
+      statusValue.textContent = data.chlorinator.salt.instant;
     }
     
     // Calculate and update 24-hour average

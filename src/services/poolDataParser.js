@@ -222,11 +222,39 @@ const parseChlorinatorData = (html) => {
         if (rawText) {
           // Extract numeric salt value from text like "salt level\n2897\nppm"
           const match = rawText.match(/(\d+)/);
-          return match ? parseInt(match[1]) : rawText;
+          return match ? parseInt(match[1]) : null;
         }
-        return $('[id*="boxchlppm"]').text().trim() || $('[id*="lbInstantSalt"]').text().trim() || $('[id*="chlppm"]').text().trim() || $('[id*="salt"]').text().trim() || $('[id*="InstantSalt"]').text().trim() || $('[id*="SaltLevel"]').text().trim() || null;
+        
+        // Try fallback selectors
+        const fallbackSelectors = [
+          '[id*="boxchlppm"]',
+          '[id*="lbInstantSalt"]',
+          '[id*="chlppm"]',
+          '[id*="salt"]',
+          '[id*="InstantSalt"]',
+          '[id*="SaltLevel"]'
+        ];
+        
+        for (const selector of fallbackSelectors) {
+          const text = $(selector).text().trim();
+          if (text) {
+            const match = text.match(/(\d+)/);
+            if (match) {
+              return parseInt(match[1]);
+            }
+          }
+        }
+        
+        return null;
       })(),
-      average: $('[id*="lbAverageSalt"]').text().trim() || $('[id*="AverageSalt"]').text().trim() || null,
+      average: (() => {
+        const avgText = $('[id*="lbAverageSalt"]').text().trim() || $('[id*="AverageSalt"]').text().trim();
+        if (avgText) {
+          const match = avgText.match(/(\d+)/);
+          return match ? parseInt(match[1]) : null;
+        }
+        return null;
+      })(),
       unit: POOL_CONSTANTS.UNITS.SALT
     },
     cell: {
