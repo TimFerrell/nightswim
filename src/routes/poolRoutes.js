@@ -252,4 +252,25 @@ router.get('/pump/state', async (req, res) => {
   }
 });
 
+// Get 24-hour rolling average for salt levels
+router.get('/salt/average', async (req, res) => {
+  try {
+    const influxDBService = require('../services/influxDBService');
+    const rollingAverage = await influxDBService.getSaltRollingAverage();
+    
+    res.json({
+      success: true,
+      rollingAverage,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Salt average fetch error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to fetch salt rolling average',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 module.exports = router;

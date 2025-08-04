@@ -162,6 +162,47 @@ class InfluxDBService {
   }
 
   /**
+   * Get 24-hour rolling average for salt levels
+   * @returns {Promise<number|null>} Rolling average or null if no data
+   */
+  async getSaltRollingAverage() {
+    if (!this.isConnected) {
+      console.warn('InfluxDB not connected, cannot calculate rolling average');
+      return null;
+    }
+
+    try {
+      const endTime = new Date();
+      const startTime = new Date(endTime.getTime() - (24 * 60 * 60 * 1000)); // 24 hours ago
+      
+      const fluxQuery = `
+        from(bucket: "${this.config.bucket}")
+          |> range(start: ${startTime.toISOString()}, stop: ${endTime.toISOString()})
+          |> filter(fn: (r) => r._measurement == "pool_metrics")
+          |> filter(fn: (r) => r._field == "salt_instant")
+          |> filter(fn: (r) => r._value != null)
+          |> mean()
+      `;
+
+      let rollingAverage = null;
+      
+      for await (const {values, tableMeta} of this.queryApi.iterateRows(fluxQuery)) {
+        const o = tableMeta.toObject(values);
+        if (o._value !== null && o._value !== undefined) {
+          rollingAverage = Math.round(o._value);
+          break; // Should only be one result from mean() function
+        }
+      }
+
+      console.log(`📊 Salt rolling average (24h): ${rollingAverage}`);
+      return rollingAverage;
+    } catch (error) {
+      console.error('Error calculating salt rolling average:', error);
+      return null;
+    }
+  }
+
+  /**
    * Store an annotation/event
    * @param {Annotation} annotation - The annotation to store
    * @returns {Promise<boolean>} Success status

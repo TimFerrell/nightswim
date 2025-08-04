@@ -559,16 +559,6 @@ const formatPoolData = (data) => {
   
   // Salt Level Card
   if (data.chlorinator?.salt?.instant && data.chlorinator.salt.instant !== null && data.chlorinator.salt.instant !== '--') {
-    // Calculate 24-hour moving average from time series data
-    let average24H = '--';
-    if (saltSparkline && saltSparkline.data.datasets[0].data.length > 0) {
-      const saltData = saltSparkline.data.datasets[0].data.filter(v => v !== null && v !== undefined);
-      if (saltData.length > 0) {
-        const sum = saltData.reduce((acc, val) => acc + val, 0);
-        average24H = Math.round(sum / saltData.length);
-      }
-    }
-    
     cards.push(`
       <div class="status-card">
         <h3>Salt Level</h3>
@@ -580,11 +570,14 @@ const formatPoolData = (data) => {
         <div class="status-details">
           <div class="status-detail">
             <span class="status-detail-label">Average 24H</span>
-            <span class="status-detail-value">${average24H} PPM</span>
+            <span class="status-detail-value" id="saltAverage24H">Loading...</span>
           </div>
         </div>
       </div>
     `);
+    
+    // Fetch the rolling average after card is created
+    fetchSaltRollingAverage();
   }
   
   // Cell Voltage Card
@@ -666,20 +659,8 @@ const updateStatusCards = (data) => {
       statusValue.textContent = data.chlorinator.salt.instant;
     }
     
-    // Calculate and update 24-hour average
-    let average24H = '--';
-    if (saltSparkline && saltSparkline.data.datasets[0].data.length > 0) {
-      const saltData = saltSparkline.data.datasets[0].data.filter(v => v !== null && v !== undefined);
-      if (saltData.length > 0) {
-        const sum = saltData.reduce((acc, val) => acc + val, 0);
-        average24H = Math.round(sum / saltData.length);
-      }
-    }
-    
-    const averageElement = saltCard.querySelector('.status-detail-value');
-    if (averageElement) {
-      averageElement.textContent = `${average24H} PPM`;
-    }
+    // Fetch updated rolling average
+    fetchSaltRollingAverage();
     
     // Add pulse animation
     saltCard.classList.add('pulse');
@@ -1013,6 +994,42 @@ const updateSparklines = async () => {
     
   } catch (error) {
     console.error('Spark line update error:', error);
+  }
+};
+
+/**
+ * Fetch the 24-hour rolling average for salt level
+ */
+const fetchSaltRollingAverage = async () => {
+  try {
+    const response = await fetch('/api/pool/salt/average', {
+      credentials: 'include'
+    });
+
+    if (!response.ok) {
+      console.error('Failed to fetch 24-hour salt rolling average');
+      const element = document.getElementById('saltAverage24H');
+      if (element) element.textContent = 'N/A';
+      return;
+    }
+
+    const result = await response.json();
+
+    if (!result.success) {
+      const element = document.getElementById('saltAverage24H');
+      if (element) element.textContent = 'N/A';
+      return;
+    }
+
+    const average24H = result.rollingAverage || 'N/A';
+    const element = document.getElementById('saltAverage24H');
+    if (element) {
+      element.textContent = average24H === 'N/A' ? 'N/A' : `${average24H} PPM`;
+    }
+  } catch (error) {
+    console.error('Error fetching salt rolling average:', error);
+    const element = document.getElementById('saltAverage24H');
+    if (element) element.textContent = 'N/A';
   }
 };
 
