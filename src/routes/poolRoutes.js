@@ -17,7 +17,7 @@ router.get('/data', async (req, res) => {
 
     // Get the most recent data point from InfluxDB
     const endTime = new Date();
-    const queryStartTime = new Date(endTime.getTime() - (1 * 60 * 60 * 1000)); // Last hour
+    const queryStartTime = new Date(endTime.getTime() - (24 * 60 * 60 * 1000)); // Last 24 hours instead of 1 hour
     
     console.log(`🔍 Querying InfluxDB for data from ${queryStartTime.toISOString()} to ${endTime.toISOString()}`);
     const influxQueryStart = Date.now();
@@ -32,13 +32,23 @@ router.get('/data', async (req, res) => {
       console.log(`❌ No data available after ${totalTime}ms`);
       return res.status(404).json({ 
         error: 'No data available',
-        message: 'Pool data not yet collected. Check cron job status.'
+        message: 'Pool data not yet collected. Check cron job status.',
+        performance: { totalTime }
       });
     }
 
     // Get the most recent data point
     const dataProcessingStart = Date.now();
     const latestData = dataPoints[dataPoints.length - 1];
+    
+    console.log(`📊 Latest data point:`, {
+      timestamp: latestData.timestamp,
+      saltInstant: latestData.saltInstant,
+      waterTemp: latestData.waterTemp,
+      cellVoltage: latestData.cellVoltage,
+      pumpStatus: latestData.pumpStatus,
+      weatherTemp: latestData.weatherTemp
+    });
     
     // Format the response to match expected structure
     const poolData = {
