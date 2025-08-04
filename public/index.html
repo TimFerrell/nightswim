@@ -470,36 +470,20 @@
         }
 
         /* Skeleton loading animation */
-        .skeleton {
-            opacity: 0.7;
-        }
-        
-        .skeleton-header {
-            height: 20px;
-            background: linear-gradient(90deg, var(--color-gray-200) 25%, var(--color-gray-300) 50%, var(--color-gray-200) 75%);
-            background-size: 200% 100%;
-            animation: skeleton-loading 1.5s infinite;
-            border-radius: var(--radius-sm);
-            margin-bottom: var(--spacing-3);
-        }
-        
         .skeleton-value {
-            height: 32px;
             background: linear-gradient(90deg, var(--color-gray-200) 25%, var(--color-gray-300) 50%, var(--color-gray-200) 75%);
             background-size: 200% 100%;
             animation: skeleton-loading 1.5s infinite;
             border-radius: var(--radius-sm);
-            margin-bottom: var(--spacing-2);
+            color: transparent !important;
         }
         
-        .skeleton-unit {
-            height: 16px;
-            width: 60%;
+        .skeleton-text {
             background: linear-gradient(90deg, var(--color-gray-200) 25%, var(--color-gray-300) 50%, var(--color-gray-200) 75%);
             background-size: 200% 100%;
             animation: skeleton-loading 1.5s infinite;
             border-radius: var(--radius-sm);
-            margin-bottom: var(--spacing-4);
+            color: transparent !important;
         }
         
         .skeleton-sparkline {
@@ -511,17 +495,17 @@
             margin-bottom: var(--spacing-3);
         }
         
-        .skeleton-details {
-            height: 16px;
-            background: linear-gradient(90deg, var(--color-gray-200) 25%, var(--color-gray-300) 50%, var(--color-gray-200) 75%);
-            background-size: 200% 100%;
-            animation: skeleton-loading 1.5s infinite;
-            border-radius: var(--radius-sm);
-        }
-        
         @keyframes skeleton-loading {
             0% { background-position: 200% 0; }
             100% { background-position: -200% 0; }
+        }
+        
+        /* Remove skeleton animation when data is loaded */
+        .status-card.loaded .skeleton-value,
+        .status-card.loaded .skeleton-text {
+            background: none;
+            animation: none;
+            color: inherit !important;
         }
         
         .skeleton.hidden {
@@ -579,37 +563,70 @@
 
             <!-- Current Status -->
             <div class="status-grid" id="statusGrid">
-                <!-- Loading skeleton cards -->
-                <div class="status-card skeleton" id="skeletonCards">
-                  <div class="skeleton-header"></div>
-                  <div class="skeleton-value"></div>
-                  <div class="skeleton-unit"></div>
-                  <div class="skeleton-sparkline"></div>
-                  <div class="skeleton-details"></div>
-                </div>
-                <div class="status-card skeleton">
-                  <div class="skeleton-header"></div>
-                  <div class="skeleton-value"></div>
-                  <div class="skeleton-unit"></div>
-                  <div class="skeleton-sparkline"></div>
-                  <div class="skeleton-details"></div>
-                </div>
-                <div class="status-card skeleton">
-                  <div class="skeleton-header"></div>
-                  <div class="skeleton-value"></div>
-                  <div class="skeleton-unit"></div>
-                  <div class="skeleton-sparkline"></div>
-                  <div class="skeleton-details"></div>
-                </div>
-                <div class="status-card skeleton">
-                  <div class="skeleton-header"></div>
-                  <div class="skeleton-value"></div>
-                  <div class="skeleton-unit"></div>
-                  <div class="skeleton-sparkline"></div>
-                  <div class="skeleton-details"></div>
-                </div>
-                <!-- Status cards will be populated by JavaScript -->
-            </div>
+                  <!-- Salt Level Card -->
+                  <div class="status-card" id="saltCard">
+                    <h3>Salt Level</h3>
+                    <div class="status-value skeleton-value" id="saltValue">--</div>
+                    <div class="status-unit">PPM</div>
+                    <div class="sparkline-container">
+                      <canvas id="saltSparkline" class="sparkline-canvas"></canvas>
+                    </div>
+                    <div class="status-details">
+                      <div class="status-detail">
+                        <span class="status-detail-label">Average 24H</span>
+                        <span class="status-detail-value skeleton-text" id="saltAverage24H">--</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Water Temperature Card -->
+                  <div class="status-card" id="waterTempCard">
+                    <h3>Water Temperature</h3>
+                    <div class="status-value skeleton-value" id="waterTempValue">--</div>
+                    <div class="status-unit">°F</div>
+                    <div class="sparkline-container">
+                      <canvas id="waterTempSparkline" class="sparkline-canvas"></canvas>
+                    </div>
+                    <div class="status-details">
+                      <div class="status-detail">
+                        <span class="status-detail-label">Current</span>
+                        <span class="status-detail-value skeleton-text">--</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Cell Voltage Card -->
+                  <div class="status-card" id="cellVoltageCard">
+                    <h3>Cell Voltage</h3>
+                    <div class="status-value skeleton-value" id="cellVoltageValue">--</div>
+                    <div class="status-unit">V</div>
+                    <div class="sparkline-container">
+                      <canvas id="cellVoltageSparkline" class="sparkline-canvas"></canvas>
+                    </div>
+                    <div class="status-details">
+                      <div class="status-detail">
+                        <span class="status-detail-label">Status</span>
+                        <span class="status-detail-value skeleton-text">--</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Weather Temperature Card -->
+                  <div class="status-card" id="weatherCard">
+                    <h3>Weather</h3>
+                    <div class="status-value skeleton-value" id="weatherTempValue">--</div>
+                    <div class="status-unit">°F</div>
+                    <div class="sparkline-container">
+                      <canvas id="weatherSparkline" class="sparkline-canvas"></canvas>
+                    </div>
+                    <div class="status-details">
+                      <div class="status-detail">
+                        <span class="status-detail-label">Zip Code</span>
+                        <span class="status-detail-value">32708</span>
+                      </div>
+                    </div>
+                  </div>
+              </div>
 
             <!-- Charts Section -->
             <div class="charts-section">
