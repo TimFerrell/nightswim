@@ -613,6 +613,26 @@ const formatPoolData = (data) => {
     `);
   }
   
+  // Weather Temperature Card
+  if (data.weather && data.weather.temperature !== null && data.weather.temperature !== undefined) {
+    cards.push(`
+      <div class="status-card">
+        <h3>Weather</h3>
+        <div class="status-value">${Math.round(data.weather.temperature)}</div>
+        <div class="status-unit">°F</div>
+        <div class="sparkline-container">
+          <canvas id="weatherSparkline" class="sparkline-canvas"></canvas>
+        </div>
+        <div class="status-details">
+          <div class="status-detail">
+            <span class="status-detail-label">Zip Code</span>
+            <span class="status-detail-value">32708</span>
+          </div>
+        </div>
+      </div>
+    `);
+  }
+  
   // Update the status grid
   statusGrid.innerHTML = cards.join('');
   
@@ -731,6 +751,30 @@ const updateStatusCards = (data) => {
     setTimeout(() => heaterCard.classList.remove('pulse'), 600);
   }
   
+  // Update weather spark line
+  const weatherSparklineCanvas = document.getElementById('weatherSparkline');
+  if (weatherSparklineCanvas && data.weather) {
+    const weatherData = data.weather.temperature !== null && data.weather.temperature !== undefined ? [data.weather.temperature] : [];
+    weatherSparkline.data.labels = Array(weatherData.length).fill('');
+    weatherSparkline.data.datasets[0].data = weatherData;
+    weatherSparkline.update('none');
+  }
+  
+  // Update weather temperature card
+  if (data.weather && data.weather.temperature !== null && data.weather.temperature !== undefined) {
+    const weatherCard = document.querySelector('#weatherSparkline')?.closest('.status-card');
+    if (weatherCard) {
+      const statusValue = weatherCard.querySelector('.status-value');
+      if (statusValue) {
+        statusValue.textContent = Math.round(data.weather.temperature);
+      }
+      
+      // Add pulse animation
+      weatherCard.classList.add('pulse');
+      setTimeout(() => weatherCard.classList.remove('pulse'), 600);
+    }
+  }
+  
   // Update timestamp
   const timestamp = document.getElementById('timestamp');
   if (timestamp) {
@@ -784,14 +828,6 @@ const loadPoolData = async () => {
     } else {
       // Update existing cards without recreating them (refresh)
       updateStatusCards(data);
-    }
-
-    // Update weather temperature
-    if (data.weather && data.weather.temperature !== null && data.weather.temperature !== undefined) {
-      const weatherElement = document.getElementById('weatherTemp');
-      if (weatherElement) {
-        weatherElement.textContent = Math.round(data.weather.temperature);
-      }
     }
 
     // Update spark lines with 24-hour data
