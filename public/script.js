@@ -7,6 +7,22 @@ let chartRefreshInterval = null;
 let statsRefreshInterval = null;
 
 /**
+ * Get human-readable comfort level for water temperature
+ * @param {number} temperature - Water temperature in Fahrenheit
+ * @returns {string} Comfort level description
+ */
+const getWaterComfortLevel = (temperature) => {
+  if (temperature >= 95) return 'Too Hot';
+  if (temperature >= 88) return 'Hot';
+  if (temperature >= 82) return 'Warm';
+  if (temperature >= 78) return 'Perfect';
+  if (temperature >= 72) return 'Cool';
+  if (temperature >= 68) return 'Chilly';
+  if (temperature >= 60) return 'Cold';
+  return 'Too Cold';
+};
+
+/**
  * Get chart configuration based on type
  */
 const getChartConfig = (type) => {
@@ -517,9 +533,19 @@ const updateStatusCards = (data) => {
   // Update water temperature card
   if (data.dashboard?.temperature?.actual && data.dashboard.temperature.actual !== null && data.dashboard.temperature.actual !== '--') {
     const waterTempValue = document.getElementById('waterTempValue');
+    const waterTempComfort = document.getElementById('waterTempComfort');
+    
     if (waterTempValue) {
       waterTempValue.textContent = Math.round(data.dashboard.temperature.actual);
       waterTempValue.classList.remove('skeleton-value');
+    }
+    
+    if (waterTempComfort) {
+      const temp = parseFloat(data.dashboard.temperature.actual);
+      if (!isNaN(temp)) {
+        waterTempComfort.textContent = getWaterComfortLevel(temp);
+        waterTempComfort.classList.remove('skeleton-text');
+      }
     }
     
     // Add pulse animation and mark as loaded
@@ -533,9 +559,19 @@ const updateStatusCards = (data) => {
   // Update cell voltage card
   if (data.chlorinator?.cell?.voltage && data.chlorinator.cell.voltage !== null && data.chlorinator.cell.voltage !== '--') {
     const cellVoltageValue = document.getElementById('cellVoltageValue');
+    const cellVoltageStatus = document.getElementById('cellVoltageStatus');
+    
     if (cellVoltageValue) {
       cellVoltageValue.textContent = data.chlorinator.cell.voltage;
       cellVoltageValue.classList.remove('skeleton-value');
+    }
+    
+    if (cellVoltageStatus) {
+      const voltage = parseFloat(data.chlorinator.cell.voltage);
+      if (!isNaN(voltage)) {
+        cellVoltageStatus.textContent = voltage > 5 ? 'Operating' : 'Inactive';
+        cellVoltageStatus.classList.remove('skeleton-text');
+      }
     }
     
     // Add pulse animation and mark as loaded
