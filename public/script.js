@@ -514,12 +514,17 @@ const stopStatsAutoRefresh = () => {
  * Update status cards with real data and pulse animation
  */
 const updateStatusCards = (data) => {
+  console.log('🔄 Updating status cards with data:', data);
+  
   // Update salt level card
+  console.log('🧂 Salt data:', data.chlorinator?.salt);
   if (data.chlorinator?.salt?.instant && data.chlorinator.salt.instant !== null && data.chlorinator.salt.instant !== '--') {
     const saltValue = document.getElementById('saltValue');
+    console.log('🧂 Found salt element:', saltValue);
     if (saltValue) {
       saltValue.textContent = data.chlorinator.salt.instant;
       saltValue.classList.remove('skeleton-value');
+      console.log('🧂 Updated salt value to:', data.chlorinator.salt.instant);
     }
     
     // Fetch updated rolling average
@@ -531,16 +536,21 @@ const updateStatusCards = (data) => {
       saltCard.classList.add('pulse', 'loaded');
       setTimeout(() => saltCard.classList.remove('pulse'), 600);
     }
+  } else {
+    console.warn('🧂 Salt data is missing or invalid:', data.chlorinator?.salt?.instant);
   }
 
   // Update water temperature card
+  console.log('🌊 Water temp data:', data.dashboard?.temperature);
   if (data.dashboard?.temperature?.actual && data.dashboard.temperature.actual !== null && data.dashboard.temperature.actual !== '--') {
     const waterTempValue = document.getElementById('waterTempValue');
     const waterTempComfort = document.getElementById('waterTempComfort');
     
+    console.log('🌊 Found water temp element:', waterTempValue);
     if (waterTempValue) {
       waterTempValue.textContent = Math.round(data.dashboard.temperature.actual);
       waterTempValue.classList.remove('skeleton-value');
+      console.log('🌊 Updated water temp value to:', Math.round(data.dashboard.temperature.actual));
     }
     
     if (waterTempComfort) {
@@ -548,6 +558,7 @@ const updateStatusCards = (data) => {
       if (!isNaN(temp)) {
         waterTempComfort.textContent = getWaterComfortLevel(temp);
         waterTempComfort.classList.remove('skeleton-text');
+        console.log('🌊 Updated comfort level to:', getWaterComfortLevel(temp));
       }
     }
     
@@ -557,6 +568,8 @@ const updateStatusCards = (data) => {
       waterTempCard.classList.add('pulse', 'loaded');
       setTimeout(() => waterTempCard.classList.remove('pulse'), 600);
     }
+  } else {
+    console.warn('🌊 Water temp data is missing or invalid:', data.dashboard?.temperature?.actual);
   }
 
   // Update cell voltage card
