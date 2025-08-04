@@ -1,16 +1,10 @@
-const {
-  parseDashboardData,
-  parseFilterData,
-  parseHeaterData,
-  parseChlorinatorData,
-  parseLightsData,
-  parseSchedulesData,
-  createPoolDataStructure
-} = require('./poolDataParser');
-const { POOL_CONSTANTS, buildSystemUrl, buildDashboardUrl } = require('../utils/constants');
-const timeSeriesService = require('./timeSeriesService');
+const { POOL_CONSTANTS } = require('../utils/constants');
+const { buildDashboardUrl, buildSystemUrl } = require('../utils/constants');
+const { parseDashboardData, parseFilterData, parseHeaterData, parseChlorinatorData, parseLightsData, parseSchedulesData, createPoolDataStructure } = require('./poolDataParser');
 const influxDBService = require('./influxDBService');
+const timeSeriesService = require('./timeSeriesService');
 const pumpStateTracker = require('./pumpStateTracker');
+const weatherService = require('./weatherService');
 
 /**
  * @typedef {object} PoolData
@@ -87,6 +81,15 @@ const poolDataService = {
       poolData.schedules = { error: error.message };
     }
 
+    // Fetch Weather data
+    try {
+      const weatherData = await weatherService.getCurrentWeather();
+      poolData.weather = weatherData;
+    } catch (error) {
+      console.error('Weather fetch error:', error.message);
+      poolData.weather = { error: error.message };
+    }
+
     // Store time series data for charts
     const timeSeriesPoint = {
       timestamp: poolData.timestamp,
@@ -95,7 +98,9 @@ const poolDataService = {
       cellVoltage: poolData.chlorinator?.cell?.voltage || null,
       waterTemp: poolData.dashboard?.temperature?.actual || null,
       airTemp: poolData.dashboard?.airTemperature || null,
-      pumpStatus: poolData.filter?.status || null
+      pumpStatus: poolData.filter?.status || null,
+      weatherTemp: poolData.weather?.temperature || null,
+      weatherHumidity: poolData.weather?.humidity || null
     };
 
     // Store in InfluxDB for persistent storage (primary storage)

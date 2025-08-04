@@ -91,28 +91,21 @@ class InfluxDBService {
   }
 
   /**
-   * Store a time series data point
-   * @param {TimeSeriesPoint} dataPoint - The data point to store
+   * Store a data point in InfluxDB
+   * @param {object} dataPoint - Data point to store
    * @returns {Promise<boolean>} Success status
    */
   async storeDataPoint(dataPoint) {
-    console.log('📊 Attempting to store data point...');
-    console.log('   Data:', {
-      timestamp: dataPoint.timestamp,
-      saltInstant: dataPoint.saltInstant,
-      cellTemp: dataPoint.cellTemp,
-      cellVoltage: dataPoint.cellVoltage,
-      waterTemp: dataPoint.waterTemp
-    });
-    
     if (!this.isConnected) {
       console.warn('❌ InfluxDB not connected, skipping data point storage');
-      console.warn('   Connection status:', this.isConnected);
+      console.log('   Connection status:', this.isConnected);
       return false;
     }
 
     try {
-      console.log('🏷️ Creating data point...');
+      console.log('📊 Attempting to store data point...');
+      console.log('   Data:', JSON.stringify(dataPoint, null, 2));
+
       const point = new Point('pool_metrics')
         .timestamp(new Date(dataPoint.timestamp))
         .tag('source', 'hayward_omnilogic');
@@ -121,42 +114,32 @@ class InfluxDBService {
       if (dataPoint.saltInstant !== null && dataPoint.saltInstant !== undefined) {
         point.floatField('salt_instant', dataPoint.saltInstant);
       }
-      
       if (dataPoint.cellTemp !== null && dataPoint.cellTemp !== undefined) {
         point.floatField('cell_temp', dataPoint.cellTemp);
       }
-      
       if (dataPoint.cellVoltage !== null && dataPoint.cellVoltage !== undefined) {
         point.floatField('cell_voltage', dataPoint.cellVoltage);
       }
-      
       if (dataPoint.waterTemp !== null && dataPoint.waterTemp !== undefined) {
         point.floatField('water_temp', dataPoint.waterTemp);
       }
-      
       if (dataPoint.airTemp !== null && dataPoint.airTemp !== undefined) {
         point.floatField('air_temp', dataPoint.airTemp);
       }
-      
+      if (dataPoint.weatherTemp !== null && dataPoint.weatherTemp !== undefined) {
+        point.floatField('weather_temp', dataPoint.weatherTemp);
+      }
       if (dataPoint.pumpStatus !== null && dataPoint.pumpStatus !== undefined) {
         point.booleanField('pump_status', dataPoint.pumpStatus);
       }
 
-      console.log('📝 Writing point to InfluxDB...');
       await this.writeApi.writePoint(point);
-      console.log('🔄 Flushing write buffer...');
       await this.writeApi.flush();
       
       console.log('✅ Data point stored successfully');
       return true;
     } catch (error) {
       console.error('❌ Failed to store data point:', error);
-      console.error('   Error details:', {
-        message: error.message,
-        stack: error.stack,
-        connectionStatus: this.isConnected,
-        writeApiExists: !!this.writeApi
-      });
       return false;
     }
   }
@@ -235,14 +218,14 @@ class InfluxDBService {
   }
 
   /**
-   * Query time series data for a specific time range
-   * @param {Date} startTime - Start time
-   * @param {Date} endTime - End time
-   * @returns {Promise<TimeSeriesPoint[]>} Array of data points
+   * Query data points from InfluxDB
+   * @param {Date} startTime - Start time for query
+   * @param {Date} endTime - End time for query
+   * @returns {Promise<Array>} Array of data points
    */
   async queryDataPoints(startTime, endTime) {
     if (!this.isConnected) {
-      console.warn('InfluxDB not connected, returning empty dataset');
+      console.warn('InfluxDB not connected, cannot query data points');
       return [];
     }
 
@@ -252,26 +235,28 @@ class InfluxDBService {
           |> range(start: ${startTime.toISOString()}, stop: ${endTime.toISOString()})
           |> filter(fn: (r) => r._measurement == "pool_metrics")
           |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
-          |> sort(columns: ["_time"])
       `;
 
-      const results = [];
+      const dataPoints = [];
       
       for await (const {values, tableMeta} of this.queryApi.iterateRows(fluxQuery)) {
         const o = tableMeta.toObject(values);
-        results.push({
+        dataPoints.push({
           timestamp: o._time,
           saltInstant: o.salt_instant || null,
           cellTemp: o.cell_temp || null,
           cellVoltage: o.cell_voltage || null,
           waterTemp: o.water_temp || null,
-          airTemp: o.air_temp || null
+          airTemp: o.air_temp || null,
+          weatherTemp: o.weather_temp || null,
+          pumpStatus: o.pump_status || null
         });
       }
 
-      return results;
+      console.log(`📊 Queried ${dataPoints.length} data points from InfluxDB`);
+      return dataPoints;
     } catch (error) {
-      console.error('Failed to query data points:', error);
+      console.error('Error querying data points:', error);
       return [];
     }
   }

@@ -1,12 +1,6 @@
-// Chart instances
-let tempChart = null;
-let electricalChart = null;
-let chemistryChart = null;
-
-// Spark line chart instances
-let saltSparkline = null;
-let waterTempSparkline = null;
-let cellVoltageSparkline = null;
+// Global chart variables
+let tempChart, electricalChart, chemistryChart;
+let saltSparkline, waterTempSparkline, cellVoltageSparkline, weatherSparkline;
 
 // Auto-refresh intervals
 let chartRefreshInterval = null;
@@ -467,30 +461,10 @@ const stopChartAutoRefresh = () => {
 /**
  * Clean up chart instances
  */
-const cleanupChart = () => {
-  if (tempChart) {
-    tempChart.destroy();
-    tempChart = null;
-  }
-  if (electricalChart) {
-    electricalChart.destroy();
-    electricalChart = null;
-  }
-  if (chemistryChart) {
-    chemistryChart.destroy();
-    chemistryChart = null;
-  }
-  if (saltSparkline) {
-    saltSparkline.destroy();
-    saltSparkline = null;
-  }
-  if (waterTempSparkline) {
-    waterTempSparkline.destroy();
-    waterTempSparkline = null;
-  }
-  if (cellVoltageSparkline) {
-    cellVoltageSparkline.destroy();
-    cellVoltageSparkline = null;
+const cleanupChart = (chart) => {
+  if (chart) {
+    chart.destroy();
+    chart = null;
   }
 };
 
@@ -768,24 +742,25 @@ const updateStatusCards = (data) => {
 };
 
 /**
- * Load pool data and initialize dashboard
+ * Load and display pool data
  */
 const loadPoolData = async () => {
   try {
     const response = await fetch('/api/pool/data', {
       credentials: 'include'
     });
-    
+
     if (!response.ok) {
-      throw new Error('Failed to fetch pool data');
+      throw new Error('Failed to load pool data');
     }
-    
+
     const result = await response.json();
-    
     if (!result.success) {
-      throw new Error(result.error || 'Failed to load pool data');
+      throw new Error('Invalid response format');
     }
-    
+
+    const data = result.data;
+
     // Initialize charts if not already done
     if (!tempChart) {
       initializeTempChart();
@@ -793,7 +768,7 @@ const loadPoolData = async () => {
       initializeChemistryChart();
       
       // Format and display the data (initial load)
-      formatPoolData(result.data);
+      formatPoolData(data);
       
       // Initialize spark lines after cards are created
       setTimeout(() => {
@@ -802,31 +777,30 @@ const loadPoolData = async () => {
       }, 100);
       
       updateAllCharts();
+      
+      // Start auto-refresh
+      startChartAutoRefresh();
+      startStatsAutoRefresh();
     } else {
       // Update existing cards without recreating them (refresh)
-      updateStatusCards(result.data);
+      updateStatusCards(data);
     }
-    
-    // Create time series data point
-    const timeSeriesPoint = {
-      timestamp: new Date().toISOString(),
-      saltInstant: result.data.chlorinator?.salt?.instant || null,
-      cellTemp: result.data.chlorinator?.cell?.temperature?.value || null,
-      cellVoltage: result.data.chlorinator?.cell?.voltage || null,
-      waterTemp: result.data.dashboard?.temperature?.actual || null,
-      airTemp: result.data.dashboard?.airTemperature || null
-    };
-    
-    // Append to charts
-    appendDataPoint(timeSeriesPoint);
-    
-    // Start auto-refresh
-    startChartAutoRefresh();
-    startStatsAutoRefresh();
-    
+
+    // Update weather temperature
+    if (data.weather && data.weather.temperature !== null && data.weather.temperature !== undefined) {
+      const weatherElement = document.getElementById('weatherTemp');
+      if (weatherElement) {
+        weatherElement.textContent = Math.round(data.weather.temperature);
+      }
+    }
+
+    // Update spark lines with 24-hour data
+    setTimeout(() => {
+      updateSparklines();
+    }, 100);
+
   } catch (error) {
     console.error('Error loading pool data:', error);
-    document.getElementById('timestamp').textContent = `Error: ${error.message}`;
   }
 };
 
@@ -835,32 +809,32 @@ const loadPoolData = async () => {
  */
 const initializeSparklines = () => {
   try {
+    // Clean up existing spark lines
+    cleanupChart(saltSparkline);
+    cleanupChart(waterTempSparkline);
+    cleanupChart(cellVoltageSparkline);
+    cleanupChart(weatherSparkline);
+
     // Initialize salt spark line
     const saltCanvas = document.getElementById('saltSparkline');
-    if (saltCanvas && !saltSparkline) {
-      const ctx = saltCanvas.getContext('2d');
-      saltSparkline = new Chart(ctx, {
+    if (saltCanvas) {
+      saltSparkline = new Chart(saltCanvas, {
         type: 'line',
         data: {
           labels: [],
           datasets: [{
             data: [],
-            borderColor: '#8b9bb4',
-            backgroundColor: 'rgba(139, 155, 180, 0.1)',
-            borderWidth: 1.5,
-            tension: 0.4,
+            borderColor: getComputedStyle(document.documentElement).getPropertyValue('--color-primary'),
+            borderWidth: 2,
             fill: false,
-            pointRadius: 0,
-            pointHoverRadius: 0
+            tension: 0.4,
+            pointRadius: 0
           }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false },
-            tooltip: { enabled: false }
-          },
+          plugins: { legend: { display: false } },
           scales: {
             x: { display: false },
             y: { display: false }
@@ -873,30 +847,24 @@ const initializeSparklines = () => {
 
     // Initialize water temperature spark line
     const waterTempCanvas = document.getElementById('waterTempSparkline');
-    if (waterTempCanvas && !waterTempSparkline) {
-      const ctx = waterTempCanvas.getContext('2d');
-      waterTempSparkline = new Chart(ctx, {
+    if (waterTempCanvas) {
+      waterTempSparkline = new Chart(waterTempCanvas, {
         type: 'line',
         data: {
           labels: [],
           datasets: [{
             data: [],
-            borderColor: '#8b9bb4',
-            backgroundColor: 'rgba(139, 155, 180, 0.1)',
-            borderWidth: 1.5,
-            tension: 0.4,
+            borderColor: getComputedStyle(document.documentElement).getPropertyValue('--color-primary'),
+            borderWidth: 2,
             fill: false,
-            pointRadius: 0,
-            pointHoverRadius: 0
+            tension: 0.4,
+            pointRadius: 0
           }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false },
-            tooltip: { enabled: false }
-          },
+          plugins: { legend: { display: false } },
           scales: {
             x: { display: false },
             y: { display: false }
@@ -909,30 +877,54 @@ const initializeSparklines = () => {
 
     // Initialize cell voltage spark line
     const cellVoltageCanvas = document.getElementById('cellVoltageSparkline');
-    if (cellVoltageCanvas && !cellVoltageSparkline) {
-      const ctx = cellVoltageCanvas.getContext('2d');
-      cellVoltageSparkline = new Chart(ctx, {
+    if (cellVoltageCanvas) {
+      cellVoltageSparkline = new Chart(cellVoltageCanvas, {
         type: 'line',
         data: {
           labels: [],
           datasets: [{
             data: [],
-            borderColor: '#8b9bb4',
-            backgroundColor: 'rgba(139, 155, 180, 0.1)',
-            borderWidth: 1.5,
-            tension: 0.4,
+            borderColor: getComputedStyle(document.documentElement).getPropertyValue('--color-primary'),
+            borderWidth: 2,
             fill: false,
-            pointRadius: 0,
-            pointHoverRadius: 0
+            tension: 0.4,
+            pointRadius: 0
           }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false },
-            tooltip: { enabled: false }
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { display: false },
+            y: { display: false }
           },
+          interaction: { intersect: false },
+          elements: { point: { radius: 0 } }
+        }
+      });
+    }
+
+    // Initialize weather spark line
+    const weatherCanvas = document.getElementById('weatherSparkline');
+    if (weatherCanvas) {
+      weatherSparkline = new Chart(weatherCanvas, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [{
+            data: [],
+            borderColor: getComputedStyle(document.documentElement).getPropertyValue('--color-primary'),
+            borderWidth: 2,
+            fill: false,
+            tension: 0.4,
+            pointRadius: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
           scales: {
             x: { display: false },
             y: { display: false }
@@ -948,52 +940,59 @@ const initializeSparklines = () => {
 };
 
 /**
- * Update spark lines with new data
+ * Update spark line charts with 24-hour data
  */
 const updateSparklines = async () => {
   try {
     const response = await fetch('/api/pool/timeseries?hours=24', {
       credentials: 'include'
     });
-    
-    if (!response.ok) return;
-    
+
+    if (!response.ok) {
+      console.error('Failed to fetch time series data for spark lines');
+      return;
+    }
+
     const result = await response.json();
-    
-    if (!result.success || !result.data || result.data.length === 0) return;
-    
+    if (!result.success || !result.data || result.data.length === 0) {
+      return;
+    }
+
+    const data = result.data;
+
     // Update salt spark line
     if (saltSparkline) {
-      const saltData = result.data.map(point => point.saltInstant).filter(v => v !== null && v !== undefined);
-      if (saltData.length > 0) {
-        saltSparkline.data.labels = Array(saltData.length).fill('');
-        saltSparkline.data.datasets[0].data = saltData;
-        saltSparkline.update('none');
-      }
+      const saltData = data.map(point => point.saltInstant).filter(v => v !== null && v !== undefined);
+      saltSparkline.data.labels = Array(saltData.length).fill('');
+      saltSparkline.data.datasets[0].data = saltData;
+      saltSparkline.update('none');
     }
-    
+
     // Update water temperature spark line
     if (waterTempSparkline) {
-      const waterTempData = result.data.map(point => point.waterTemp).filter(v => v !== null && v !== undefined);
-      if (waterTempData.length > 0) {
-        waterTempSparkline.data.labels = Array(waterTempData.length).fill('');
-        waterTempSparkline.data.datasets[0].data = waterTempData;
-        waterTempSparkline.update('none');
-      }
+      const waterTempData = data.map(point => point.waterTemp).filter(v => v !== null && v !== undefined);
+      waterTempSparkline.data.labels = Array(waterTempData.length).fill('');
+      waterTempSparkline.data.datasets[0].data = waterTempData;
+      waterTempSparkline.update('none');
     }
-    
+
     // Update cell voltage spark line
     if (cellVoltageSparkline) {
-      const cellVoltageData = result.data.map(point => point.cellVoltage).filter(v => v !== null && v !== undefined);
-      if (cellVoltageData.length > 0) {
-        cellVoltageSparkline.data.labels = Array(cellVoltageData.length).fill('');
-        cellVoltageSparkline.data.datasets[0].data = cellVoltageData;
-        cellVoltageSparkline.update('none');
-      }
+      const cellVoltageData = data.map(point => point.cellVoltage).filter(v => v !== null && v !== undefined);
+      cellVoltageSparkline.data.labels = Array(cellVoltageData.length).fill('');
+      cellVoltageSparkline.data.datasets[0].data = cellVoltageData;
+      cellVoltageSparkline.update('none');
     }
-    
+
+    // Update weather spark line
+    if (weatherSparkline) {
+      const weatherData = data.map(point => point.weatherTemp).filter(v => v !== null && v !== undefined);
+      weatherSparkline.data.labels = Array(weatherData.length).fill('');
+      weatherSparkline.data.datasets[0].data = weatherData;
+      weatherSparkline.update('none');
+    }
   } catch (error) {
-    console.error('Spark line update error:', error);
+    console.error('Error updating spark lines:', error);
   }
 };
 

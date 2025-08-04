@@ -1,11 +1,13 @@
 /**
  * @typedef {object} TimeSeriesPoint
  * @property {string} timestamp - ISO timestamp
- * @property {number|null} saltInstant - Chlorinator salt instant value
+ * @property {number|null} saltInstant - Salt level value
  * @property {number|null} cellTemp - Cell temperature value
  * @property {number|null} cellVoltage - Cell voltage value
  * @property {number|null} waterTemp - Water temperature value
  * @property {number|null} airTemp - Air temperature value
+ * @property {number|null} weatherTemp - Weather temperature value
+ * @property {boolean|null} pumpStatus - Pump status
  */
 
 /**
