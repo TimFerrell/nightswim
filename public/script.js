@@ -12,6 +12,32 @@ let chartRefreshInterval = null;
 let statsRefreshInterval = null;
 
 /**
+ * Update salt sparkline annotation colors based on current value
+ * @param {number} currentSalt - Current salt value
+ */
+const updateSaltAnnotations = (currentSalt) => {
+  if (!saltSparkline) return;
+  
+  const annotations = saltSparkline.options.plugins.annotation.annotations;
+  
+  // Reset all annotations to low saturation
+  annotations.tooLowRegion.backgroundColor = 'rgba(255, 255, 0, 0.05)';
+  annotations.safeRegion.backgroundColor = 'rgba(0, 255, 0, 0.05)';
+  annotations.tooHighRegion.backgroundColor = 'rgba(255, 0, 0, 0.05)';
+  
+  // Increase saturation for the region containing current value
+  if (currentSalt >= 2000 && currentSalt < 2700) {
+    annotations.tooLowRegion.backgroundColor = 'rgba(255, 255, 0, 0.15)';
+  } else if (currentSalt >= 2700 && currentSalt < 3400) {
+    annotations.safeRegion.backgroundColor = 'rgba(0, 255, 0, 0.15)';
+  } else if (currentSalt >= 3400 && currentSalt <= 4000) {
+    annotations.tooHighRegion.backgroundColor = 'rgba(255, 0, 0, 0.15)';
+  }
+  
+  saltSparkline.update('none');
+};
+
+/**
  * Get human-readable comfort level for water temperature
  * @param {number} temperature - Water temperature in Fahrenheit
  * @returns {string} Comfort level description
@@ -527,6 +553,9 @@ const updateStatusCards = (data) => {
       saltValue.textContent = data.chlorinator.salt.instant;
       saltValue.classList.remove('skeleton-value');
       console.log('🧂 Updated salt value to:', data.chlorinator.salt.instant);
+      
+      // Update annotation colors based on current salt value
+      updateSaltAnnotations(data.chlorinator.salt.instant);
     }
     
     // Fetch updated rolling average
@@ -753,9 +782,9 @@ const initializeSparklines = () => {
                   type: 'box',
                   yMin: 2000,
                   yMax: 2700,
-                  backgroundColor: 'rgba(255, 255, 0, 0.1)',
-                  borderColor: 'rgba(255, 255, 0, 0.3)',
-                  borderWidth: 1,
+                  backgroundColor: 'rgba(255, 255, 0, 0.05)',
+                  borderColor: 'transparent',
+                  borderWidth: 0,
                   drawTime: 'beforeDatasetsDraw'
                 },
                 // Safe operating region (green)
@@ -763,9 +792,9 @@ const initializeSparklines = () => {
                   type: 'box',
                   yMin: 2700,
                   yMax: 3400,
-                  backgroundColor: 'rgba(0, 255, 0, 0.1)',
-                  borderColor: 'rgba(0, 255, 0, 0.3)',
-                  borderWidth: 1,
+                  backgroundColor: 'rgba(0, 255, 0, 0.05)',
+                  borderColor: 'transparent',
+                  borderWidth: 0,
                   drawTime: 'beforeDatasetsDraw'
                 },
                 // Too high salt region (red)
@@ -773,9 +802,9 @@ const initializeSparklines = () => {
                   type: 'box',
                   yMin: 3400,
                   yMax: 4000,
-                  backgroundColor: 'rgba(255, 0, 0, 0.1)',
-                  borderColor: 'rgba(255, 0, 0, 0.3)',
-                  borderWidth: 1,
+                  backgroundColor: 'rgba(255, 0, 0, 0.05)',
+                  borderColor: 'transparent',
+                  borderWidth: 0,
                   drawTime: 'beforeDatasetsDraw'
                 }
               }
