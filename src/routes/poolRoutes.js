@@ -407,4 +407,43 @@ router.get('/salt/debug', async (req, res) => {
   }
 });
 
+// Debug endpoint to see raw InfluxDB data
+router.get('/debug-influxdb', async (req, res) => {
+  try {
+    console.log('🔍 Debug: Querying raw InfluxDB data...');
+    
+    const endTime = new Date();
+    const startTime = new Date(endTime.getTime() - (24 * 60 * 60 * 1000)); // Last 24 hours
+    
+    // Simple query to see all data
+    const fluxQuery = `
+      from(bucket: "${influxDBService.config.bucket}")
+        |> range(start: ${startTime.toISOString()}, stop: ${endTime.toISOString()})
+        |> filter(fn: (r) => r._measurement == "pool_metrics")
+        |> limit(n: 10)
+    `;
+    
+    console.log('🔍 Debug query:', fluxQuery);
+    
+    const dataPoints = [];
+    for await (const {values, tableMeta} of influxDBService.queryApi.iterateRows(fluxQuery)) {
+      const o = tableMeta.toObject(values);
+      dataPoints.push(o);
+    }
+    
+    console.log(`🔍 Debug: Found ${dataPoints.length} raw data points`);
+    
+    res.json({
+      success: true,
+      query: fluxQuery,
+      dataPoints: dataPoints,
+      count: dataPoints.length
+    });
+    
+  } catch (error) {
+    console.error('❌ Debug query error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;
