@@ -146,11 +146,82 @@ const parseFilterData = (html) => {
 
   return {
     status: (() => {
-      const status = $('[id*="divfilterStatus"]').text().trim();
-      // Return true if filter is on, false if off
-      return status ? status.toLowerCase().includes('on') : null;
+      // Try multiple selectors for filter/pump status
+      const statusSelectors = [
+        '#cphMainContent_3_divStatusName',  // This is the correct selector!
+        '[id*="divfilterStatus"]',
+        '[id*="filterStatus"]',
+        '[id*="pumpStatus"]',
+        '[id*="divPump"]',
+        '[id*="lblFilter"]',
+        '[id*="lblPump"]',
+        '[id*="filter"]',
+        '[id*="pump"]'
+      ];
+      
+      let status = null;
+      
+      for (const selector of statusSelectors) {
+        const element = $(selector);
+        if (element.length > 0) {
+          const text = element.text().trim();
+          console.log(`🔍 Filter status selector "${selector}": "${text}"`);
+          
+          if (text) {
+            // Check for various "on" indicators
+            const isOn = text.toLowerCase().includes('on') || 
+                        text.toLowerCase().includes('running') ||
+                        text.toLowerCase().includes('active') ||
+                        text.toLowerCase().includes('enabled') ||
+                        text.toLowerCase().includes('1') ||
+                        text.toLowerCase().includes('true');
+            
+            // Check for various "off" indicators
+            const isOff = text.toLowerCase().includes('off') || 
+                         text.toLowerCase().includes('stopped') ||
+                         text.toLowerCase().includes('inactive') ||
+                         text.toLowerCase().includes('disabled') ||
+                         text.toLowerCase().includes('0') ||
+                         text.toLowerCase().includes('false');
+            
+            if (isOn) {
+              status = true;
+              console.log(`✅ Filter pump detected as ON via selector "${selector}"`);
+              break;
+            } else if (isOff) {
+              status = false;
+              console.log(`❌ Filter pump detected as OFF via selector "${selector}"`);
+              break;
+            }
+          }
+        }
+      }
+      
+      // If no clear status found, try to infer from diagnostic text
+      if (status === null) {
+        const diagnostic = $('[id*="divPump"]').text().trim() || 
+                          $('[id*="pump"]').text().trim() ||
+                          $('[id*="filter"]').text().trim();
+        
+        if (diagnostic) {
+          console.log(`🔍 Filter diagnostic text: "${diagnostic}"`);
+          const isOn = diagnostic.toLowerCase().includes('on') || 
+                      diagnostic.toLowerCase().includes('running') ||
+                      diagnostic.toLowerCase().includes('active');
+          
+          if (isOn) {
+            status = true;
+            console.log(`✅ Filter pump inferred as ON from diagnostic text`);
+          }
+        }
+      }
+      
+      console.log(`🏊‍♂️ Final filter pump status: ${status}`);
+      return status;
     })(),
-    diagnostic: $('[id*="divPump"]').text().trim() || null
+    diagnostic: $('[id*="divPump"]').text().trim() || 
+                $('[id*="pump"]').text().trim() ||
+                $('[id*="filter"]').text().trim() || null
   };
 };
 

@@ -1,0 +1,1369 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <script language="javascript" src="/Scripts/GoogleTagManager.js" type="text/javascript"></script>
+    
+    <title>
+	Hayward OmniLogic
+</title><link href="../../App_Themes/Chrome/form.css" type="text/css" rel="stylesheet" /><link href="../../App_Themes/Chrome/login.css" type="text/css" rel="stylesheet" /><link href="../../App_Themes/Chrome/style.css" type="text/css" rel="stylesheet" /><link href="/WebResource.axd?d=GHi6lFAmpS7jJXTxw-Z3VYsUpSRMLj5lyD9W1zQ3o0qRFO4guyAboHwAs24IK7cU_BuHl0yU8QouVPZpncNd6F-BDB0GwAltRo9FjyKjgjYvxwh86KMnCokIi0dYIW6hr7r-F3wcqMIH5f5LpeTUMQ2&amp;t=638665244940000000" type="text/css" rel="stylesheet" /><style type="text/css">
+	/* <![CDATA[ */
+	#menuBar img.icon { border-style:none;vertical-align:middle; }
+	#menuBar img.separator { border-style:none;display:block; }
+	#menuBar img.horizontal-separator { border-style:none;vertical-align:middle; }
+	#menuBar ul { list-style:none;margin:0;padding:0;width:auto; }
+	#menuBar ul.dynamic { z-index:1; }
+	#menuBar a { text-decoration:none;white-space:nowrap;display:block; }
+	#menuBar a.static { padding-left:0.15em;padding-right:0.15em; }
+	#menuBar a.popout-dynamic { background:url("/WebResource.axd?d=BKpOaSiafDcMAeTAvjIMMB0dCUS0slvq3KTGoVlUCsYJEZxjZcDFAL7snRlao-50C2oQP5E-6DfzPSRl08-Fm7HX_1QNkLWXG6kK07lPiRI1&t=638563091773552689") no-repeat right center;padding-right:14px; }
+	#menuBar a.static.selected { text-decoration:none;border-style:none; }
+	#menuBar a.dynamic.selected { background-color:Gold;text-decoration:none; }
+	#menuBar a.dynamic.highlighted { background-color:#DADADA; }
+	/* ]]> */
+</style></head>
+<link rel="stylesheet" type="text/css" href="../../Scripts/themes/base/jquery.ui.all.css" />
+<link rel="stylesheet" type="text/css" href="../../Scripts/themes/base/jquery.ui.dialog.custom.css" />
+<style>
+    .show {
+        display:;
+    }
+
+    .hide {
+        display: none;
+    }
+
+    .abshide {
+        display: none;
+    }
+</style>
+<link rel="icon" href="/Images/bitbug_favicon.ico" type="image/x-icon" />
+<script type="text/javascript">
+    function getGauge() {
+    }
+    function changeMenuStyle() {
+    }
+    function downMenu() {
+    }
+    window.history.forward(1);
+
+
+</script>
+<script type="text/javascript" src="../../Scripts/res/en-US.js"></script>
+<script type="text/javascript" src="../../Scripts/jquery-1.4.1.js"></script>
+<script type="text/javascript" src="../../Scripts/timer.js"></script>
+<script type="text/javascript" src="../../Scripts/jquery.dialog.js"></script>
+<script type="text/javascript" src="../../Scripts/custom-form-elements.js"></script>
+<script type="text/javascript">
+    $(document).ready(function () {
+        $('#menu>ul>li>ul').find('li:has(ul:not(:empty))>a').append("<span class='arrow'>></span>");
+        $("#menu>ul>li").bind('mouseover', function () {
+            $(this).children('ul').slideDown('fast');
+        }).bind('mouseleave', function () {
+            $(this).children('ul').slideUp('fast');
+        });
+        $('#menu>ul>li>ul li').bind('mouseover', function () {
+            $(this).children('ul').slideDown('fast');
+        }).bind('mouseleave', function () {
+            $(this).children('ul').slideUp('fast');
+        });
+    });
+
+    //    function onClickFavoriteBar() {
+    //        var pnlFavorite = document.getElementById("");
+    //        var favoriteTotalCount = document.getElementById("");
+    //        if (favoriteTotalCount.value <= 16) {
+    //            panelFavoriteAdd.setAttribute("class", "favoritePopupMinHeight");
+    //        } else {
+    //            panelFavoriteAdd.setAttribute("class", "favoritePopupMaxHeight");
+    //        }
+    //        var btnSubmitFavoriteBar = document.getElementById("");
+    //        btnSubmitFavoriteBar.click(); 
+    //    }
+</script>
+<body>
+    <form method="post" action="./Filter_Setting.aspx" id="form1">
+<div class="aspNetHidden">
+<input type="hidden" name="__EVENTTARGET" id="__EVENTTARGET" value="" />
+<input type="hidden" name="__EVENTARGUMENT" id="__EVENTARGUMENT" value="" />
+<input type="hidden" name="__LASTFOCUS" id="__LASTFOCUS" value="" />
+<input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="/wEPDwUKMjA1MzQyNTc5OA9kFgJmDw8WAh4RU3lzdGVtTWVzc2FnZUxpc3QyrgMAAQAAAP////8BAAAAAAAAAAwCAAAAUE5leHRHZW4uV2ViUGxhdGZvcm0uTW9kZWwsIFZlcnNpb249MC4wLjAuMCwgQ3VsdHVyZT1uZXV0cmFsLCBQdWJsaWNLZXlUb2tlbj1udWxsBAEAAACiAVN5c3RlbS5Db2xsZWN0aW9ucy5HZW5lcmljLkxpc3RgMVtbTmV4dEdlbi5XZWJQbGF0Zm9ybS5Nb2RlbC5TeXN0ZW1NZXNzYWdlSW5mbywgTmV4dEdlbi5XZWJQbGF0Zm9ybS5Nb2RlbCwgVmVyc2lvbj0wLjAuMC4wLCBDdWx0dXJlPW5ldXRyYWwsIFB1YmxpY0tleVRva2VuPW51bGxdXQMAAAAGX2l0ZW1zBV9zaXplCF92ZXJzaW9uBAAALU5leHRHZW4uV2ViUGxhdGZvcm0uTW9kZWwuU3lzdGVtTWVzc2FnZUluZm9bXQIAAAAICAkDAAAAAAAAAAAAAAAHAwAAAAABAAAAAAAAAAQrTmV4dEdlbi5XZWJQbGF0Zm9ybS5Nb2RlbC5TeXN0ZW1NZXNzYWdlSW5mbwIAAAALZBYCAgEPZBYiAgMPZBYCZg9kFgICAQ8WAh4FY2xhc3MFB2Fic2hpZGUWAgIBDw8WAh4LTmF2aWdhdGVVcmwFTn4vTW9kdWxlL1VzZXJNYW5hZ2VtZW50L0JhY2t5YXJkX0VxdWlwbWVudF9TZXR0aW5nLmFzcHg/bXNwSUQ9RENFQzM2N0M2QkREQ0IwNmRkAgQPDxYCHwIFVH4vTW9kdWxlL1VzZXJNYW5hZ2VtZW50L1RoZW1lTGlzdC5hc3B4P21zcElEPURDRUMzNjdDNkJERENCMDYmYm93SUQ9NDhBNkMwRUJDMzgwOEE5NGRkAgUPDxYCHwIFVX4vTW9kdWxlL1VzZXJNYW5hZ2VtZW50L01zcFNldHRpbmcuYXNweD9tc3BJRD1EQ0VDMzY3QzZCRERDQjA2JmJvd0lEPTQ4QTZDMEVCQzM4MDhBOTRkZAIID2QWAmYPZBYCAgEPDxYEHwIFT2h0dHBzOi8vaGF5d2FyZG9tbmlsb2dpYy5jb20vTW9kdWxlL1VzZXJNYW5hZ2VtZW50L0ZpbHRlcl9TZXR0aW5nLmFzcHgjYWxhcm1EaXYeB1Zpc2libGVoZGQCCQ8PFgIeBFRleHQFA1RpbWRkAgoPFgQeA3NyYwUwaHR0cHM6Ly9oYXl3YXJkb21uaWxvZ2ljLmNvbS9JbWFnZXMvaWNvbl9tc2cucG5nHwNoZAIMD2QWAgIBD2QWAmYPZBYEAgEPFgIeBXN0eWxlBQxkaXNwbGF5Om5vbmVkAgMPDxYCHwRlZGQCDQ8QZGQWAWZkAg4PPCsADQEMFCsABgUTMDowLDA6MSwwOjIsMDozLDA6NBQrAAIWBB8EBQRob21lHwIFJn4vTW9kdWxlL1VzZXJNYW5hZ2VtZW50L0Rhc2hib2FyZC5hc3B4ZBQrAAIWAh8EBQVzaXRlcxQrAAQFCzA6MCwwOjEsMDoyFCsAAhYEHwQFDHJlZ2lzdGVyIG1zcB8CBSl+L01vZHVsZS9Vc2VyTWFuYWdlbWVudC9SZWdpc3Rlcl9Nc3AuYXNweGQUKwACFgQfBAUJc2l0ZSBsaXN0HwIFJ34vTW9kdWxlL1VzZXJNYW5hZ2VtZW50L1NlbGVjdF9Nc3AuYXNweGQUKwACFgQfBAUNYmFja3lhcmQgbGlzdB8CBSR+L01vZHVsZS9Vc2VyTWFuYWdlbWVudC9Nc3BMaXN0LmFzcHhkFCsAAhYCHwQFB3Byb2ZpbGUUKwAFBQ8wOjAsMDoxLDA6MiwwOjMUKwACFgQfBAULaW5mb3JtYXRpb24fAgUofi9Nb2R1bGUvVXNlck1hbmFnZW1lbnQvSW5mb3JtYXRpb24uYXNweGQUKwACFgQfBAURbXNwIGNvbmZpZ3VyYXRpb24fAgUtfi9Nb2R1bGUvVXNlck1hbmFnZW1lbnQvTXNwQ29uZmlndXJhdGlvbi5hc3B4ZBQrAAIWBB8EBQxvYXV0aCBjbGllbnQfAgUsfi9Nb2R1bGUvVXNlck1hbmFnZW1lbnQvT2F1dGhDbGllbnRMaXN0LmFzcHhkFCsAAhYEHwQFDkRlbGV0ZSBBY2NvdW50HwIFFH4vRGVsZXRlQWNjb3VudC5hc3B4ZBQrAAIWBB8EBQdsb2cgb3V0HwIFDX4vTG9nb3V0LmFzcHhkFCsAAhYEHwQFBGhlbHAfAgUSfi9Db21tb24vSGVscC5hc3B4ZGQCDw8PFgIfBAUBM2RkAhAPDxYCHwQFBlNVTkRBWWRkAhEPDxYCHwQFBkF1ZyAwM2RkAhIPDxYCHwQFBTExOjMzZGQCEw8PFgIfBAUCUE1kZAIXDxYCHwEFBm1haW5fMRYMAgUPZBYCAgUPZBYOZg8PZBYCHwYFNmRpc3BsYXk6O2NvbG9yOiAjRkZGRkZGO2ZvbnQtc2l6ZTp4LWxhcmdlOyBtYXJnaW46MTBweGQCAg8PZBYCHwYFHGRpc3BsYXk6OyBtYXJnaW4tcmlnaHQ6MTBweDtkAgMPDxYCHwRlZGQCBg9kFgICBQ8PFgQeFFNlbGVjdGVkRmF2b3JpdGVMaXN0MtwEAAEAAAD/////AQAAAAAAAAAEAQAAAOIBU3lzdGVtLkNvbGxlY3Rpb25zLkdlbmVyaWMuRGljdGlvbmFyeWAyW1tTeXN0ZW0uU3RyaW5nLCBtc2NvcmxpYiwgVmVyc2lvbj00LjAuMC4wLCBDdWx0dXJlPW5ldXRyYWwsIFB1YmxpY0tleVRva2VuPWI3N2E1YzU2MTkzNGUwODldLFtTeXN0ZW0uU3RyaW5nLCBtc2NvcmxpYiwgVmVyc2lvbj00LjAuMC4wLCBDdWx0dXJlPW5ldXRyYWwsIFB1YmxpY0tleVRva2VuPWI3N2E1YzU2MTkzNGUwODldXQMAAAAHVmVyc2lvbghDb21wYXJlcghIYXNoU2l6ZQADAAiSAVN5c3RlbS5Db2xsZWN0aW9ucy5HZW5lcmljLkdlbmVyaWNFcXVhbGl0eUNvbXBhcmVyYDFbW1N5c3RlbS5TdHJpbmcsIG1zY29ybGliLCBWZXJzaW9uPTQuMC4wLjAsIEN1bHR1cmU9bmV1dHJhbCwgUHVibGljS2V5VG9rZW49Yjc3YTVjNTYxOTM0ZTA4OV1dCAAAAAAJAgAAAAAAAAAEAgAAAJIBU3lzdGVtLkNvbGxlY3Rpb25zLkdlbmVyaWMuR2VuZXJpY0VxdWFsaXR5Q29tcGFyZXJgMVtbU3lzdGVtLlN0cmluZywgbXNjb3JsaWIsIFZlcnNpb249NC4wLjAuMCwgQ3VsdHVyZT1uZXV0cmFsLCBQdWJsaWNLZXlUb2tlbj1iNzdhNWM1NjE5MzRlMDg5XV0AAAAACx4TU3VibWl0RXF1aXBtZW50TGlzdDLcBAABAAAA/////wEAAAAAAAAABAEAAADiAVN5c3RlbS5Db2xsZWN0aW9ucy5HZW5lcmljLkRpY3Rpb25hcnlgMltbU3lzdGVtLlN0cmluZywgbXNjb3JsaWIsIFZlcnNpb249NC4wLjAuMCwgQ3VsdHVyZT1uZXV0cmFsLCBQdWJsaWNLZXlUb2tlbj1iNzdhNWM1NjE5MzRlMDg5XSxbU3lzdGVtLlN0cmluZywgbXNjb3JsaWIsIFZlcnNpb249NC4wLjAuMCwgQ3VsdHVyZT1uZXV0cmFsLCBQdWJsaWNLZXlUb2tlbj1iNzdhNWM1NjE5MzRlMDg5XV0DAAAAB1ZlcnNpb24IQ29tcGFyZXIISGFzaFNpemUAAwAIkgFTeXN0ZW0uQ29sbGVjdGlvbnMuR2VuZXJpYy5HZW5lcmljRXF1YWxpdHlDb21wYXJlcmAxW1tTeXN0ZW0uU3RyaW5nLCBtc2NvcmxpYiwgVmVyc2lvbj00LjAuMC4wLCBDdWx0dXJlPW5ldXRyYWwsIFB1YmxpY0tleVRva2VuPWI3N2E1YzU2MTkzNGUwODldXQgAAAAACQIAAAAAAAAABAIAAACSAVN5c3RlbS5Db2xsZWN0aW9ucy5HZW5lcmljLkdlbmVyaWNFcXVhbGl0eUNvbXBhcmVyYDFbW1N5c3RlbS5TdHJpbmcsIG1zY29ybGliLCBWZXJzaW9uPTQuMC4wLjAsIEN1bHR1cmU9bmV1dHJhbCwgUHVibGljS2V5VG9rZW49Yjc3YTVjNTYxOTM0ZTA4OV1dAAAAAAtkFgICAQ9kFgICAQ9kFgJmD2QWCAIFDw8WAh8EZWRkAgkPZBYCAgUPZBYEAgIPPCsACQBkAgQPPCsACQBkAgsPZBYCAgEPPCsACQEADxYEHghEYXRhS2V5cxYAHgtfIUl0ZW1Db3VudAICZBYEZg9kFgQCAQ8WAh8GBXtiYWNrZ3JvdW5kOnVybCguLi8uLi9JbWFnZXMvYnRuX2JnX3NlbC5wbmcpOyBiYWNrZ3JvdW5kLXJlcGVhdDpuby1yZXBlYXQ7IGJhY2tncm91bmQtcG9zaXRpb246Y2VudGVyO3dpZHRoOjUwcHg7aGVpZ2h0OjUzcHgWAgIBDw8WBB4ISW1hZ2VVcmwFFn4vSW1hZ2VzL2ljb25fcG9vbC5wbmceD0NvbW1hbmRBcmd1bWVudAUBMWRkAgMPDxYCHwQFBFBvb2xkZAIBD2QWBAIBDxYCHwYFfWJhY2tncm91bmQ6dXJsKC4uLy4uL0ltYWdlcy9idG5fYmdfdW5zZWwucG5nKTsgYmFja2dyb3VuZC1yZXBlYXQ6bm8tcmVwZWF0OyBiYWNrZ3JvdW5kLXBvc2l0aW9uOmNlbnRlcjt3aWR0aDo1MHB4O2hlaWdodDo1M3B4FgICAQ8PFgQfCwUVfi9JbWFnZXMvaWNvbl9zcGEucG5nHwwFATJkZAIDDw8WAh8EBQNTcGFkZAIND2QWAgIBDzwrAAkBAA8WBB8JFgAfCgIEZBYIZg9kFgQCAQ9kFgICAQ8PFgQfCwUkfi9JbWFnZXMvRmF2b3JpdGUvaWNvbl9zcGlsbG92ZXIucG5nHwwFATNkZAIDDw8WAh8EBQlTcGlsbG92ZXJkZAIBD2QWBAIBD2QWAgIBDw8WBB8LBSF+L0ltYWdlcy9GYXZvcml0ZS9pY29uX2hlYXRlci5wbmcfDAUCMThkZAIDDw8WAh8EBQZIZWF0ZXJkZAICD2QWBAIBD2QWAgIBDw8WBB8LBSR+L0ltYWdlcy9GYXZvcml0ZS9pY29uX2NoZW1pc3RyeS5wbmcfDAUBNGRkAgMPDxYCHwQFC0NobG9yaW5hdG9yZGQCAw9kFgQCAQ9kFgICAQ8PFgQfCwUhfi9JbWFnZXMvRmF2b3JpdGUvaWNvbl9saWdodHMucG5nHwwFATZkZAIDDw8WAh8EBQVMaWdodGRkAggPZBYCAgEPFgIfCgIDFgZmD2QWBGYPFQajAWJhY2tncm91bmQ6dXJsKC4uLy4uL0ltYWdlcy9idG5fYmdfc2VsLnBuZyk7IGJhY2tncm91bmQtcmVwZWF0Om5vLXJlcGVhdDsgYmFja2dyb3VuZC1wb3NpdGlvbjpjZW50ZXI7IHdpZHRoOjUwcHg7aGVpZ2h0OjUzcHg7cG9zaXRpb246IHJlbGF0aXZlO2xlZnQ6MzBweDt0b3A6MTBweDsBMQEwCTI2ODQzNTQ0MCUuLi8uLi9JbWFnZXMvRmF2b3JpdGUvaWNvbl9maWx0ZXIucG5nATFkAgEPDxYCHwQFC0ZpbHRlciBQdW1wZGQCAQ9kFgRmDxUGpQFiYWNrZ3JvdW5kOnVybCguLi8uLi9JbWFnZXMvYnRuX2JnX3Vuc2VsLnBuZyk7IGJhY2tncm91bmQtcmVwZWF0Om5vLXJlcGVhdDsgYmFja2dyb3VuZC1wb3NpdGlvbjpjZW50ZXI7IHdpZHRoOjUwcHg7aGVpZ2h0OjUzcHg7cG9zaXRpb246IHJlbGF0aXZlO2xlZnQ6MzBweDt0b3A6MTBweDsBMwEwCTI2ODQzNTQ1NTtodHRwczovL2hheXdhcmRvbW5pbG9naWMuY29tL0ltYWdlcy9UaGVtZS9pY29uX3RoZW1lXzIwLnBuZwEwZAIBDw8WAh8EBQdIb3QgVHViZGQCAg9kFgRmDxUGpQFiYWNrZ3JvdW5kOnVybCguLi8uLi9JbWFnZXMvYnRuX2JnX3Vuc2VsLnBuZyk7IGJhY2tncm91bmQtcmVwZWF0Om5vLXJlcGVhdDsgYmFja2dyb3VuZC1wb3NpdGlvbjpjZW50ZXI7IHdpZHRoOjUwcHg7aGVpZ2h0OjUzcHg7cG9zaXRpb246IHJlbGF0aXZlO2xlZnQ6MzBweDt0b3A6MTBweDsBNAEwCTI2ODQzNTQ1NTpodHRwczovL2hheXdhcmRvbW5pbG9naWMuY29tL0ltYWdlcy9UaGVtZS9pY29uX3RoZW1lXzAucG5nATBkAgEPDxYCHwQFC05vcm1hbCBQb29sZGQCFA8WAh8FBTRodHRwczovL2hheXdhcmRvbW5pbG9naWMuY29tL0ltYWdlcy9idG5fYWN0X2dvdG8ucG5nZAIVDw8WAh8LBTxodHRwczovL2hheXdhcmRvbW5pbG9naWMuY29tL0ltYWdlcy9GYXZvcml0ZS9idG5fYWN0X2RlbC5wbmdkZAILD2QWAgIDD2QWAmYPZBYCZg9kFgICAQ9kFgICAQ9kFgRmD2QWAgIBDw8WAh8EZWRkAgEPZBYCAgEPDxYCHwRlZGQCFQ88KwAJAQAPFgQfCRYAHwoCAmQWBGYPZBYCAgEPFgQfAWUfBgUQcGFkZGluZy1sZWZ0OjVweBYEZg8VATFodHRwczovL2hheXdhcmRvbW5pbG9naWMuY29tL0ltYWdlcy9pY29uX3Bvb2wucG5nZAIBDw8WBh8EBQRQb29sHwwFATEeB1Rvb2xUaXAFBFBvb2xkZAIBD2QWAgIBDxYCHwEFBm5vX3NlbBYEZg8VATBodHRwczovL2hheXdhcmRvbW5pbG9naWMuY29tL0ltYWdlcy9pY29uX3NwYS5wbmdkAgEPDxYGHwQFA1NwYR8MBQEyHw0FA1NwYWRkAhsPDxYCHwsFMmh0dHBzOi8vaGF5d2FyZG9tbmlsb2dpYy5jb20vSW1hZ2VzL2ljb25fdGFiX3IucG5nFgIeBVN0eWxlBQxkaXNwbGF5Om5vbmVkAh0PDxYCHwsFMmh0dHBzOi8vaGF5d2FyZG9tbmlsb2dpYy5jb20vSW1hZ2VzL2ljb25fdGFiX2wucG5nZGQCHw9kFgJmD2QWEgICDxYCHwEFBHNob3dkAgMPFgIfAQUEc2hvd2QCBA8WAh8BBQdhYnNoaWRlZAIFDxYCHwEFBHNob3dkAgYPFgIfAQUHYWJzaGlkZWQCBw8WAh8BBQdhYnNoaWRlZAIIDxYCHwEFBHNob3dkAgkPFgIfAQUHYWJzaGlkZWQCDw9kFgICAQ9kFgJmD2QWAmYPZBYIAgEPZBYIAgEPDxYCHwsFNWh0dHBzOi8vaGF5d2FyZG9tbmlsb2dpYy5jb20vSW1hZ2VzL2ljb25fZmlsdGVyX3IucG5nZGQCAw8PFgIfBAULRmlsdGVyIFB1bXBkZAIFDw8WAh8LBS9odHRwczovL2hheXdhcmRvbW5pbG9naWMuY29tL0ltYWdlcy9pY29uX29uLnBuZ2RkAgcPFgIeCWlubmVyaHRtbAUCb25kAgMPDxYCHwsFNGh0dHBzOi8vaGF5d2FyZG9tbmlsb2dpYy5jb20vSW1hZ2VzL2ljb25fb25fc3RhdC5naWZkZAIFD2QWEAIBDw8WBB8LBTZodHRwczovL2hheXdhcmRvbW5pbG9naWMuY29tL0ltYWdlcy9idG5fYmdfc3BkX2xvdy5wbmcfA2hkZAIDDw8WBB8LBTZodHRwczovL2hheXdhcmRvbW5pbG9naWMuY29tL0ltYWdlcy9idG5fYmdfc3BkX21lZC5wbmcfA2hkZAIFDw8WBB8LBTdodHRwczovL2hheXdhcmRvbW5pbG9naWMuY29tL0ltYWdlcy9idG5fYmdfc3BkX2hpZ2gucG5nHwNoZGQCBw8PFgQfCwU5aHR0cHM6Ly9oYXl3YXJkb21uaWxvZ2ljLmNvbS9JbWFnZXMvYnRuX2JnX3NwZF9jdXN0b20ucG5nHwNoZGQCCQ8WAh8DaBYIAgEPFgIfBQUzaHR0cHM6Ly9oYXl3YXJkb21uaWxvZ2ljLmNvbS9JbWFnZXMvaWNvbl9yZWR1Y2UucG5nZAIDDxYCHgpCZWhhdmlvcklEBR1jcGhNYWluQ29udGVudF8zX3R4dFB1bXBTcGVlZGQCBQ8PFgIfBAUDMTAwZGQCDQ8WAh8FBTBodHRwczovL2hheXdhcmRvbW5pbG9naWMuY29tL0ltYWdlcy9pY29uX2FkZC5wbmdkAgsPDxYEHgtQb3N0QmFja1VybAXFAX4vTW9kdWxlL1VzZXJNYW5hZ2VtZW50L0ZpbHRlckRpYWdub3N0aWMuYXNweD9tc3BJRD1EQ0VDMzY3QzZCRERDQjA2JmJvd0lEPTQ4QTZDMEVCQzM4MDhBOTQmc3lzdGVtSUQ9Qzc5REZEQjdCNThEREIxOCZib3dTeXN0ZW1JRD1CRTFCRjU0M0JDQzZCRDQwJnR5cGU9ODEzM0M4QkVGNjFBMzU3NiZtc3BTeXN0ZW1JRD1CRTFGMUNBREY5QjEwNzFCHwNnZGQCDQ8PFgIfA2hkZAIPDxYEHwQFASUfA2hkAgcPFgIfBgUIZGlzcGxheToWBAIBDw8WAh8LBTRodHRwczovL2hheXdhcmRvbW5pbG9naWMuY29tL0ltYWdlcy9idG5fc2NoZWR1bGUucG5nZGQCBQ8PFgIfCwUxaHR0cHM6Ly9oYXl3YXJkb21uaWxvZ2ljLmNvbS9JbWFnZXMvYnRuX3RpbWVyLnBuZ2RkAhgPZBYCZg9kFgICAQ8PFgQeDF9tc3BTeXN0ZW1JRAK4uA8eEF9zaG93Q2xlYXJCdXR0b25nZBYCZg8WAh8KAv////8PZAIZDxYCHwQFBlIzLjYuM2QYAQUeX19Db250cm9sc1JlcXVpcmVQb3N0QmFja0tleV9fFiAFEmN0bDAwJGxpc3RPS0J1dHRvbgUWY3RsMDAkaW1nQ2xvc2VGYXZvcml0ZQUpY3RsMDAkRmF2b3JpdGVDb250cm9sMSRjb3B5QnRuRmF2b3JpdGVBZGQFJWN0bDAwJEZhdm9yaXRlQ29udHJvbDEkYnRuRmF2b3JpdGVBZGQFKmN0bDAwJEZhdm9yaXRlQ29udHJvbDEkaW1nQ2xvc2VBZGRGYXZvcml0ZQUiY3RsMDAkRmF2b3JpdGVDb250cm9sMSRBZGRPS0J1dHRvbgUwY3RsMDAkRmF2b3JpdGVDb250cm9sMSRGYXZvcml0ZUFkZDEkYnRuTGlnaHRTaG93BTpjdGwwMCRGYXZvcml0ZUNvbnRyb2wxJEZhdm9yaXRlQWRkMSRidG5TdWJtaXRMaWdodEZhdm9yaXRlBTVjdGwwMCRGYXZvcml0ZUNvbnRyb2wxJEZhdm9yaXRlQWRkMSRMaWdodFNob3dPS0J1dHRvbgU+Y3RsMDAkRmF2b3JpdGVDb250cm9sMSRGYXZvcml0ZUFkZDEkZGx0UG9vbENob29zZSRjdGwwMCRpbWdCb1cFPmN0bDAwJEZhdm9yaXRlQ29udHJvbDEkRmF2b3JpdGVBZGQxJGRsdFBvb2xDaG9vc2UkY3RsMDEkaW1nQm9XBU9jdGwwMCRGYXZvcml0ZUNvbnRyb2wxJEZhdm9yaXRlQWRkMSRkbHRFcXVpcG1lbnRDaG9vc2UkY3RsMDAkaW1nQ2hvb3NlRXF1aXBtZW50BU9jdGwwMCRGYXZvcml0ZUNvbnRyb2wxJEZhdm9yaXRlQWRkMSRkbHRFcXVpcG1lbnRDaG9vc2UkY3RsMDEkaW1nQ2hvb3NlRXF1aXBtZW50BU9jdGwwMCRGYXZvcml0ZUNvbnRyb2wxJEZhdm9yaXRlQWRkMSRkbHRFcXVpcG1lbnRDaG9vc2UkY3RsMDIkaW1nQ2hvb3NlRXF1aXBtZW50BU9jdGwwMCRGYXZvcml0ZUNvbnRyb2wxJEZhdm9yaXRlQWRkMSRkbHRFcXVpcG1lbnRDaG9vc2UkY3RsMDMkaW1nQ2hvb3NlRXF1aXBtZW50BTJjdGwwMCRGYXZvcml0ZUNvbnRyb2wxJEZhdm9yaXRlQWRkMSRpbWdGYXZvcml0ZUFkZAUrY3RsMDAkRmF2b3JpdGVDb250cm9sMSRidG5GYXZvcml0ZUVuYWJsZU9mZgUqY3RsMDAkRmF2b3JpdGVDb250cm9sMSRidG5GYXZvcml0ZUVuYWJsZU9uBSZjdGwwMCRGYXZvcml0ZUNvbnRyb2wxJGJ0bkZhdm9yaXRlR290bwUoY3RsMDAkRmF2b3JpdGVDb250cm9sMSRidG5GYXZvcml0ZURlbGV0ZQUWY3RsMDAkaW1nQ2xvc2VQb3dlck9mZgUaY3RsMDAkUG93ZXJPZmYxJGltZ0dvb2RieWUFG2N0bDAwJFBvd2VyT2ZmMSRpbWdQb3dlck9mZgUSY3RsMDAkSW1hZ2VCdXR0b24xBSljdGwwMCRGcmVlemVQcm90ZWN0T3ZlcnJpZGUxJGliSW50ZXJ2YWw2MAUqY3RsMDAkRnJlZXplUHJvdGVjdE92ZXJyaWRlMSRpYkludGVydmFsMTIwBSpjdGwwMCRGcmVlemVQcm90ZWN0T3ZlcnJpZGUxJGliSW50ZXJ2YWwxODAFEWN0bDAwJGltZ1RhYlJpZ2h0BRBjdGwwMCRpbWdUYWJMZWZ0BSFjdGwwMCRjcGhNYWluQ29udGVudCQzJGJ0bkVuYWJsZWQFJWN0bDAwJGNwaE1haW5Db250ZW50JDMkYnRuRW5hYmxlZFN0YXQFI2N0bDAwJGNwaE1haW5Db250ZW50JDMkaWJ0blNjaGVkdWxlsmsiAjHLIJHz7rN+0Phl45tZQ4wXjchaF8pt4f0ZXAk=" />
+</div>
+
+<script type="text/javascript">
+//<![CDATA[
+var theForm = document.forms['form1'];
+if (!theForm) {
+    theForm = document.form1;
+}
+function __doPostBack(eventTarget, eventArgument) {
+    if (!theForm.onsubmit || (theForm.onsubmit() != false)) {
+        theForm.__EVENTTARGET.value = eventTarget;
+        theForm.__EVENTARGUMENT.value = eventArgument;
+        theForm.submit();
+    }
+}
+//]]>
+</script>
+
+
+<script src="/WebResource.axd?d=xzDdZIOgOrfKdKPrN9Az7bfYtEcue-HOUZb1zasLOFbO4c1jPsl48vHabuxhPwVgZAUVeF5hbppO4dvEHGXNlLJbyYvOYjCZ1vR2uohjd-I1&amp;t=638563091773552689" type="text/javascript"></script>
+
+<script>changeMenuStyle();</script>
+<script src="/Scripts/V2Light.js" type="text/javascript"></script>
+<script src="/ScriptResource.axd?d=3q0JSsm5kmjWjf0FXGCdPqMVy-wQnpQkFWv3XTkqnk_YMOuFuTC81Cqr_TL1KRtHg8RjIgR2egPyq1rxhB5Cn3ujuVDWX9X1FYFoUaSPifblS1Lk4NH5UWYFqshLfrr9G1mNqsoUB_M7HaXgaKYYOQ2&amp;t=7266186d" type="text/javascript"></script>
+<script src="/ScriptResource.axd?d=e8lMI9oZ77OMh07zOisybDkZn3KZTlSLdKrpLvow38OUKdegPvLLsOcCxJuhmjLl9ZKzOiDhXhUZ9q6BnkbkB80k3kVUoKK21FbzS5vTYgmVRGdtyL6YqO5GRci4QDjyxv1x1ckIquWFWFTrOg3jTA2&amp;t=ffffffffe4ec58b9" type="text/javascript"></script>
+<script type="text/javascript">
+//<![CDATA[
+if (typeof(Sys) === 'undefined') throw new Error('ASP.NET Ajax client-side framework failed to load.');
+//]]>
+</script>
+
+<script src="/ScriptResource.axd?d=qrD0cbAzF6879GGDh3LvsMUWcm7hYOGeL--2f-mU5RGg2DJeotb7vnKaOqhDE22fZGsaCd2dUm9NdnzvsyO7DkH08nZdludM1soSINYWj9WIDE7jreReiLOrMvbzKZ3iKSUi9ZhJ9RZisFCk4vpXPA2&amp;t=ffffffffe4ec58b9" type="text/javascript"></script>
+<script src="/ScriptResource.axd?d=G08NvF0Wcl92s3d2qW1N53F-SUoCDAG68peF4S1VfKIW5wrNHCQaV4-JK87WLxfUOIA5HUJZPkB0rg5tTyAcNiBwYtg-jeUCwlmmrz07gx9dj4f3aqJ-l0V1T0qnq0bMpfYrzThGB4iMxnyAWgrQyw2&amp;t=ffffffffe4ec58b9" type="text/javascript"></script>
+<script src="/ScriptResource.axd?d=0-_XHFEz8tXij5PxJ4tDSotidpsFM8Z5MwII2-JXALWQpjhzG2hyMWrKZHhGUMHAIm_GgB5RSuUg8ewlcntHChY48PRFaIZaLNUDowt6Adckf1LWs7nnVSbxSEVJYs6RecBo7Lk-h9njZaRmh-jrmQ2&amp;t=ffffffffe4ec58b9" type="text/javascript"></script>
+<script src="/ScriptResource.axd?d=7mETeWfeOaa2S3RVQYOCsWJ2oWbEW0Dv0MlZ41x54y5PYpePErV_v57xr1GW4Yllhk3hEO6xKpJucuwE_YrFq0kAcDUN0kaMlxDPpw_9vHsWfWiUQ9VbevoAIoPMn8pYC9e0MYTgygd2e7iCkIbyMA2&amp;t=ffffffffe4ec58b9" type="text/javascript"></script>
+<script src="/ScriptResource.axd?d=lSBiwA3IrEaHW96A7QnkcdvCLFRCv8RHDVDxvpeXnlq8sTbpt-cDJwJD0psHD3eR1EpxKXpA7x902F0HSrb09M1gLruuauzIakyxdEerD327yhbKivx5XqdgZVBOWYfuC10a6rj-kqOogYAvIE2dukYlWOs6iM_SwAXIj5gphR81&amp;t=ffffffffe4ec58b9" type="text/javascript"></script>
+<script src="/ScriptResource.axd?d=e2SbWqkrY1l7u7q0vEfy5pYgJUvAjBW2-KqHBdVClbYSF0WbktHK3KtT7IiNK9RYMDaOj_CGsNjZPTHKY88bIqYmsE82zl8BoDGA3zItB2zpayr3p7PLiMUpdyrpmIhEqMqFwd_nVnb2khLTef7RLA2&amp;t=ffffffffe4ec58b9" type="text/javascript"></script>
+<script src="/ScriptResource.axd?d=-G8sfy0-gfnwo3-PfTX9KYYMEKm6IKvPLeLxTQ_dO-9izQOUmPR1cg6RL5_57FtYeV6aKkpRDfhVa-RDTRk3WOOH30JVSdCIge3RfyLLZtL8kyA0P1yK3HZB1ca3tF8olaq1LGQjbWED4bhp_pQwjc-kw-i0AhxNEdffELX6lTg1&amp;t=ffffffffe4ec58b9" type="text/javascript"></script>
+<script src="/ScriptResource.axd?d=swTJGVhbarPLJAb_96InwpIuHpnarpjH2FGKv_1d0CfBIXrffKLsMolcTTfWgntDWLmawgG1pUKjU_5YrGh0e4DdU7UBpGhM3NuaKD5jiNdxUbGVxZJ83xUPj4XXyRaGnyaE6q2DWTkzGcHo0prcNOxyYsU7f1-M64gon2MGKlc1&amp;t=ffffffffe4ec58b9" type="text/javascript"></script>
+<script src="/ScriptResource.axd?d=xi1z_XxmJIOaamBXVF5nyUltB8RnAOBsYLYEsdwH_26er1lRDxpOI1VHN7QY_Z1QlazJvHOaLJtDcvmizpd74DsxvXkp7deT7UF8YEv7E7x2BH4j3by3L3JzwBvt6a-RFWZy3Jb7orxnhh4TpWa4pKhgw9wLYwAv2gr8r-42XF01&amp;t=ffffffffe4ec58b9" type="text/javascript"></script>
+<script src="/ScriptResource.axd?d=VjmHiOx5useH4mtShYCxtXp3c3bLYYvC1bvxp94d9z3SG6MiCrplXbOzQ5ZzuiM4DivCfUyEIE0VeqIJ28kf6DEr2mxxRKOLuvXaXyd8Kl2IoLRx80x9nmsEmlDtHHMPc6Y9oJGQ7Hkmtp5SaF0-73Jb1R1BT4eUrPiYg6VWiTA1&amp;t=ffffffffe4ec58b9" type="text/javascript"></script>
+<script src="/ScriptResource.axd?d=A-MdSUGsVS8-n6-fn3615JpTGJqqOvxeOO4yAhlLVwaoFDC7AHXTT8C9Kt7sqOf5l4gRe8bSmNEZSqp18myHtSjhFtzbGofWWA9kgxvcwmKLJ4s_8VxsvvPRn2Z4CUlU89zRbTZ3jJ5AE5tVvBcdew2&amp;t=ffffffffe4ec58b9" type="text/javascript"></script>
+<script src="/ScriptResource.axd?d=292CtbNZ8j53FHQtfSzmxJrQiS6F90LEApJmA_ILwf-YmdfQq3oKxDVkuZHCDgcsZYoOdH2oUpdacKZn-_04hBpJvpE4QDBomSCD31h39n_R6srIzs3z5wcG9vKql8LvWSDPpGX9S4gU7ewJsX3pUxVkFAn3YgysCLM2Xad2bsA1&amp;t=ffffffffe4ec58b9" type="text/javascript"></script>
+<script src="/ScriptResource.axd?d=gn1vDxsIBGMA8kncOuv3_S4s66Odn2qXbKGfHvI1PBTxD-Tpeyd92LbXsod6rJZjJrP2OB_0Lh_A_dwpjDKi-MNC_ch0-axQstwgzcCg8YEjOTiiM_-hwyLGNMXazXGIKm1d4rnbVI-oYUsPKLI-yGEFlVoXD46TVghcuh7Irgc1&amp;t=ffffffffe4ec58b9" type="text/javascript"></script>
+<div class="aspNetHidden">
+
+	<input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="93CCACB3" />
+	<input type="hidden" name="__SCROLLPOSITIONX" id="__SCROLLPOSITIONX" value="0" />
+	<input type="hidden" name="__SCROLLPOSITIONY" id="__SCROLLPOSITIONY" value="0" />
+	<input type="hidden" name="__PREVIOUSPAGE" id="__PREVIOUSPAGE" value="9jdXS9kVPCZsjR1emlHrsirXSKj5JehpzmuO9KCsC-mwewdAH3mZY-ZeOhDOGjTN8ebi7kLVqsUhR9daV67vRcK5OLjx8__oHZlyVqZabQGpShdx7eopKgf5RDtG17JyKq931SPYuSc7-UskOVXh4Q2" />
+	<input type="hidden" name="__EVENTVALIDATION" id="__EVENTVALIDATION" value="/wEdAFSvgpcALxlkQCXNYvN4tIgl3V6nZld/4MIM3lcaYgz82xTR8DMsJNW4uflkRlJoH12GNnH0fccZVTsHEb/i8wEp/TavYBUDKwhMtah/qpl8KVWl6PuU63BnSs+9T2Ec/RsOJJ/WjZ09mBAVoMkrEmBviQqT3NCC5rHR9sLFdBOFvVuJnIiu7SqHJSbJBL6nuEXx1RRp6NRQKtKC1lyCtlg9PZdybo1cT87bJm6CTbSFhJgTKShzZG+qyTHz7iWpI+wY4Z7cmhi5QvClWcKiohqInHVAy4BZ4NgneHQ3W/fd/uB6LMbrmMBlgR9a7iAheu9ADTsW6KhAtUGQr7l2QF9e813P1sdIiX53TVra/3IcO2UJk1J7voGFhRePbNQCy76xvqvs7xu36ET3e3exEY7jgNrRyAiZKKsX64zsa7uHu7XdmhjJ14+FYMTmn9/rtev8arjFpfEN9wchH+BUbsJXWHxwS3v/JpDRPurBuz2jOZZTZZLb9Fu5CRre9uuTp1u9fSlM08DXXpvnRsoFNVpIpwEKCx69ZoctgyaZA5j8FfTkzvhClIDhGY62kcwhLLBrYf5WbG4KHHS68qhkENxw5C61E3u1IsN4lj13CUl5exXBhkduApsu7iIda8RTdueMRmOlGD1NrVkkFd3RShkEuEvDqOUWNLdgszZid2XaVbS6DW1FSrHySTXYrRdxSDHthRoyrZCUh8hk06XYVh+SBhe1X6j/7h7KNk6gDx5qkfumoW00dv39rv3RVy+ktBIlA8u0Lh+Q7QmTjSjgndE9gve/6s4la2etPKckaZuq3pJHPVNfrCtqHyLAui1NCSQ/uxrnb75OT+yhmrnk85ZNaVbU+r6VXD8FlkMlHauXLsd7ztIUHUIffmO1NJiz1qCMn9rBxI/ctlzN1agLcNVxJTPQP5Z2CNdA+Ldfw8zduJYoaKk44or89g4MMzhWHM99hGCdwLM9Io1Ho32SczugmBI3pzYG+/BOmWdLjs2NSS7LpN/yv4eUsL2FMmQ8ok4BTFvaOPp1/XhJtXrVhxRydX1lfM4tfFJrPt2wUctM9ReCmpLM17uJbydNyWZhDtPIgtmv1t1I2vspxAbjEkG3D4zZrxX92uOlyIx1SyGTQgA6x9qd/nRLXe22LO5lgMTE16qrqXjC9ly/cDvjfZwc5PFm/yG6vMGGBRWfad0XUIcNI3nj8hsgRcRCpIfeAvaTPOs2BMfHNvj5JAgWxadBulO3UBvZy9edha2sVBqkfRiSHNkIhxIUkCdLg8A0v+o2qnlTGQ9pUYt7SLfe8dQvC37JPTbYUzSdKCN+OvaAnAx28DIONVG2YkM04Oe+c1qJz4trU8XS/CiqvXh4MahPFK5sA0QWQTEFJum5G8LSLw/hwt3ptUroMw4SURIJuofgaIJEbiyRioXq64X++hyfYAl7CKz/gC3yY3hOvrKWIZpZ2rL9rh5U2cFxyuiqHSaNK2QTw9fZV50Duc+oHz23nkZF1vXKbK9RBBO+JlkfIX9XDeWZ8COP2fjiJNBNxAB/CbC3hImEgwr5dqruljGW9fcIIbfJmedd+av4s+S+n/gyCa+VtBQJtnieR5/yHG9ExndJbr9Q13em/sWlU6MJmWGCI80+Q+xv8a0FoIGlmLKm1HhnqkezRLZhImxlP5JdE5x2IG6f7Hfj6R7PzUfl8OGTesmep5EfrYY2V4fFzvR0oGCaq06m8Sk5xOAdTwtm+juj2dT0ILlqo/Ee/V2teaOX4sLj9lMqtZ77vy1q7PMp9keyWlAp+FEy+r+4s3O6yG2gYVGrjJK5jwmr3tjyGUILVbUBHA9MTpGaoBgPTA==" />
+</div>
+        <script type="text/javascript">
+//<![CDATA[
+Sys.WebForms.PageRequestManager._initialize('ctl00$ScriptManager1', 'form1', ['tctl00$upMenuBackyard','upMenuBackyard','tctl00$UpdatePanel3','UpdatePanel3','tctl00$UpdatePanel1','UpdatePanel1','tctl00$FavoriteControl1$AddUpdatepanel','FavoriteControl1_AddUpdatepanel','tctl00$FavoriteControl1$AddOKUpdatepanel','FavoriteControl1_AddOKUpdatepanel','tctl00$FavoriteControl1$FavoriteAdd1$upEquipmentChoose','FavoriteControl1_FavoriteAdd1_upEquipmentChoose','tctl00$PowerOff1$UpdatePanel1','PowerOff1_UpdatePanel1','tctl00$upPoolCommand','upPoolCommand','tctl00$upPoolAlarm','upPoolAlarm'], ['ctl00$timerPool','timerPool','ctl00$AlarmMessages1','AlarmMessages1'], [], 90, 'ctl00');
+//]]>
+</script>
+
+        <!-- menu tips -->
+        <div id="Menutips" style="top: 229.5px;">
+            <div>
+                <ul>
+                    <li>
+                        <a id="lbtFavoriteBar" title="favorite" class="menufav" href="javascript:__doPostBack(&#39;ctl00$lbtFavoriteBar&#39;,&#39;&#39;)"></a>
+                        <input name="ctl00$hidFavoriteBar" type="hidden" id="hidFavoriteBar" />
+                    </li>
+                    <li style="display: none"><a class="menuoverview" href="#"></a>
+                        
+                    </li>
+                    <div id="upMenuBackyard">
+	
+                            <li id="LiHyperBackyard" class="abshide">
+                                <a id="hplBackyard" title="backyard" class="menubackyard" href="Backyard_Equipment_Setting.aspx?mspID=DCEC367C6BDDCB06"></a>
+                            </li>
+                        
+</div>
+                    <li>
+                        <a id="hplThemeBar" title="theme" class="menutheme" href="ThemeList.aspx?mspID=DCEC367C6BDDCB06&amp;bowID=48A6C0EBC3808A94"></a>
+                    </li>
+                    <li>
+                        <a id="hplSettingBar" title="settings" class="menusetting" href="MspSetting.aspx?mspID=DCEC367C6BDDCB06&amp;bowID=48A6C0EBC3808A94"></a>
+                    </li>
+                    <li>
+                        <a id="lbkPowerOff" title="power off / features off" class="menupoweroff" href="javascript:__doPostBack(&#39;ctl00$lbkPowerOff&#39;,&#39;&#39;)"></a>
+                        <input name="ctl00$hidPowerOff" type="hidden" id="hidPowerOff" />
+                    </li>
+                    <li>
+                        
+                        <div id="UpdatePanel3">
+	
+                                
+                            
+</div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div id="everything">
+            <div class="top">
+                <div class="logo">
+                    <a href="http://www.hayward.com" target="_blank">
+                        <img src="https://haywardomnilogic.com/Images/logo.png" width="261" height="40" /></a>
+                </div>
+                <div class="usr" style="padding-top: 5px">
+                    <img src="https://haywardomnilogic.com/Images/icon_usr.png" width="17" height="15" align="absmiddle" />
+                    <span id="lblUserName" style="width: 78px; display: inline-block; float: right; line-height: 17px; height: 17px; overflow: hidden;">Tim</span>
+                </div>
+                <div class="notice">
+                    <div>
+                        <span><a id="hlNotice" href="../AdminManagement/ShowSystemMessage.aspx?id= &lt;%= Misc.DecEncrypt(mspID) %>" style="text-decoration: none"></a></span>
+                        &nbsp;&nbsp;
+                    </div>
+                </div>
+                <div class="main_menu">
+                    <div id="divLostLink" class="lostlink">
+                        <div id="UpdatePanel1">
+	
+                                <img id="imgMspStatus" width="35" align="absmiddle" hspace="2" style="display:none" />
+                                <br />
+                                <span id="lblMspStatus" style="display:inline-block;width:65px;"></span>
+                            
+</div>
+                    </div>
+                    <div id="menu">
+                        <div>
+                            <select name="ctl00$ddlLanguages" onchange="javascript:setTimeout(&#39;__doPostBack(\&#39;ctl00$ddlLanguages\&#39;,\&#39;\&#39;)&#39;, 0)" id="ddlLanguages" class="languageSelection">
+	<option selected="selected" value="en-US">English</option>
+	<option value="fr-CA">Fran&#231;ais</option>
+
+</select>
+                        </div>
+                        <div style="float: right">
+                            <a href="#menuBar_SkipLink"><img alt="Skip Navigation Links" src="/WebResource.axd?d=j0vzhZ9ASpiMjyPj6Dcr-6zMY0lkmf_75A9e06IulNdAKwFvvFH8cPMdw1zkE3vIaKHR2ESpF3ZUcObUTZWAG_oIRjY9PEJNBn0KSYjeuEo1&amp;t=638563091773552689" width="0" height="0" style="border-width:0px;" /></a><div id="menuBar">
+	<ul class="level1">
+		<li><a class="level1" href="Dashboard.aspx">home</a></li><li><a class="level1" href="#" onclick="__doPostBack(&#39;ctl00$menuBar&#39;,&#39;sites&#39;)">sites</a><ul class="level2">
+			<li><a class="level2" href="Register_Msp.aspx">register msp</a></li><li><a class="level2" href="Select_Msp.aspx">site list</a></li><li><a class="level2" href="MspList.aspx">backyard list</a></li>
+		</ul></li><li><a class="level1" href="#" onclick="__doPostBack(&#39;ctl00$menuBar&#39;,&#39;profile&#39;)">profile</a><ul class="level2">
+			<li><a class="level2" href="Information.aspx">information</a></li><li><a class="level2" href="MspConfiguration.aspx">msp configuration</a></li><li><a class="level2" href="OauthClientList.aspx">oauth client</a></li><li><a class="level2" href="../../DeleteAccount.aspx">Delete Account</a></li>
+		</ul></li><li><a class="level1" href="../../Logout.aspx">log out</a></li><li><a class="level1" href="../../Common/Help.aspx">help</a></li>
+	</ul>
+</div><a id="menuBar_SkipLink"></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="cws">
+                <div class="can">
+                    <h1>
+                        <span id="lblDay">3</span></h1>
+                    <h2>
+                        <span id="lblWeekday">SUNDAY</span></h2>
+                    <h3>
+                        <span id="lblMspDate">Aug 03</span></h3>
+                    <h4>
+                        <span id="lblMspTime">11:33</span>
+                        <span id="lblTimeFormat" style="font-size:16px;">PM</span>
+                        <input type="hidden" name="ctl00$hdnMspTime" id="hdnMspTime" value="1754220723487.02" />
+                    </h4>
+                </div>
+                <div id="divWeather">
+                    <div style="margin-top: 45px; margin-left: 150px;">
+                        <img src="https://haywardomnilogic.com/Images/loading.gif" />
+                    </div>
+                </div>
+            </div>
+            <div>
+                <div id="divMessage" class="alert_msg">
+                </div>
+                <div id="divMain" class="main_1">
+                    <div style="width: 210px; float: left;">
+                        
+                        <input type="hidden" name="ctl00$favoriteTotalCount" id="favoriteTotalCount" value="3" />
+                        
+                        <div id="pnlFavorite" align="center" style="border-color:#73E6FF;border-width:1px;border-style:solid;height:450px;width:725px;background-image:url(../../Images/bg.png);display: none;">
+	
+                            <br />
+                            <input type="image" name="ctl00$listOKButton" id="listOKButton" src="../../Images/btn_act_bck.png" align="right" style="display: none" />
+                            <input type="image" name="ctl00$imgCloseFavorite" id="imgCloseFavorite" title="close" src="../../Images/btn_act_close.png" align="right" style="margin-right: 10px" />
+                            
+
+
+<div>
+    <div style="text-align:left">
+    <span id="FavoriteControl1_favoriteTitle" style="display:;color: #FFFFFF;font-size:x-large; margin:10px">favorite</span>
+    <div id="FavoriteControl1_AddUpdatepanel" style="display: none;">
+		
+         <span style="color: #FFFFFF;font-size:x-large; margin:10px">favorite</span>
+         <input type="image" name="ctl00$FavoriteControl1$copyBtnFavoriteAdd" id="FavoriteControl1_copyBtnFavoriteAdd" title="add" src="../../Images/btn_act_add.png" align="right" onclick="addConfirm();" style=" margin-right:5px" />
+        
+	</div>
+    <input type="image" name="ctl00$FavoriteControl1$btnFavoriteAdd" id="FavoriteControl1_btnFavoriteAdd" title="add" src="../../Images/btn_act_add.png" align="right" onclick="onClickAddOKButton();" style="display:; margin-right:10px;" />
+    </div>
+    <span id="lblAlert" class="alertMessage"></span>
+    <br />
+    <hr />
+    <div id="FavoriteControl1_AddOKUpdatepanel" style="display:none;">
+		
+            <fieldset>
+               <input type="submit" name="ctl00$FavoriteControl1$AddOKButtonSubmit" value="" id="FavoriteControl1_AddOKButtonSubmit" title="submit" />
+               <input type="submit" name="ctl00$FavoriteControl1$btnReturn" value="" id="FavoriteControl1_btnReturn" />
+            </fieldset>
+        
+	</div>
+    
+    <div id="FavoriteControl1_pnlFavoriteAdd" style="border-color:#73E6FF;border-width:1px;border-style:solid;height:450px;width:725px;background-image:url(../../Images/bg.png);display:none;">
+		
+        <br />
+        <input type="image" name="ctl00$FavoriteControl1$imgCloseAddFavorite" id="FavoriteControl1_imgCloseAddFavorite" title="close" src="../../Images/btn_act_close.png" align="right" style="margin-right: 10px" />
+        <input type="image" name="ctl00$FavoriteControl1$AddOKButton" id="FavoriteControl1_AddOKButton" title="return" src="../../Images/btn_act_bck.png" align="right" onclick="onClickReturnButton();" style="margin-right:10px" />
+        
+<style>
+    .sel
+    {
+        background:url(../../Images/btn_bg_sel.png);background-repeat:no-repeat;background-position:center;width:50px;height:53px
+    }
+    .unsel
+    {
+        background:url(../../Images/btn_bg_unsel.png);background-repeat:no-repeat;background-position:center;width:50px;height:53px
+    }
+</style>
+    <div id="FavoriteControl1_FavoriteAdd1_pnlAdd">
+			
+    <div id="FavoriteControl1_FavoriteAdd1_upEquipmentChoose">
+				
+            <div style="text-align:left">
+            <span style="color: #FFFFFF;font-size:x-large; margin:10px">favorite</span>
+            <input type="image" name="ctl00$FavoriteControl1$FavoriteAdd1$btnLightShow" id="btnLightShow" src="../../Images/btn_act_add.png" align="right" style="width:0px;" />
+            </div>
+            <span id="lblAlertFavoriteAdd" class="alertMessage"></span>
+            <br />
+            <hr />
+            
+            <div id="FavoriteControl1_FavoriteAdd1_pnlLightShow" style="border-color:#73E6FF;border-width:1px;border-style:solid;height:640px;width:574px;background-image:url(../../Images/bg.png);display:none;">
+					
+                <input type="image" name="ctl00$FavoriteControl1$FavoriteAdd1$btnSubmitLightFavorite" id="FavoriteControl1_FavoriteAdd1_btnSubmitLightFavorite" title="submit" src="../../Images/btn_act_ok.png" align="right" style="margin:10px" />
+                <input type="image" name="ctl00$FavoriteControl1$FavoriteAdd1$LightShowOKButton" id="FavoriteControl1_FavoriteAdd1_LightShowOKButton" title="return" src="../../Images/btn_act_bck.png" align="right" style="margin:10px" />
+                
+<div class="mbright" style="overflow: auto; width: 100%; height: 580px; padding-top: 10px">
+    <div class="mbrgt_box" style="height: auto">
+        <div class=" mbrgt_top_light">
+			<div>
+				<span id="lblPromptMessage" class="alertMessage"></span>
+			</div>
+            <div id="FavoriteControl1_FavoriteAdd1_LightShow1_divSubrgtIcon" class="subrgt_icon">
+                <div class="primicon" style="text-align: left; margin: 5px">
+                    
+                    <img src="../../Images/icon_fixedcolor_r.png" style="margin-top: 10px;" />
+                    <br />
+                    <span style="color: #FFFFFF; font-size: x-large;">fixed color</span>
+                    <br />
+                </div>
+            </div>
+            <div class="subrgt_box" style="height: auto">
+                <b class="b1"></b><b class="b2 d1"></b><b class="b3 d1"></b><b class="b4 d1"></b>
+                <div class="b d1 k" style="height: auto">
+                    <ul class="lightlist" style="padding-left: 40px;">
+                        
+                        <input type="hidden" name="ctl00$FavoriteControl1$FavoriteAdd1$LightShow1$HiddenField2" id="FavoriteControl1_FavoriteAdd1_LightShow1_HiddenField2" />
+                    </ul>
+                </div>
+                <b class="b4b d1"></b><b class="b3b d1"></b><b class="b2b d1"></b><b class="b1b"></b>
+            </div>
+        </div>
+    </div>
+    <br />
+    <div class="mbrgt_box" style="height: auto">
+        <div class=" mbrgt_top_light">
+            <div class="subrgt_icon">
+                <div class="primicon" style="text-align: left; margin: 5px">
+                    <img src="../../Images/icon_shows_r.png" /><br />
+                    <span style="color: #FFFFFF; font-size: x-large;">shows</span><br />
+                </div>
+            </div>
+            <div class="subrgt_box">
+                <b class="b1"></b><b class="b2 d1"></b><b class="b3 d1"></b><b class="b4 d1"></b>
+                <div class="b d1 k" style="height: auto">
+                    <ul class="lightlist">
+                        
+                        <input type="hidden" name="ctl00$FavoriteControl1$FavoriteAdd1$LightShow1$hdnSelectedShowID" id="FavoriteControl1_FavoriteAdd1_LightShow1_hdnSelectedShowID" />
+                    </ul>
+                </div>
+                <b class="b4b d1"></b><b class="b3b d1"></b><b class="b2b d1"></b><b class="b1b"></b>
+            </div>
+            <div class="sbline2">
+            </div>
+            <div style="clear: both">
+            </div>
+        </div>
+        
+    </div>
+</div>
+<script type="text/javascript">
+    function changeFavoriteShowStyle(ctr) {
+        if (ctr.className != "isAFlag") {
+            $("ul.lightlist").find("h4").removeClass("light_sel");
+            ctr.className = "light_sel";
+
+            var hdnShowID = ctr.id.replace("hShow", "hdnShowID");
+            var hdnSelectedShowID = 'FavoriteControl1_FavoriteAdd1_LightShow1_hdnSelectedShowID';
+            document.getElementById(hdnSelectedShowID).value = document.getElementById(hdnShowID).value;
+        }
+
+        var lblPromptMessageID = 'lblPromptMessage';
+        document.getElementById(lblPromptMessageID).innerText = "";
+        //            var btnSubmitLightFavorite = document.getElementById('btnSubmitLightFavorite.ClientID');
+        //            btnSubmitLightFavorite.click();
+    }
+
+    function fixedColorClick() {
+        if ($(".lblFlicker").find('input[type="hidden"]').attr("Value") == "1") {
+            $(".lblFlicker").show();
+            $(".imageFlicker").find('input[type="image"]').show();
+            var imageUrl = $(".imageFlicker").find('input[type="image"]').attr("src");
+            $(".imageFlicker").find('input[type="hidden"]').attr("Value", (imageUrl.indexOf("icon_on.png") > 0) ? "on" : "off");
+            $(".lblFlicker").parent().prev().prev().hide();
+            $(".subrgt_icon").attr("style", "height:78px");
+        }
+    }
+
+    function lightShowClick() {
+        if ($(".lblFlicker").find('input[type="hidden"]').attr("Value") == "1") {
+            $(".lblFlicker").hide();
+            $(".imageFlicker").find('input[type="image"]').hide();
+            $(".imageFlicker").find('input[type="hidden"]').attr("Value", "off");
+            $(".lblFlicker").parent().prev().prev().show();
+            $(".subrgt_icon").attr("style", "height:78px");
+        }
+    }
+
+    function btnImageFlicker() {
+        try {
+            var imageUrl = $(".imageFlicker").find('input[type="image"]').attr("src");
+            $(".imageFlicker").find('input[type="hidden"]').attr("Value", (imageUrl.indexOf("icon_on.png") > 0) ? "off" : "on");
+            $(".imageFlicker").find('input[type="image"]').attr("src", (imageUrl.indexOf("icon_on.png") > 0) ? imageUrl.replace("icon_on.png", "icon_off.png") : imageUrl.replace("icon_off.png", "icon_on.png"));
+        } catch (e) {
+
+        }
+        return false;
+    }
+</script>
+
+            
+				</div>
+            <div id="FavoriteControl1_FavoriteAdd1_pnlPoolChoose" style="border-color:#73E6FF;border-width:1px;border-style:solid;height:100px;width:720px;text-align:left;">
+					
+            <table id="FavoriteControl1_FavoriteAdd1_dltPoolChoose" cellspacing="0" style="border-collapse:collapse;">
+						<tr>
+							<td align="center" style="height:100px;width:100px;">
+                    <div id="divBoW" class="divBoW" style="background:url(../../Images/btn_bg_sel.png); background-repeat:no-repeat; background-position:center;width:50px;height:53px">
+                        <input type="image" name="ctl00$FavoriteControl1$FavoriteAdd1$dltPoolChoose$ctl00$imgBoW" id="FavoriteControl1_FavoriteAdd1_dltPoolChoose_imgBoW_0" class="imgBoW" src="../../Images/icon_pool.png" style="position:relative;top:10px;width:38px;height:32px" />                      
+                    </div>
+                    <span id="FavoriteControl1_FavoriteAdd1_dltPoolChoose_lblBoWName_0" style="color:White;">Pool</span> 
+                    <input type="hidden" name="ctl00$FavoriteControl1$FavoriteAdd1$dltPoolChoose$ctl00$hdnBowSystemID" id="FavoriteControl1_FavoriteAdd1_dltPoolChoose_hdnBowSystemID_0" value="1" />
+                </td><td align="center" style="height:100px;width:100px;">
+                    <div id="divBoW" class="divBoW" style="background:url(../../Images/btn_bg_unsel.png); background-repeat:no-repeat; background-position:center;width:50px;height:53px">
+                        <input type="image" name="ctl00$FavoriteControl1$FavoriteAdd1$dltPoolChoose$ctl01$imgBoW" id="FavoriteControl1_FavoriteAdd1_dltPoolChoose_imgBoW_1" class="imgBoW" src="../../Images/icon_spa.png" style="position:relative;top:10px;width:38px;height:32px" />                      
+                    </div>
+                    <span id="FavoriteControl1_FavoriteAdd1_dltPoolChoose_lblBoWName_1" style="color:White;">Spa</span> 
+                    <input type="hidden" name="ctl00$FavoriteControl1$FavoriteAdd1$dltPoolChoose$ctl01$hdnBowSystemID" id="FavoriteControl1_FavoriteAdd1_dltPoolChoose_hdnBowSystemID_1" value="2" />
+                </td><td></td><td></td><td></td>
+						</tr>
+					</table>
+            <input name="ctl00$FavoriteControl1$FavoriteAdd1$hdnMspID" type="hidden" id="hdnMspID" value="252984" />
+            <input type="hidden" name="ctl00$FavoriteControl1$FavoriteAdd1$hdnSelectBoWID" id="hdnSelectBoWID" value="1" />
+            
+				</div>
+            <br />
+            <div id="FavoriteControl1_FavoriteAdd1_pnlEquipmentChoose" style="border-color:#73E6FF;border-width:1px;border-style:solid;height:200px;width:720px;overflow:auto;text-align:left;">
+					
+            <table id="FavoriteControl1_FavoriteAdd1_dltEquipmentChoose" cellspacing="0" style="border-collapse:collapse;">
+						<tr>
+							<td align="center" style="height:100px;width:100px;">
+                    <div id="divEquipment" class="divEquipment unsel">
+                        <input type="image" name="ctl00$FavoriteControl1$FavoriteAdd1$dltEquipmentChoose$ctl00$imgChooseEquipment" id="imgChooseEquipment" src="../../Images/Favorite/icon_spillover.png" style="position:relative;top:10px;width:38px;height:32px" />
+                    </div>
+                    <span id="FavoriteControl1_FavoriteAdd1_dltEquipmentChoose_lblEquipmentName_0" style="color:White;">Spillover</span>
+                </td><td align="center" style="height:100px;width:100px;">
+                    <div id="divEquipment" class="divEquipment unsel">
+                        <input type="image" name="ctl00$FavoriteControl1$FavoriteAdd1$dltEquipmentChoose$ctl01$imgChooseEquipment" id="imgChooseEquipment" src="../../Images/Favorite/icon_heater.png" style="position:relative;top:10px;width:38px;height:32px" />
+                    </div>
+                    <span id="FavoriteControl1_FavoriteAdd1_dltEquipmentChoose_lblEquipmentName_1" style="color:White;">Heater</span>
+                </td><td align="center" style="height:100px;width:100px;">
+                    <div id="divEquipment" class="divEquipment unsel">
+                        <input type="image" name="ctl00$FavoriteControl1$FavoriteAdd1$dltEquipmentChoose$ctl02$imgChooseEquipment" id="imgChooseEquipment" src="../../Images/Favorite/icon_chemistry.png" style="position:relative;top:10px;width:38px;height:32px" />
+                    </div>
+                    <span id="FavoriteControl1_FavoriteAdd1_dltEquipmentChoose_lblEquipmentName_2" style="color:White;">Chlorinator</span>
+                </td><td align="center" style="height:100px;width:100px;">
+                    <div id="divEquipment" class="divEquipment unsel">
+                        <input type="image" name="ctl00$FavoriteControl1$FavoriteAdd1$dltEquipmentChoose$ctl03$imgChooseEquipment" id="imgChooseEquipment" src="../../Images/Favorite/icon_lights.png" style="position:relative;top:10px;width:38px;height:32px" />
+                    </div>
+                    <span id="FavoriteControl1_FavoriteAdd1_dltEquipmentChoose_lblEquipmentName_3" style="color:White;">Light</span>
+                </td><td></td>
+						</tr>
+					</table>
+            <input type="hidden" name="ctl00$FavoriteControl1$FavoriteAdd1$hdnSelectEquipmentID" id="hdnSelectEquipmentID" />
+            
+				</div>
+            <input type="image" name="ctl00$FavoriteControl1$FavoriteAdd1$imgFavoriteAdd" id="FavoriteControl1_FavoriteAdd1_imgFavoriteAdd" title="submit" align="right" src="../../Images/btn_act_ok.png" style="margin:10px;" />
+
+          
+			</div>
+    
+		</div>
+<br />
+
+
+<script type="text/javascript" >
+//    $(document).ready(function () {
+//        $("#imgFavoriteAdd").click(function () {
+//            var mspIDValue = $("#hdnMspID").attr('value');
+//            var equipmentIDValue = $("#hdnSelectEquipmentID").attr('value');
+    //            jqalert(equipmentIDValue);
+//            $.post("../../UserControl/FavoriteService.asmx/AddFavorite",
+//            {
+//                mspID: mspIDValue,
+//                equipmentID: equipmentIDValue,
+//                data: 0
+//            },
+//            function (data, status) {
+    //                //jqalert("Data: " + data + "\nStatus: " + status);
+//            });
+//            return false;
+//        });
+//    });
+</script>
+
+    
+	</div>
+    <span id="FavoriteControl1_timerFavoriteAdd" style="visibility:hidden;display:none;"></span>
+    <div id="FavoriteControl1_pnlFavoriteList" style="border-color:#73E6FF;border-width:1px;border-style:solid;height:320px;width:720px;overflow:auto;text-align:left;">
+		
+        <ul id="sortable" class="sortable">
+        
+                <li id="liFavorite">
+                    <br />
+                    <div id="divFavorite" style='background:url(../../Images/btn_bg_sel.png); background-repeat:no-repeat; background-position:center; width:50px;height:53px;position: relative;left:30px;top:10px;'>
+                        <input id="hdnFavorite" type="hidden" name='1' value='0'/>
+                        <input id="hdnFavoriteData" type="hidden" value='268435440'/>
+				        <img id="imgChooseFavorite" src='../../Images/Favorite/icon_filter.png' alt="icon"  width="38px" height="32px"/>
+                        <input type="hidden" id="favoriteState" value='1'/>
+                    </div>
+                    <br />
+                    <span id="FavoriteControl1_dltFavorite_Label1_0" style="display:inline-block;color:White;width:110px;font-size:14px; line-height:13px;">Filter Pump</span>
+                </li>
+            
+                <li id="liFavorite">
+                    <br />
+                    <div id="divFavorite" style='background:url(../../Images/btn_bg_unsel.png); background-repeat:no-repeat; background-position:center; width:50px;height:53px;position: relative;left:30px;top:10px;'>
+                        <input id="hdnFavorite" type="hidden" name='3' value='0'/>
+                        <input id="hdnFavoriteData" type="hidden" value='268435455'/>
+				        <img id="imgChooseFavorite" src='https://haywardomnilogic.com/Images/Theme/icon_theme_20.png' alt="icon"  width="38px" height="32px"/>
+                        <input type="hidden" id="favoriteState" value='0'/>
+                    </div>
+                    <br />
+                    <span id="FavoriteControl1_dltFavorite_Label1_1" style="display:inline-block;color:White;width:110px;font-size:14px; line-height:13px;">Hot Tub</span>
+                </li>
+            
+                <li id="liFavorite">
+                    <br />
+                    <div id="divFavorite" style='background:url(../../Images/btn_bg_unsel.png); background-repeat:no-repeat; background-position:center; width:50px;height:53px;position: relative;left:30px;top:10px;'>
+                        <input id="hdnFavorite" type="hidden" name='4' value='0'/>
+                        <input id="hdnFavoriteData" type="hidden" value='268435455'/>
+				        <img id="imgChooseFavorite" src='https://haywardomnilogic.com/Images/Theme/icon_theme_0.png' alt="icon"  width="38px" height="32px"/>
+                        <input type="hidden" id="favoriteState" value='0'/>
+                    </div>
+                    <br />
+                    <span id="FavoriteControl1_dltFavorite_Label1_2" style="display:inline-block;color:White;width:110px;font-size:14px; line-height:13px;">Normal Pool</span>
+                </li>
+            
+        </ul>
+    
+	</div>
+    <div>
+        <input type="hidden" name="ctl00$FavoriteControl1$favoriteCount" id="FavoriteControl1_favoriteCount" value="3" />
+        <span id="maxFavoriteMessage" style="display:none"></span>
+        <input type="hidden" name="ctl00$FavoriteControl1$hdnMessageVersion" id="FavoriteControl1_hdnMessageVersion" value="1.22" />
+        <input type="hidden" name="ctl00$FavoriteControl1$hdnMaxFavoriteCount" id="FavoriteControl1_hdnMaxFavoriteCount" value="50" />
+        <input name="ctl00$FavoriteControl1$hdnMspID" type="hidden" id="hdnMspID" value="252984" />
+        <input name="ctl00$FavoriteControl1$hdnSelectFavoriteID" type="hidden" id="hdnSelectFavoriteID" />
+        <input name="ctl00$FavoriteControl1$hdnSelectFvaoriteData" type="hidden" id="hdnSelectFvaoriteData" />
+        <input name="ctl00$FavoriteControl1$hdnDeleteFavorite" type="hidden" id="hdnDeleteFavorite" />
+        <input name="ctl00$FavoriteControl1$hdnClickAddButtonValue" type="hidden" id="hdnClickAddButtonValue" />
+        
+       <div id="divButtons">
+        <input type="image" name="ctl00$FavoriteControl1$btnFavoriteEnableOff" id="btnFavoriteEnableOff" align="right" src="../../Images/btn_act_off.png" style="display:none;" />
+        <input type="image" name="ctl00$FavoriteControl1$btnFavoriteEnableOn" id="btnFavoriteEnableOn" align="right" src="../../Images/btn_act_on.png" style="display:none;" />
+        <input src="https://haywardomnilogic.com/Images/btn_act_goto.png" name="ctl00$FavoriteControl1$btnFavoriteGoto" type="image" id="btnFavoriteGoto" style="display:none" align="right" />
+        <input type="image" name="ctl00$FavoriteControl1$btnFavoriteDelete" id="btnFavoriteDelete" align="right" src="https://haywardomnilogic.com/Images/Favorite/btn_act_del.png" onclick="return confirmDeletFavorite(this); ;" style="display:none;" />
+       </div>
+    </div>
+</div>
+<script type="text/javascript" >
+    function confirmDeletFavorite(target) {
+        //NGCIT-5629,User can go to favorite page without confirming whether delete a selected favorite.
+        $("#pnlFavorite").css('z-index', 100);
+        var favoritePanelId = "pnlFavorite";
+
+        var msg = "Are you sure to delete this favorite?";
+        return jqconfirm(target, msg,favoritePanelId);
+    }
+    function onClickAddOKButton() {
+        var hdnClickAddButtonValueID = document.getElementById("hdnClickAddButtonValue");
+        hdnClickAddButtonValueID.value = "1";
+
+        var lblAlertID = document.getElementById("lblAlert");
+        lblAlertID.innerHTML = "";
+        var addOKButtonSubmitID = "FavoriteControl1_AddOKButtonSubmit";
+        var submitElement = document.getElementById(addOKButtonSubmitID);
+        submitElement.click();
+    }
+    function addConfirm() {
+        var hdnMessageVersion = document.getElementById("FavoriteControl1_hdnMessageVersion");
+        var favoriteCount = document.getElementById("FavoriteControl1_favoriteCount");
+        var hdnMaxFavoriteCount = document.getElementById("FavoriteControl1_hdnMaxFavoriteCount");
+        if (favoriteCount.value >= hdnMaxFavoriteCount.value) {
+            var maxFavoriteMessage = document.getElementById("maxFavoriteMessage");
+            var lblAlertID = document.getElementById("lblAlert");
+            lblAlertID.setAttribute("class", "promptMessage");
+            lblAlertID.innerHTML = maxFavoriteMessage.innerHTML;
+        }
+    }
+
+    function onClickReturnButton() {
+        var hdnClickAddButtonValueID = document.getElementById("hdnClickAddButtonValue");
+        hdnClickAddButtonValueID.value = "0";
+
+        //Reload the favorite list
+        reloadFavoriteListStyle(); 
+              
+        var btnReturn = document.getElementById("FavoriteControl1_btnReturn");
+        btnReturn.click();
+    }
+
+    function setFavoriteDispalyNone() {
+        //Don't display the favorite which has been deleted
+        var hdnDeleteFavoriteID = document.getElementById("hdnDeleteFavorite");
+        if (hdnDeleteFavoriteID.value != null && hdnDeleteFavoriteID.value != "") {
+            $("#sortable").find("li").each(function () {
+                var hdnFavorite = $(this).find('#hdnFavorite').attr("name");
+                if (hdnFavorite == hdnDeleteFavoriteID.value) {
+                    $(this).attr({ 'style': 'display :none' });
+                }
+            });
+        }
+    }
+
+    function reloadFavoriteListStyle() {
+        var btnBGUnsel = "background:url(../../Images/btn_bg_unsel.png);background-repeat:no-repeat;background-position:center;width:50px;height:50px;position:relative;left:30px;top:10px;";
+        var btnBgSel = "background:url(../../Images/btn_bg_sel.png);background-repeat:no-repeat;background-position:center;width:50px;height:50px;position:relative;left:30px;top:10px;";
+        var btnClickImage = "btn_bg_sel_mannual.png";
+
+        // Hide the buttons
+        $("#divButtons").attr('style', 'display:none'); 
+
+        //Don't select all icon
+        $("#sortable").find("div").each(function () {
+            if ($(this).attr('style').indexOf(btnClickImage) > 0) {
+                var favoriteStateValue = $(this).find('#favoriteState').attr("value");
+                if (favoriteStateValue > 0) {
+                    $(this).attr({ 'style': btnBgSel });
+                } else {
+                    $(this).attr({ 'style': btnBGUnsel });
+                }
+            }
+        });
+    }
+
+    $(document).ready(function () {
+        $("#sortable").sortable({
+            update: function (event, ui) {
+                var mspIDValue = $("#hdnMspID").attr('value');
+                var favoriteIDs = "";
+                $("#sortable").find("li").each(function () {
+                    favoriteIDs += $(this).find('#hdnFavorite').attr("name") + ",";
+                });
+                if (favoriteIDs.length > 0) {
+                    favoriteIDs = favoriteIDs.substring(0, favoriteIDs.length - 1);
+                }
+                $.post("../../UserControl/FavoriteService.asmx/SortFavorite",
+                {
+                    mspID: mspIDValue,
+                    favoriteIDs: favoriteIDs
+                },
+                function (data, status) {
+                    //jqalert("Data: " + data + "\nStatus: " + status);
+                });
+            }
+        });
+
+        $("#sortable").find("div").click(function () {
+            $("#lblAlert").html("");
+            
+            //Reload the favorite list
+            reloadFavoriteListStyle();
+
+            var btnClickStyle = "background:url(../../Images/btn_bg_sel_mannual.png);background-repeat:no-repeat;background-position:center;width:58px;height:58px;position:relative;left:30px;top:5px;";
+            $(this).attr({ 'style': btnClickStyle });
+
+            $("#divButtons").attr('style', 'display:');
+
+            var stateValue = $(this).find('#favoriteState').attr("value");
+            var hdnFavorite = $(this).find('#hdnFavorite');
+            $("#hdnSelectFavoriteID").attr('value', hdnFavorite.attr("name"));
+            var isGotoPage = hdnFavorite.attr("value");
+            $("#btnFavoriteDelete").attr('style', 'display:block;margin:10px');
+            if (isGotoPage == 1) {
+                $("#btnFavoriteEnableOn").attr('style', 'display:none');
+                $("#btnFavoriteEnableOff").attr('style', 'display:none');
+                $("#btnFavoriteGoto").attr('style', 'display:block;margin:10px');
+            } else {
+                $("#btnFavoriteGoto").attr('style', 'display:none');
+                if ('1.22' == "0.9") {
+                    $("#btnFavoriteEnableOn").attr('style', 'display:block;margin:10px');
+                    $("#btnFavoriteEnableOff").attr('style', 'display:block;margin:10px');
+                } else {
+                    if (stateValue > 0) {
+                        $("#btnFavoriteEnableOn").attr('style', 'display:none');
+                        $("#btnFavoriteEnableOff").attr('style', 'display:block;margin:10px');
+                    } else {
+                        $("#btnFavoriteEnableOff").attr('style', 'display:none');
+                        $("#btnFavoriteEnableOn").attr('style', 'display:block;margin:10px');
+                    }
+                }
+            }
+
+        });
+ 
+
+    });
+
+</script>
+                        
+</div>
+                        <span id="timerFavorite" style="visibility:hidden;display:none;"></span>
+                        
+                        <div id="pnlPowerOff" align="center" style="border-color:#73E6FF;border-width:1px;border-style:solid;height:375px;width:525px;background-image:url(../../Images/bg.png);display: none;">
+	
+                            <br />
+                            <input type="image" name="ctl00$imgClosePowerOff" id="imgClosePowerOff" title="close" src="../../Images/btn_act_close.png" align="right" style="margin-right: 10px" />
+                            
+<div>
+    <div style="text-align: left">
+        <span style="color: #FFFFFF; font-size: x-large; margin: 10px">
+            power off / features off
+        </span>
+    </div>
+    <br />
+    <hr />
+    <div>
+        <div id="PowerOff1_UpdatePanel1">
+		
+                <table id="PowerOff1_tbDisclaimer" cellspacing="0" cellpadding="0" align="center" width="100%" height="100%" class="tabreg">
+			<tr style="height: 60px;">
+			</tr>
+			<tr style="height: 145px;">
+				<td align="right" valign="top" width="50%" style="padding-right:45px;">
+                            <input type="image" name="ctl00$PowerOff1$imgGoodbye" id="PowerOff1_imgGoodbye" src="../../Images/btn_act_goodbye.png" />
+                            <br />
+                             <span style="color:White; font-size: 14px; font-weight: bold; vertical-align: bottom;">
+                                features off
+                            </span>
+                            <br />
+                            <span id="PowerOff1_lblMessage"></span>
+                                                                         
+                        </td>
+				<td align="left" valign="top" style="padding-left:45px; ">
+                            <input type="image" name="ctl00$PowerOff1$imgPowerOff" id="PowerOff1_imgPowerOff" src="../../Images/btn_act_poweroff.png" onclick="return powerOff(this);" />
+                            <br />
+                             <span style="color: White; font-size: 14px; font-weight: bold; vertical-align: bottom;">
+                                power off
+                            </span>
+                            <br />
+                            <span id="PowerOff1_lblMessage1"></span>
+                        </td>
+			</tr>
+			<tr>
+				<td colspan="2" align="left" style="padding-left:70px">
+                            <span style="color: Orange; font-size: 14px; font-weight: bold; vertical-align: bottom;">
+                                features off: all manual operations will turn off. 
+                            </span>
+                            <br />
+                            <span style="color: Red; font-size: 14px; font-weight: bold; vertical-align: bottom;">
+                                power off: system shut down.
+                            </span>
+                        </td>
+			</tr>
+		</table>
+		
+            
+	</div>
+    </div>
+</div>
+<script type="text/javascript">
+    function powerOff(target) {
+        //Clear the prompt message
+        document.getElementById("PowerOff1_lblMessage").innerHTML = "";
+        document.getElementById("PowerOff1_lblMessage1").innerHTML = "";
+
+        $("#pnlPowerOff").css('z-index', 99);
+        var powerOffPanelId = "pnlPowerOff";
+
+        if (jqconfirm(target, 'Complete system shut down! Can only be reset from controller. Are you sure?', powerOffPanelId,null,null,null,'close')) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+</script>
+
+                        
+</div>
+                        <span id="timerPowerOff" style="visibility:hidden;display:none;"></span>
+                        
+                        <div id="pnlFreezeProtectOverride" align="center" style="border-color:#73E6FF;border-width:1px;border-style:solid;height:375px;width:525px;background-image:url(../../Images/bg.png);display: none;">
+	
+                            <br />
+                            <input type="image" name="ctl00$ImageButton1" id="ImageButton1" title="close" src="../../Images/btn_act_close.png" align="right" style="margin-right: 10px" />
+                            
+<div>
+    <div style="text-align: left">
+        <span style="color: #FFFFFF; font-size: x-large; margin: 10px"> Freeze Protect Override
+        </span>
+    </div>
+    <br />
+    <hr />
+    <div style="text-align: center; padding: 55px">
+        <span style="color: #FFFFFF; font-size: large;">Overriding Freeze Protect could cause damage to your system. Are you sure?</span>
+    </div>
+    <div>
+        <table style="text-align: center; width: 400px">
+            <tr>
+                <td>
+                    <input type="image" name="ctl00$FreezeProtectOverride1$ibInterval60" id="FreezeProtectOverride1_ibInterval60" src="../../Images/btn_act_timer.png" />
+                    <div>
+                        <span style="color: #FFFFFF; font-size: medium">60 min </span>
+                    </div>
+                </td>
+                <td>
+                    <input type="image" name="ctl00$FreezeProtectOverride1$ibInterval120" id="FreezeProtectOverride1_ibInterval120" src="../../Images/btn_act_timer.png" />
+                    <div>
+                        <span style="color: #FFFFFF; font-size: medium">120 min </span>
+                    </div>
+                </td>
+                <td>
+                    <input type="image" name="ctl00$FreezeProtectOverride1$ibInterval180" id="FreezeProtectOverride1_ibInterval180" src="../../Images/btn_act_timer.png" />
+                    <div>
+                        <span style="color: #FFFFFF; font-size: medium">180 min </span>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+
+                        
+</div>
+                        <input name="ctl00$hidFreezeProtectOverride" type="hidden" id="hidFreezeProtectOverride" />
+                    </div>
+                    <div class="main_tab">                       
+                        <ul>
+                            <table id="dlstPool" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">
+	<tr>
+		<td align="left" style="width:100px;">
+                                    <li id="dlstPool_liPoolTab_0" class="" style="padding-left:5px">
+                                        <img src='https://haywardomnilogic.com/Images/icon_pool.png' width="20" vspace="2" align="absmiddle" style="margin-top: 10px; float: left;" />
+                                        <a onclick="return changebow();" id="dlstPool_lkbPool_0" title="Pool" align="absmiddle" href="javascript:__doPostBack(&#39;ctl00$dlstPool$ctl00$lkbPool&#39;,&#39;&#39;)" style="display: block; width: 95px; height: 44px; padding-left: 5px; overflow: HIDDEN; float: left;">Pool</a>
+                                        <input type="hidden" name="ctl00$dlstPool$ctl00$hdnBowID" id="dlstPool_hdnBowID_0" value="5074744" />
+                                        <input type="hidden" name="ctl00$dlstPool$ctl00$hdnBowSystemID" id="dlstPool_hdnBowSystemID_0" value="1" />
+                                        <input type="hidden" name="ctl00$dlstPool$ctl00$hdnIndex" id="dlstPool_hdnIndex_0" value="1" />
+                                    </li>
+                                </td><td align="left" style="width:100px;">
+                                    <li id="dlstPool_liPoolTab_1" class="no_sel" style="">
+                                        <img src='https://haywardomnilogic.com/Images/icon_spa.png' width="20" vspace="2" align="absmiddle" style="margin-top: 10px; float: left;" />
+                                        <a onclick="return changebow();" id="dlstPool_lkbPool_1" title="Spa" align="absmiddle" href="javascript:__doPostBack(&#39;ctl00$dlstPool$ctl01$lkbPool&#39;,&#39;&#39;)" style="display: block; width: 95px; height: 44px; padding-left: 5px; overflow: HIDDEN; float: left;">Spa</a>
+                                        <input type="hidden" name="ctl00$dlstPool$ctl01$hdnBowID" id="dlstPool_hdnBowID_1" value="5074745" />
+                                        <input type="hidden" name="ctl00$dlstPool$ctl01$hdnBowSystemID" id="dlstPool_hdnBowSystemID_1" value="2" />
+                                        <input type="hidden" name="ctl00$dlstPool$ctl01$hdnIndex" id="dlstPool_hdnIndex_1" value="2" />
+                                    </li>
+                                </td><td></td><td></td><td></td><td></td><td></td>
+	</tr>
+</table>
+                        </ul>
+                        <input type="hidden" name="ctl00$hdnSelectedIndex" id="hdnSelectedIndex" value="0" />
+                        <input type="hidden" name="ctl00$hdnLastIndex" id="hdnLastIndex" value="4" />
+                    </div>
+                    <div style="width: 20px; float: left; margin-top: 9px;">
+                        <input type="image" name="ctl00$imgTabRight" id="imgTabRight" src="https://haywardomnilogic.com/Images/icon_tab_r.png" onclick="return changebow();" style="display:none" />
+                        <input type="image" name="ctl00$imgTabLeft" id="imgTabLeft" src="https://haywardomnilogic.com/Images/icon_tab_l.png" onclick="return changebow();" style="display: none" />
+                    </div>
+                    <div id="upPoolCommand">
+	
+                            <div class="main_body">
+                                <div class="mbleft">
+                                    <ul>
+                                        <li id="liHome">
+                                            <img src="https://haywardomnilogic.com/Images/icon_home_s.png" width="32" height="32" hspace="5" vspace="5"
+                                                border="0" align="absmiddle" />
+                                            <a href="../../Module/UserManagement/Dashboard.aspx?mspID=DCEC367C6BDDCB06&bowID=48A6C0EBC3808A94">
+                                                home</a> </li>
+                                        <li id="liFilter">
+                                            <img src="https://haywardomnilogic.com/Images/icon_filter_s.png" width="32" height="32" hspace="5"
+                                                border="0" vspace="5" align="absmiddle" />
+                                            <a href="../../Module/UserManagement/Filter_Setting.aspx?mspID=DCEC367C6BDDCB06&bowID=48A6C0EBC3808A94&bowSystemID=BE1BF543BCC6BD40">
+                                                filter pump</a> </li>
+                                        <li id="liHeater" class="show">
+                                            <img src="https://haywardomnilogic.com/Images/icon_heater_s.png" width="32" height="32" hspace="5"
+                                                border="0" vspace="5" align="absmiddle" />
+                                            <a href="../../Module/UserManagement/Heater_Setting.aspx?mspID=DCEC367C6BDDCB06&bowID=48A6C0EBC3808A94&bowSystemID=BE1BF543BCC6BD40">
+                                                heater</a> </li>
+                                        <li id="liLight" class="show">
+                                            <img src="https://haywardomnilogic.com/Images/icon_lights_s.png" width="32" height="32" hspace="5"
+                                                border="0" vspace="5" align="absmiddle" />
+                                            <a href="../../Module/UserManagement/Light_Setting.aspx?mspID=DCEC367C6BDDCB06&bowID=48A6C0EBC3808A94&bowSystemID=BE1BF543BCC6BD40">
+                                                lights</a> </li>
+                                        <li id="liWaterFeature" class="abshide">
+                                            <img src="https://haywardomnilogic.com/Images/icon_waterfeature_s.png" width="32" height="32" hspace="5"
+                                                border="0" vspace="5" align="absmiddle" />
+                                            <a href="../../Module/UserManagement/WaterFeature_Setting.aspx?mspID=DCEC367C6BDDCB06&bowID=48A6C0EBC3808A94&bowSystemID=BE1BF543BCC6BD40">
+                                                water features</a> </li>
+                                        <li id="liChlorinator" class="show">
+                                            <img src="https://haywardomnilogic.com/Images/icon_chemistry_s.png" width="32" height="32" hspace="5"
+                                                border="0" vspace="5" align="absmiddle" />
+                                            <a href="../../Module/UserManagement/Chlorinator_Setting.aspx?mspID=DCEC367C6BDDCB06&bowID=48A6C0EBC3808A94&bowSystemID=BE1BF543BCC6BD40">
+                                                chlorinator</a> </li>
+                                        <li id="liPH" class="abshide">
+                                            <img src="https://haywardomnilogic.com/Images/icon_csad_s.png" width="32" height="32" hspace="5" border="0"
+                                                vspace="5" align="absmiddle" />
+                                            <a href="../../Module/UserManagement/CSAD_Setting.aspx?mspID=DCEC367C6BDDCB06&bowID=48A6C0EBC3808A94&bowSystemID=BE1BF543BCC6BD40">
+                                                pH</a> </li>
+                                        <li id="liCleaner" class="abshide">
+                                            <img src="https://haywardomnilogic.com/Images/icon_cleaner_s.png" width="32" height="32" hspace="5"
+                                                border="0" vspace="5" align="absmiddle" />
+                                            <a href="../../Module/UserManagement/Cleaner_Setting.aspx?mspID=DCEC367C6BDDCB06&bowID=48A6C0EBC3808A94&bowSystemID=BE1BF543BCC6BD40">
+                                                cleaner</a> </li>
+                                        <li id="liSpillover" class="show">
+                                            <img src="https://haywardomnilogic.com/Images/icon_spillover_s.png" width="32" height="32" hspace="5"
+                                                border="0" vspace="5" align="absmiddle" />
+                                            <a href="../../Module/UserManagement/Spillover_Setting.aspx?mspID=DCEC367C6BDDCB06&bowID=48A6C0EBC3808A94&bowSystemID=BE1BF543BCC6BD40">
+                                                spillover</a> </li>
+                                        <li id="liBackyard" class="abshide">
+                                            <img src="https://haywardomnilogic.com/Images/icon_backyard_equipment_s.png" width="32" height="32"
+                                                hspace="5" border="0" vspace="5" align="absmiddle" />
+                                            <a href="../../Module/UserManagement/Backyard_Equipment_Setting.aspx?mspID=DCEC367C6BDDCB06">
+                                                backyard</asp:Label></a> </li>
+                                        <li id="liSchedule">
+                                            <img src="https://haywardomnilogic.com/Images/icon_schedule_s.png" width="32" height="32" hspace="5"
+                                                border="0" vspace="5" align="absmiddle" />
+                                            <a href="../../Module/UserManagement/Bow_Schedule_List.aspx?mspID=DCEC367C6BDDCB06&bowID=48A6C0EBC3808A94">
+                                                schedule</a> </li>
+                                        <li id="liSetting">
+                                            <img src="https://haywardomnilogic.com/Images/icon_setting_s.png" width="32" height="32" hspace="5"
+                                                border="0" vspace="5" align="absmiddle" />
+                                            <a href="../../Module/UserManagement/MspSetting.aspx?mspID=DCEC367C6BDDCB06&bowID=48A6C0EBC3808A94">
+                                                settings</a> </li>
+                                        <li id="liTheme">
+                                            <img src="https://haywardomnilogic.com/Images/icon_theme_s.png" width="32" height="32" hspace="5"
+                                                border="0" vspace="5" align="absmiddle" />
+                                            <a href="../../Module/UserManagement/ThemeList.aspx?mspID=DCEC367C6BDDCB06&bowID=48A6C0EBC3808A94">
+                                                theme</a> </li>
+                                        <li id="liSurvey">
+                                            <img src="https://haywardomnilogic.com/Images/icon_survey_s.png" width="32" height="32" hspace="5"
+                                                border="0" vspace="5" align="absmiddle" />
+                                            <a href="../../Module/UserManagement/SurveyList.aspx?mspID=DCEC367C6BDDCB06&bowID=48A6C0EBC3808A94">
+                                                survey</a> </li>
+                                        <li id="liHistory">
+                                            <img src="https://haywardomnilogic.com/Images/icon_history_s.png" width="32" height="32" hspace="5"
+                                                border="0" vspace="5" align="absmiddle" />
+                                            <a href="../../Module/TelemetryManagement/TelemetryHistory.aspx?mspID=DCEC367C6BDDCB06&bowID=48A6C0EBC3808A94">
+                                                history</a> </li>
+                                        <br />
+                                        <a id="hrfUp" href="#" onclick="upMenu();" class="hide">
+                                            <img src="https://haywardomnilogic.com/Images/icon_up.png" width="23" height="13" align="absmiddle"
+                                                border="0" /></a> <a id="hrfDown" href="#" onclick="downMenu();" class="hide">
+                                                    <img src="https://haywardomnilogic.com/Images/icon_down.png" width="23" height="13" align="absmiddle"
+                                                        border="0" /></a>
+                                    </ul>
+                                </div>
+                                
+          <div class="mbright bg_filter">
+          	<div class="sbttl"></div>
+            <div class="sbline"><hr /></div>
+            <div id="cphMainContent_pnlControls">
+		<div id="cphMainContent_3_divContent" class="mbrgt_secd">
+    <div class="subrgt_icon">
+        <div id="cphMainContent_3_iconHidden" class="primicon">
+            
+            <img id="cphMainContent_3_imgIcon" src="https://haywardomnilogic.com/Images/icon_filter_r.png" alt="Icon" />
+            <br />
+            <span id="cphMainContent_3_lblName">Filter Pump</span><br />
+            <input type="image" name="ctl00$cphMainContent$3$btnEnabled" id="cphMainContent_3_btnEnabled" src="https://haywardomnilogic.com/Images/icon_on.png" onclick="StopCountdown(this);" style="height:28px;width:52px;" />
+            <div id="cphMainContent_3_divStatusName" style="line-height: 1.2;">on</div>
+        </div>
+        <input type="image" name="ctl00$cphMainContent$3$btnEnabledStat" id="cphMainContent_3_btnEnabledStat" vspace="20" hspace="0" align="absmiddle" src="https://haywardomnilogic.com/Images/icon_on_stat.gif" style="height:18px;width:18px;" />
+    </div>
+    <div class="subrgt_box">
+        <b class="b1"></b><b class="b2 d1"></b><b class="b3 d1"></b><b class="b4 d1"></b>
+        <div class="b d1 k">
+            <div id="cphMainContent_3_divPump" class="boxright3">
+
+                <div class="boxspdset">
+                    <h1>
+                        
+                        
+                        
+                        
+
+                    </h1>
+
+                    
+                </div>
+
+                <div class="boxspdtarget" style="width: 140px; text-align: left">
+                    <div style="float: right;">
+                        <a id="cphMainContent_3_lbDiagnostic" href="javascript:WebForm_DoPostBackWithOptions(new WebForm_PostBackOptions(&quot;ctl00$cphMainContent$3$lbDiagnostic&quot;, &quot;&quot;, false, &quot;&quot;, &quot;FilterDiagnostic.aspx?mspID=DCEC367C6BDDCB06&amp;bowID=48A6C0EBC3808A94&amp;systemID=C79DFDB7B58DDB18&amp;bowSystemID=BE1BF543BCC6BD40&amp;type=8133C8BEF61A3576&amp;mspSystemID=BE1F1CADF9B1071B&quot;, false, true))" style="display:inline-block;height:40px;width:120px;background: url(../../images/bg_btn_120.png) no-repeat; border-width: 0px; color: white; line-height: 40px; text-align: center; text-decoration: none; font-weight: bold; opacity: 0.8">Diagnostic</a>
+                    </div>
+                    <h2></h2>
+                    <h3>
+                        &nbsp;
+                        
+                    </h3>
+                </div>
+            </div>
+            <div id="cphMainContent_3_divFilterSpeed" class="subrgt_act2" style="display:">
+                <input type="image" name="ctl00$cphMainContent$3$ibtnSchedule" id="cphMainContent_3_ibtnSchedule" border="0" align="absmiddle" src="https://haywardomnilogic.com/Images/btn_schedule.png" style="height:38px;width:93px;" />
+                <input type="hidden" name="ctl00$cphMainContent$3$hdnTimerStatus" id="cphMainContent_3_hdnTimerStatus" value="1" />
+                <img id="cphMainContent_3_imgTimer" class="timePickerIMG" src="https://haywardomnilogic.com/Images/btn_timer.png" />
+                <input type="submit" name="ctl00$cphMainContent$3$btnTimerSubmit" value="" id="cphMainContent_3_btnTimerSubmit" style="width:0px;display: none" />
+                <input type="hidden" name="ctl00$cphMainContent$3$hdnHour" id="cphMainContent_3_hdnHour" value="0" />
+                <input type="hidden" name="ctl00$cphMainContent$3$hdnMinute" id="cphMainContent_3_hdnMinute" value="0" />
+                <input type="hidden" name="ctl00$cphMainContent$3$hdnSecond" id="cphMainContent_3_hdnSecond" value="0" />
+                <input type="hidden" name="ctl00$cphMainContent$3$hdnHourAgo" id="cphMainContent_3_hdnHourAgo" value="0" />
+                <input type="hidden" name="ctl00$cphMainContent$3$hdnMinuteAgo" id="cphMainContent_3_hdnMinuteAgo" value="0" />
+
+            </div>
+        </div>
+        <b class="b4b d1"></b><b class="b3b d1"></b><b class="b2b d1"></b><b class="b1b"></b>
+    </div>
+    <div style="clear: both;">
+    </div>
+</div>
+
+<script type="text/javascript">
+    var btnSpeedSubmit = "cphMainContent_3_btnSpeedSubmit";
+    var hdnSliderChanged = "cphMainContent_3_hdnSliderChanged";
+
+    var hdnHour = "cphMainContent_3_hdnHour";
+    var hdnMinute = "cphMainContent_3_hdnMinute";
+    var btnTimerSubmit = "cphMainContent_3_btnTimerSubmit";
+
+    var sliderChanged;
+    var autoSumbit = true;
+
+    function submitTargetSpeed(id) {
+        var id_new = id.replace("txtPumpSpeed", "btnSpeedSubmit");
+        var tempSubmit = document.getElementById(id_new);
+        if (autoSumbit) {
+            tempSubmit.click();
+        }
+        var timer = $find(timerPool);
+        timer._startTimer();
+    }
+
+    function setTargetSpeed(ctr) {
+        var timer = $find(timerPool);
+        timer._stopTimer();
+        window.clearTimeout(sliderChanged);
+        var id = ctr.id;
+        sliderChanged = setTimeout("submitTargetSpeed('" + id + "')", 3000);
+    }
+
+    function downfilter(ctr) {
+        var txtPumpSpeed = ctr.id.replace("imgReduce", "txtPumpSpeed");
+        var hdnSpeedStep = ctr.id.replace("imgReduce", "hdnSpeedStep");
+        var temp = document.getElementById(txtPumpSpeed);
+        var stepValue = document.getElementById(hdnSpeedStep);
+        var value = parseFloat(temp.value) - parseFloat(stepValue.value);
+        $find(txtPumpSpeed).set_Value(value);
+        setTargetSpeed(temp);
+    }
+
+    function upfilter(ctr) {
+        var txtPumpSpeed = ctr.id.replace("imgAdd", "txtPumpSpeed");
+        var hdnSpeedStep = ctr.id.replace("imgAdd", "hdnSpeedStep");
+
+        var temp = document.getElementById(txtPumpSpeed);
+        var stepValue = document.getElementById(hdnSpeedStep);
+        var value = parseFloat(temp.value) + parseFloat(stepValue.value);
+        $find(txtPumpSpeed).set_Value(value);
+        setTargetSpeed(temp);
+    }
+
+    $(document).ready(function () {
+        var ctrHourId = "cphMainContent_3_hdnHourAgo";
+        var ctrMinuteId = "cphMainContent_3_hdnMinuteAgo";
+        GetTimeSetAgo(ctrHourId, ctrMinuteId);
+    });
+
+    //get the time user have selected
+    function GetTimeSetAgo(ctrHourId, ctrMinuteId) {
+
+        //excute this belows code just only on Filter setting page and Filter schedule page because "Filter",
+        //"waterfeature","spillover" and "cleaner" have the same function "GetTimeSetAgo".
+        //the function "GetTimeSetAgo" will be called for 4 times when click custom button on schedule page,this will 
+        //cause Js script error.------------NGCIT-5339------------------
+        var isOnSchedule = 'True';
+        if (isOnSchedule == 'False' && ctrHourId.indexOf('filterControl') != -1 || isOnSchedule == 'True') {
+            var hdnHourValue = document.getElementById(ctrHourId).value;
+            var hdnMinuteValue = document.getElementById(ctrMinuteId).value;
+
+            var controlFlag = ctrHourId.substring(0, ctrHourId.lastIndexOf('_'));//there is many usercontrol which have                                                        different Id,this the flag to differentiate them,used at time.js
+
+            if (hdnHourValue != '0' || hdnMinuteValue != '0') {
+                addTimer('timePickerIMG', hdnHourValue, hdnMinuteValue, saveClick, controlFlag);
+            }
+            else {
+                addTimer('timePickerIMG', 12, 30, saveClick, controlFlag);
+            }
+        }
+        //-----------------------------------------
+    }
+
+
+    function StopCountdown(ctr) {
+        var id = ctr.id.replace("btnEnabled", "btnTimerSubmit");
+        var imgUrl = ctr.src;
+
+        if (imgUrl.indexOf('icon_on.png') != -1) {
+            clearTimer(id);
+        }
+    }
+
+
+</script>
+
+	</div>
+          </div>
+
+                            </div>
+                        
+</div>
+                    <span id="timerPool" style="visibility:hidden;display:none;"></span>
+                </div>
+                <div class="alarm" id="alarmDiv">
+                    <ul>
+                        <li>
+                            <div id="upPoolAlarm">
+	
+                                    
+<div>
+    
+    <input type="submit" name="ctl00$AlarmMessages1$btnClear" value="" id="AlarmMessages1_btnClear" style="width:0px;display: none;" />
+    <input type="hidden" name="ctl00$AlarmMessages1$hdnBowID" id="AlarmMessages1_hdnBowID" />
+    <input type="hidden" name="ctl00$AlarmMessages1$hdnEquipmentID" id="AlarmMessages1_hdnEquipmentID" />
+    <input type="hidden" name="ctl00$AlarmMessages1$hdnResourceMsgID" id="AlarmMessages1_hdnResourceMsgID" />
+</div>
+<script type="text/javascript">
+    var btnClear = 'AlarmMessages1_btnClear';
+    var hdnBowID = 'AlarmMessages1_hdnBowID';
+    var hdnEquipmentID = 'AlarmMessages1_hdnEquipmentID';
+    var hdnResourceMsgID = 'AlarmMessages1_hdnResourceMsgID';
+    function clearAlarm(ctr) {
+        var hdnItemBowIDObj = ctr.id.replace('lkbClear', 'hdnItemBowID');
+        var hdnItemEquipmentID = ctr.id.replace('lkbClear', 'hdnItemEquipmentID');
+        var hdnItemResourceMsgID = ctr.id.replace('lkbClear', 'hdnItemResourceMsgID');
+
+        document.getElementById(hdnBowID).value = document.getElementById(hdnItemBowIDObj).value;
+        document.getElementById(hdnEquipmentID).value = document.getElementById(hdnItemEquipmentID).value;
+        document.getElementById(hdnResourceMsgID).value = document.getElementById(hdnItemResourceMsgID).value;
+        document.getElementById(btnClear).click();
+    }
+</script>
+
+                                
+</div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="copyright">
+                Copyright (c) 2013-2019 Hayward Industries Inc. version
+            R3.6.3
+            </div>
+        </div>
+        <script src="https://haywardomnilogic.com/Scripts/Chrome/Home.js" type="text/javascript"></script>
+        <script type="text/javascript" src="https://haywardomnilogic.com/Scripts/jquery.min-1.8.3.js"></script>
+        <script src="https://haywardomnilogic.com/Scripts/jQueryRotate.2.2.js" type="text/javascript"></script>
+        <script type="text/javascript" src="https://haywardomnilogic.com/Scripts/jquery-ui.min.js"></script>
+        <script type="text/javascript">
+            var hdnMspTime = 'hdnMspTime';
+            var lblMspDate = 'lblMspDate';
+            var lblMspTime = 'lblMspTime';
+            var hdnSelectedIndex = 'hdnSelectedIndex';
+            var hdnLastIndex = 'hdnLastIndex';
+            var imgTabLeft = 'imgTabLeft';
+            var imgTabRight = 'imgTabRight';
+            var timerPool = 'timerPool';
+            var g_Temp;
+            var g_MspUnit;
+
+            function getWeatherForcast(mspID, mspUnit, mspTimeFormat, mspBackyardCity) {
+                $.get(
+                "https://haywardomnilogic.com/Common/Forecast.aspx",
+                    {
+                        mspIDUnitCity: mspID + "_" + mspUnit + "_" + mspTimeFormat + "_" + mspBackyardCity + "_" + 'en'
+                    },
+                    function (result) {
+                        $("#divWeather").html(result);
+                        if (g_Temp && g_MspUnit) {
+                            RefreshAirTemp(g_Temp, g_MspUnit);
+                        }
+                    }, "html");
+            }
+
+
+            $(document).ready(
+                function () {
+                    if (typeof (getGauge) != "undefined")
+                        getGauge();
+
+                    /**********************
+                    *load weather forecast
+                    ***********************/
+
+                    getWeatherForcast('DCEC367C6BDDCB06', '9869064DD3EAE482', '9869064DD3EAE482', 'EF0A4E9EB36F119DE74137F920E65824');
+                }
+            );
+
+
+
+            function changeMenuStyle() {
+                hideLeftMenu();
+                $("div.mbleft").find("li").removeClass("mbl_crrnt");
+                ($("div.mbleft").find("img")[1]).src = ($("div.mbleft").find("img")[1]).src.replace("_s.png", ".png");
+                $("div.mbleft").find("li")[1].className = "mbl_crrnt";
+
+
+            }
+
+
+            function upMenu() {
+                var countAbsHide = $(".abshide");
+                $(".mbleft li").toggle();
+                countAbsHide.attr("class", "abshide");
+                countAbsHide.hide();
+                $("#hrfUp").addClass("hide");
+                $("#hrfDown").show();
+            }
+            function downMenu() {
+                var countAbsHide = $(".abshide");
+                $(".mbleft li").toggle();
+                countAbsHide.hide();
+                $("#hrfUp").removeClass("hide");
+                $("#hrfDown").hide();
+            }
+
+            function hideLeftMenu() {
+                var count = $(".mbleft li").length;
+                var countAbsHide = $(".abshide").length;
+                var countDiff = count - countAbsHide;
+                if (countDiff > 12) {
+                    $("#hrfDown").show();
+                    for (var i = 12; i < count; i++) {
+                        if ($(".mbleft li")[i].className != "abshide")
+                            $(".mbleft li")[i].className = "hide";
+                    }
+                }
+
+                if (1 > 11 && countDiff > 12) {
+                    downMenu();
+                }
+            }
+
+            changeMenuStyle();
+
+            function changebow() {
+                var canChangebow ='True';
+                if (canChangebow.toLowerCase() == "true") {
+                    return true;
+                }
+                else {
+                    jqalert("You can\'t  change bow as you have selected special equipment.");
+                    return false;
+                }
+            }
+            /****************Float bar**********************************************/
+            var tips; var theTop = 225; var old = theTop; var minTop = theTop; var windowHeight;
+            function initFloatTips() {
+                tips = document.getElementById('Menutips');
+                moveTips();
+            };
+            function moveTips() {
+                var tt = 50;
+                if (window.innerHeight) {
+                    pos = window.pageYOffset
+                }
+                else if (document.documentElement && document.documentElement.scrollTop) {
+                    pos = document.documentElement.scrollTop
+                }
+                else if (document.body) {
+                    pos = document.body.scrollTop;
+                }
+
+                pos = pos - tips.offsetTop + theTop;
+                pos = tips.offsetTop + pos / 10;
+
+                if (pos < theTop) {
+                    pos = theTop;
+                }
+
+                windowHeight = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
+                if (windowHeight < tips.offsetHeight + pos) {
+                    /*******caculate the min top if the size of window is too small****************/
+                    /*******and make the margin on the buttom or on the top at leas 10 px*******/
+                    minTop = theTop - (tips.offsetHeight + pos - windowHeight) - 10;
+                    if (minTop < 10) {
+                        minTop = 10;
+                    }
+
+                } else {
+                    minTop = theTop;
+                }
+
+                // if (minTop != theTop && pos > minTop) {
+                if (pos > minTop) {
+                    pos = minTop;
+                }
+
+                if (pos != old) {
+                    tips.style.top = pos + "px";
+                    tt = 10;
+                }
+
+                old = pos;
+                setTimeout(moveTips, tt);
+            }
+            initFloatTips();
+        </script>
+    
+<script>g_Temp='82';g_MspUnit='0';RefreshAirTemp('82','0');</script><script type='text/javascript'>new Sys.WebForms.Menu({ element: 'menuBar', disappearAfter: 500, orientation: 'horizontal', tabIndex: 0, disabled: false });</script>
+<script type="text/javascript">
+//<![CDATA[
+(function() {var fn = function() {Sys.Extended.UI.ModalPopupBehavior.invokeViaServer('mpe', false); Sys.Application.remove_load(fn);};Sys.Application.add_load(fn);})();(function() {var fn = function() {Sys.Extended.UI.ModalPopupBehavior.invokeViaServer('FavoriteControl1_mpeFavoriteAdd', false); Sys.Application.remove_load(fn);};Sys.Application.add_load(fn);})();(function() {var fn = function() {Sys.Extended.UI.ModalPopupBehavior.invokeViaServer('mpePowerOff', false); Sys.Application.remove_load(fn);};Sys.Application.add_load(fn);})();
+theForm.oldSubmit = theForm.submit;
+theForm.submit = WebForm_SaveScrollPositionSubmit;
+
+theForm.oldOnSubmit = theForm.onsubmit;
+theForm.onsubmit = WebForm_SaveScrollPositionOnSubmit;
+Sys.Application.add_init(function() {
+    $create(Sys.Extended.UI.ModalPopupBehavior, {"OkControlID":"listOKButton","PopupControlID":"pnlFavorite","dynamicServicePath":"/Module/UserManagement/Filter_Setting.aspx","id":"mpe"}, null, null, $get("hidFavoriteBar"));
+});
+Sys.Application.add_init(function() {
+    $create(Sys.Extended.UI.ModalPopupBehavior, {"OkControlID":"FavoriteControl1_AddOKButton","PopupControlID":"FavoriteControl1_pnlFavoriteAdd","dynamicServicePath":"/Module/UserManagement/Filter_Setting.aspx","id":"FavoriteControl1_mpeFavoriteAdd"}, null, null, $get("FavoriteControl1_btnFavoriteAdd"));
+});
+Sys.Application.add_init(function() {
+    $create(Sys.Extended.UI.ModalPopupBehavior, {"OkControlID":"FavoriteControl1_FavoriteAdd1_LightShowOKButton","PopupControlID":"FavoriteControl1_FavoriteAdd1_pnlLightShow","dynamicServicePath":"/Module/UserManagement/Filter_Setting.aspx","id":"FavoriteControl1_FavoriteAdd1_mpeLightShow"}, null, null, $get("btnLightShow"));
+});
+Sys.Application.add_init(function() {
+    $create(Sys.UI._Timer, {"enabled":false,"interval":60000,"uniqueID":"ctl00$FavoriteControl1$timerFavoriteAdd"}, null, null, $get("FavoriteControl1_timerFavoriteAdd"));
+});
+Sys.Application.add_init(function() {
+    $create(Sys.UI._Timer, {"enabled":false,"interval":60000,"uniqueID":"ctl00$timerFavorite"}, null, null, $get("timerFavorite"));
+});
+Sys.Application.add_init(function() {
+    $create(Sys.Extended.UI.ModalPopupBehavior, {"PopupControlID":"pnlPowerOff","dynamicServicePath":"/Module/UserManagement/Filter_Setting.aspx","id":"mpePowerOff"}, null, null, $get("hidPowerOff"));
+});
+Sys.Application.add_init(function() {
+    $create(Sys.UI._Timer, {"enabled":false,"interval":60000,"uniqueID":"ctl00$timerPowerOff"}, null, null, $get("timerPowerOff"));
+});
+Sys.Application.add_init(function() {
+    $create(Sys.Extended.UI.ModalPopupBehavior, {"PopupControlID":"pnlFreezeProtectOverride","dynamicServicePath":"/Module/UserManagement/Filter_Setting.aspx","id":"mpeFreezeProtectOverride"}, null, null, $get("hidFreezeProtectOverride"));
+});
+Sys.Application.add_init(function() {
+    $create(Sys.UI._Timer, {"enabled":true,"interval":60000,"uniqueID":"ctl00$timerPool"}, null, null, $get("timerPool"));
+});
+//]]>
+</script>
+</form>
+</body>
+</html>
