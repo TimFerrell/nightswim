@@ -37,17 +37,33 @@ router.get('/data', async (req, res) => {
       });
     }
 
-    // Get the most recent data point
+    // Get the most recent data point with valid data
     const dataProcessingStart = Date.now();
-    const latestData = dataPoints[dataPoints.length - 1];
     
-    console.log(`📊 Latest data point:`, {
+    // Find the most recent data point that has at least some valid values
+    let latestData = null;
+    for (let i = dataPoints.length - 1; i >= 0; i--) {
+      const point = dataPoints[i];
+      // Check if this point has at least one valid numeric value
+      if (point.saltInstant !== null || point.waterTemp !== null || point.cellVoltage !== null || point.cellTemp !== null) {
+        latestData = point;
+        break;
+      }
+    }
+    
+    // If no valid data found, use the most recent point
+    if (!latestData && dataPoints.length > 0) {
+      latestData = dataPoints[dataPoints.length - 1];
+    }
+    
+    console.log(`📊 Selected data point:`, {
       timestamp: latestData.timestamp,
       saltInstant: latestData.saltInstant,
       waterTemp: latestData.waterTemp,
       cellVoltage: latestData.cellVoltage,
       pumpStatus: latestData.pumpStatus,
-      weatherTemp: latestData.weatherTemp
+      weatherTemp: latestData.weatherTemp,
+      isValid: latestData.saltInstant !== null || latestData.waterTemp !== null || latestData.cellVoltage !== null || latestData.cellTemp !== null
     });
     
     // Format the response to match expected structure
