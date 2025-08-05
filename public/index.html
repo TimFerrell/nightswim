@@ -4,8 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Night Swim - Pool Monitoring Dashboard</title>
+    
+    <!-- Resource hints for performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" as="style">
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/chart.js" as="script">
+    
+    <!-- Load fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -88,10 +98,76 @@
             }
         }
 
+        /* Performance optimizations */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+        }
+
+        /* Optimize animations and transitions */
+        .status-card,
+        .chart-container,
+        .sparkline-container {
+            will-change: transform, opacity;
+            transform: translateZ(0); /* Force hardware acceleration */
+        }
+
+        /* Reduce repaints for frequently updated elements */
+        .status-value,
+        .status-detail-value,
+        .chart-status {
+            contain: layout style paint;
+        }
+
+        /* Optimize skeleton loading animations */
+        .skeleton-value,
+        .skeleton-text {
+            background: linear-gradient(90deg, 
+                var(--color-gray-200) 25%, 
+                var(--color-gray-100) 50%, 
+                var(--color-gray-200) 75%);
+            background-size: 200% 100%;
+            animation: skeleton-loading 1.5s infinite;
+            will-change: background-position;
+        }
+
+        @keyframes skeleton-loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* Optimize chart rendering */
+        .chart-canvas canvas {
+            contain: layout style paint;
+            will-change: transform;
+        }
+
+        /* Reduce layout thrashing for status cards */
+        .status-grid {
+            contain: layout style;
+        }
+
+        /* Optimize dark mode transitions */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --color-background: #0a0a0a;
+                --color-surface: #1a1a1a;
+                --color-border: #2a2a2a;
+                --color-text-primary: #ffffff;
+                --color-text-secondary: #a0a0a0;
+                --color-text-muted: #666666;
+                --color-accent: #8b5cf6;
+                --color-accent-light: #1a1a2e;
+                --color-success: #10b981;
+                --color-warning: #f59e0b;
+                --color-error: #ef4444;
+                
+                /* Dark mode shadows */
+                --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+                --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+                --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+            }
         }
 
         body {
@@ -468,37 +544,6 @@
         .status-card.pulse {
             animation: pulse 0.6s ease-in-out;
         }
-
-        /* Skeleton loading animation */
-        .skeleton-value {
-            background: linear-gradient(90deg, var(--color-gray-200) 25%, var(--color-gray-300) 50%, var(--color-gray-200) 75%);
-            background-size: 200% 100%;
-            animation: skeleton-loading 1.5s infinite;
-            border-radius: var(--radius-sm);
-            color: transparent !important;
-        }
-        
-        .skeleton-text {
-            background: linear-gradient(90deg, var(--color-gray-200) 25%, var(--color-gray-300) 50%, var(--color-gray-200) 75%);
-            background-size: 200% 100%;
-            animation: skeleton-loading 1.5s infinite;
-            border-radius: var(--radius-sm);
-            color: transparent !important;
-        }
-        
-        .skeleton-sparkline {
-            height: 40px;
-            background: linear-gradient(90deg, var(--color-gray-200) 25%, var(--color-gray-300) 50%, var(--color-gray-200) 75%);
-            background-size: 200% 100%;
-            animation: skeleton-loading 1.5s infinite;
-            border-radius: var(--radius-sm);
-            margin-bottom: var(--spacing-3);
-        }
-        
-        @keyframes skeleton-loading {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
         
         /* Remove skeleton animation when data is loaded */
         .status-card.loaded .skeleton-value,
@@ -711,9 +756,12 @@
         </div>
     </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
-    <script src="script.js"></script>
+    <!-- Load Chart.js and plugins with async loading -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation" defer></script>
+    
+    <!-- Load main script after dependencies -->
+    <script src="script.js" defer></script>
 </body>
 </html> 

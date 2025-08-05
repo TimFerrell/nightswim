@@ -2,6 +2,79 @@
 let tempChart, electricalChart, chemistryChart;
 let saltSparkline, waterTempSparkline, cellVoltageSparkline, weatherSparkline, filterPumpSparkline;
 
+// DOM element cache for performance
+const domCache = {
+  // Status cards
+  saltValue: null,
+  saltCard: null,
+  waterTempValue: null,
+  waterTempComfort: null,
+  waterTempCard: null,
+  cellVoltageValue: null,
+  cellVoltageStatus: null,
+  cellVoltageCard: null,
+  filterPumpValue: null,
+  filterPumpState: null,
+  filterPumpCard: null,
+  weatherTempValue: null,
+  weatherCard: null,
+  
+  // Initialize cache
+  init() {
+    this.saltValue = document.getElementById('saltValue');
+    this.saltCard = document.getElementById('saltCard');
+    this.waterTempValue = document.getElementById('waterTempValue');
+    this.waterTempComfort = document.getElementById('waterTempComfort');
+    this.waterTempCard = document.getElementById('waterTempCard');
+    this.cellVoltageValue = document.getElementById('cellVoltageValue');
+    this.cellVoltageStatus = document.getElementById('cellVoltageStatus');
+    this.cellVoltageCard = document.getElementById('cellVoltageCard');
+    this.filterPumpValue = document.getElementById('filterPumpValue');
+    this.filterPumpState = document.getElementById('filterPumpState');
+    this.filterPumpCard = document.getElementById('filterPumpCard');
+    this.weatherTempValue = document.getElementById('weatherTempValue');
+    this.weatherCard = document.getElementById('weatherCard');
+  }
+};
+
+// Debounce utility for performance
+const debounce = (func, wait) => {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+};
+
+// Request cache for API calls
+const requestCache = {
+  data: null,
+  timestamp: 0,
+  ttl: 5000, // 5 seconds cache
+  
+  isValid() {
+    return this.data && (Date.now() - this.timestamp) < this.ttl;
+  },
+  
+  set(data) {
+    this.data = data;
+    this.timestamp = Date.now();
+  },
+  
+  get() {
+    return this.isValid() ? this.data : null;
+  },
+  
+  clear() {
+    this.data = null;
+    this.timestamp = 0;
+  }
+};
+
 // Register Chart.js plugins
 if (typeof annotationPlugin !== 'undefined') {
   Chart.register(annotationPlugin);
@@ -345,7 +418,8 @@ const initializeChemistryChart = () => {
 /**
  * Update all charts with new data
  */
-const updateAllCharts = async () => {
+// Debounced chart update function
+const debouncedUpdateCharts = debounce(async () => {
   const timeRange = document.getElementById('timeRange').value;
   
   try {
@@ -424,7 +498,9 @@ const updateAllCharts = async () => {
     document.getElementById('electricalChartStatus').textContent = 'Error loading data';
     document.getElementById('chemistryChartStatus').textContent = 'Error loading data';
   }
-};
+}, 300); // 300ms debounce
+
+const updateAllCharts = debouncedUpdateCharts;
 
 /**
  * Append a single data point to all charts
@@ -544,16 +620,19 @@ const stopStatsAutoRefresh = () => {
 const updateStatusCards = (data) => {
   console.log('🔄 Updating status cards with data:', data);
   
+  // Initialize DOM cache if not done
+  if (!domCache.saltValue) {
+    domCache.init();
+  }
+  
   // Update salt level card
   console.log('🧂 Salt data:', data.chlorinator?.salt);
-  const saltValue = document.getElementById('saltValue');
-  const saltCard = document.getElementById('saltCard');
   
   if (data.chlorinator?.salt?.instant && data.chlorinator.salt.instant !== null && data.chlorinator.salt.instant !== '--') {
-    console.log('🧂 Found salt element:', saltValue);
-    if (saltValue) {
-      saltValue.textContent = data.chlorinator.salt.instant;
-      saltValue.classList.remove('skeleton-value');
+    console.log('🧂 Found salt element:', domCache.saltValue);
+    if (domCache.saltValue) {
+      domCache.saltValue.textContent = data.chlorinator.salt.instant;
+      domCache.saltValue.classList.remove('skeleton-value');
       console.log('🧂 Updated salt value to:', data.chlorinator.salt.instant);
       
       // Update annotation colors based on current salt value
@@ -564,16 +643,16 @@ const updateStatusCards = (data) => {
     fetchSaltRollingAverage();
     
     // Mark as loaded
-    if (saltCard) {
-      saltCard.classList.add('loaded');
+    if (domCache.saltCard) {
+      domCache.saltCard.classList.add('loaded');
     }
   } else {
     // Check if pump is off - if so, show appropriate message
     if (data.filter?.status === false) {
-      if (saltValue) {
-        saltValue.textContent = 'Pump Off';
-        saltValue.classList.remove('skeleton-value');
-        saltValue.classList.add('pump-off-indicator');
+      if (domCache.saltValue) {
+        domCache.saltValue.textContent = 'Pump Off';
+        domCache.saltValue.classList.remove('skeleton-value');
+        domCache.saltValue.classList.add('pump-off-indicator');
       }
       console.log('🧂 Salt sensor unavailable - pump is off');
     } else {

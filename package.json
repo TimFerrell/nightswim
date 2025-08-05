@@ -1,52 +1,56 @@
 {
   "name": "nightswim",
   "version": "1.0.0",
-  "description": "Hayward OmniLogic Pool Data Proxy",
-  "main": "server.js",
+  "description": "Pool monitoring dashboard",
+  "main": "src/app.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js",
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "test:deployment": "node scripts/test-deployment.js",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "type-check": "node scripts/type-check.js"
+    "test:ui": "jest tests/ui-optimizations.test.js"
   },
   "dependencies": {
-    "@influxdata/influxdb-client": "^1.33.2",
     "axios": "^1.6.0",
-    "chart.js": "^4.5.0",
     "cheerio": "^1.0.0-rc.12",
-    "cookie-parser": "^1.4.6",
-    "cors": "^2.8.5",
-    "dotenv": "^16.6.1",
+    "dotenv": "^16.3.1",
     "express": "^4.18.2",
-    "express-session": "^1.17.3",
-    "form-data": "^4.0.0",
-    "helmet": "^7.1.0",
-    "tough-cookie": "^4.1.3"
+    "influx": "^5.9.0",
+    "node-cron": "^3.0.3"
   },
   "devDependencies": {
-    "@eslint/js": "^9.32.0",
-    "eslint": "^9.32.0",
-    "eslint-plugin-jsdoc": "^52.0.2",
-    "globals": "^16.3.0",
     "jest": "^29.7.0",
+    "jest-environment-jsdom": "^30.0.5",
+    "jsdom": "^23.0.1",
     "nodemon": "^3.0.1"
   },
   "jest": {
-    "testEnvironment": "node",
-    "collectCoverageFrom": [
-      "lib/**/*.js",
-      "!**/node_modules/**"
+    "testEnvironment": "jsdom",
+    "setupFilesAfterEnv": [
+      "<rootDir>/tests/setup.js"
     ],
-    "coverageDirectory": "coverage",
+    "collectCoverageFrom": [
+      "public/script.js",
+      "src/**/*.js",
+      "!src/app.js"
+    ],
     "coverageReporters": [
       "text",
       "lcov",
       "html"
+    ],
+    "testMatch": [
+      "**/tests/**/*.test.js",
+      "**/test/**/*.test.js"
     ]
-  }
+  },
+  "keywords": [
+    "pool",
+    "monitoring",
+    "dashboard",
+    "hayward"
+  ],
+  "author": "Timothy Ferrell",
+  "license": "MIT"
 }
