@@ -74,19 +74,19 @@ const parseDashboardData = (html) => {
     temperature: {
       target: (() => {
         const temp = $('[id*="lblTempTarget"]').text().trim();
-        if (temp) {
+        if (temp && temp !== '--' && temp !== '---') {
           // Extract numeric temperature value (whole numbers or decimals)
           const match = temp.match(/(\d+(?:\.\d+)?)/);
-          return match ? parseFloat(match[1]) : temp;
+          return match ? parseFloat(match[1]) : null;
         }
         return null;
       })(),
       actual: (() => {
         const temp = $('[id*="lblTempActual"]').text().trim();
-        if (temp) {
+        if (temp && temp !== '--' && temp !== '---') {
           // Extract numeric temperature value (whole numbers or decimals)
           const match = temp.match(/(\d+(?:\.\d+)?)/);
-          return match ? parseFloat(match[1]) : temp;
+          return match ? parseFloat(match[1]) : null;
         }
         return null;
       })(),
@@ -237,37 +237,37 @@ const parseHeaterData = (html) => {
     temperature: {
       min: (() => {
         const temp = $('[id*="lblMinTargetTemp"]').text().trim();
-        if (temp) {
+        if (temp && temp !== '--' && temp !== '---') {
           // Extract numeric temperature value (whole numbers or decimals)
           const match = temp.match(/(\d+(?:\.\d+)?)/);
-          return match ? parseFloat(match[1]) : temp;
+          return match ? parseFloat(match[1]) : null;
         }
         return null;
       })(),
       current: (() => {
         const temp = $('[id*="lblTemp"]').text().trim();
-        if (temp) {
+        if (temp && temp !== '--' && temp !== '---') {
           // Extract numeric temperature value (whole numbers or decimals)
           const match = temp.match(/(\d+(?:\.\d+)?)/);
-          return match ? parseFloat(match[1]) : temp;
+          return match ? parseFloat(match[1]) : null;
         }
         return null;
       })(),
       max: (() => {
         const temp = $('[id*="lblMaxTargetTemp"]').text().trim();
-        if (temp) {
+        if (temp && temp !== '--' && temp !== '---') {
           // Extract numeric temperature value (whole numbers or decimals)
           const match = temp.match(/(\d+(?:\.\d+)?)/);
-          return match ? parseFloat(match[1]) : temp;
+          return match ? parseFloat(match[1]) : null;
         }
         return null;
       })(),
       actual: (() => {
         const temp = $('[id*="lblActualTemp"]').text().trim();
-        if (temp) {
+        if (temp && temp !== '--' && temp !== '---') {
           // Extract numeric temperature value (whole numbers or decimals)
           const match = temp.match(/(\d+(?:\.\d+)?)/);
-          return match ? parseFloat(match[1]) : temp;
+          return match ? parseFloat(match[1]) : null;
         }
         return null;
       })(),
@@ -332,10 +332,10 @@ const parseChlorinatorData = (html) => {
       temperature: {
         value: (() => {
           const temp = $('[id*="lbCellTemp"]').text().trim();
-          if (temp) {
+          if (temp && temp !== '--' && temp !== '---') {
             // Extract numeric temperature value (whole numbers or decimals)
             const match = temp.match(/(\d+(?:\.\d+)?)/);
-            return match ? parseFloat(match[1]) : temp;
+            return match ? parseFloat(match[1]) : null;
           }
           return null;
         })(),
@@ -343,19 +343,19 @@ const parseChlorinatorData = (html) => {
       },
       voltage: (() => {
         const voltage = $('[id*="lbCellVoltage"]').text().trim();
-        if (voltage) {
+        if (voltage && voltage !== '--' && voltage !== '---') {
           // Extract numeric voltage value (whole numbers or decimals)
           const match = voltage.match(/(\d+(?:\.\d+)?)/);
-          return match ? parseFloat(match[1]) : voltage;
+          return match ? parseFloat(match[1]) : null;
         }
         return null;
       })(),
       current: (() => {
         const current = $('[id*="lbCellCurrent"]').text().trim();
-        if (current) {
+        if (current && current !== '--' && current !== '---') {
           // Extract numeric current value (whole numbers or decimals)
           const match = current.match(/(\d+(?:\.\d+)?)/);
-          return match ? parseFloat(match[1]) : current;
+          return match ? parseFloat(match[1]) : null;
         }
         return null;
       })(),
