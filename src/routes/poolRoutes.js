@@ -65,12 +65,38 @@ router.get('/data', async (req, res) => {
       }
     }
     
-    // Combine most recent data with best flow data
+    // Find the most recent non-null values for pump status and cell voltage
+    let mostRecentPumpStatus = null;
+    let mostRecentCellVoltage = null;
+    let mostRecentCellTemp = null;
+    
+    for (let i = dataPoints.length - 1; i >= 0; i--) {
+      const point = dataPoints[i];
+      if (mostRecentPumpStatus === null && point.pumpStatus !== null) {
+        mostRecentPumpStatus = point.pumpStatus;
+      }
+      if (mostRecentCellVoltage === null && point.cellVoltage !== null) {
+        mostRecentCellVoltage = point.cellVoltage;
+      }
+      if (mostRecentCellTemp === null && point.cellTemp !== null) {
+        mostRecentCellTemp = point.cellTemp;
+      }
+      // Break if we found all the values we need
+      if (mostRecentPumpStatus !== null && mostRecentCellVoltage !== null && mostRecentCellTemp !== null) {
+        break;
+      }
+    }
+    
+    // Combine most recent data with best flow data and most recent sensor values
     const latestData = {
       ...mostRecentData,
       // Use best available flow-dependent sensor data
       saltInstant: bestFlowData?.saltInstant ?? mostRecentData.saltInstant,
-      waterTemp: bestFlowData?.waterTemp ?? mostRecentData.waterTemp
+      waterTemp: bestFlowData?.waterTemp ?? mostRecentData.waterTemp,
+      // Use most recent non-null values for sensors that don't depend on flow
+      pumpStatus: mostRecentPumpStatus ?? mostRecentData.pumpStatus,
+      cellVoltage: mostRecentCellVoltage ?? mostRecentData.cellVoltage,
+      cellTemp: mostRecentCellTemp ?? mostRecentData.cellTemp
     };
     
     // If no valid data found, use the most recent point
