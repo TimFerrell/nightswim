@@ -184,14 +184,14 @@ const poolDataService = {
     // Store time series data for charts
     const timeSeriesPoint = {
       timestamp: poolData.timestamp,
-      saltInstant: poolData.chlorinator?.salt?.instant || null,
-      cellTemp: poolData.chlorinator?.cell?.temperature?.value || null,
-      cellVoltage: poolData.chlorinator?.cell?.voltage || null,
-      waterTemp: poolData.dashboard?.temperature?.actual || null,
-      airTemp: poolData.dashboard?.airTemperature || null,
-      pumpStatus: poolData.filter?.status || null,
-      weatherTemp: poolData.weather?.temperature || null,
-      weatherHumidity: poolData.weather?.humidity || null
+      saltInstant: poolData.chlorinator?.salt?.instant ?? null,
+      cellTemp: poolData.chlorinator?.cell?.temperature?.value ?? null,
+      cellVoltage: poolData.chlorinator?.cell?.voltage ?? null,
+      waterTemp: poolData.dashboard?.temperature?.actual ?? null,
+      airTemp: poolData.dashboard?.airTemperature ?? null,
+      pumpStatus: poolData.filter?.status ?? null,
+      weatherTemp: poolData.weather?.temperature ?? null,
+      weatherHumidity: poolData.weather?.humidity ?? null
     };
 
     // Store in InfluxDB for persistent storage (primary storage)
