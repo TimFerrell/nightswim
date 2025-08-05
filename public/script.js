@@ -546,8 +546,10 @@ const updateStatusCards = (data) => {
   
   // Update salt level card
   console.log('🧂 Salt data:', data.chlorinator?.salt);
+  const saltValue = document.getElementById('saltValue');
+  const saltCard = document.getElementById('saltCard');
+  
   if (data.chlorinator?.salt?.instant && data.chlorinator.salt.instant !== null && data.chlorinator.salt.instant !== '--') {
-    const saltValue = document.getElementById('saltValue');
     console.log('🧂 Found salt element:', saltValue);
     if (saltValue) {
       saltValue.textContent = data.chlorinator.salt.instant;
@@ -562,24 +564,35 @@ const updateStatusCards = (data) => {
     fetchSaltRollingAverage();
     
     // Mark as loaded
-    const saltCard = document.getElementById('saltCard');
     if (saltCard) {
       saltCard.classList.add('loaded');
     }
   } else {
-    console.warn('🧂 Salt data is missing or invalid:', data.chlorinator?.salt?.instant);
+    // Check if pump is off - if so, show appropriate message
+    if (data.filter?.status === false) {
+      if (saltValue) {
+        saltValue.textContent = 'Pump Off';
+        saltValue.classList.remove('skeleton-value');
+        saltValue.classList.add('pump-off-indicator');
+      }
+      console.log('🧂 Salt sensor unavailable - pump is off');
+    } else {
+      console.warn('🧂 Salt data is missing or invalid:', data.chlorinator?.salt?.instant);
+    }
   }
 
   // Update water temperature card
   console.log('🌊 Water temp data:', data.dashboard?.temperature);
+  const waterTempValue = document.getElementById('waterTempValue');
+  const waterTempComfort = document.getElementById('waterTempComfort');
+  const waterTempCard = document.getElementById('waterTempCard');
+  
   if (data.dashboard?.temperature?.actual && data.dashboard.temperature.actual !== null && data.dashboard.temperature.actual !== '--') {
-    const waterTempValue = document.getElementById('waterTempValue');
-    const waterTempComfort = document.getElementById('waterTempComfort');
-    
     console.log('🌊 Found water temp element:', waterTempValue);
     if (waterTempValue) {
       waterTempValue.textContent = Math.round(data.dashboard.temperature.actual);
       waterTempValue.classList.remove('skeleton-value');
+      waterTempValue.classList.remove('pump-off-indicator');
       console.log('🌊 Updated water temp value to:', Math.round(data.dashboard.temperature.actual));
     }
     
@@ -593,12 +606,26 @@ const updateStatusCards = (data) => {
     }
     
     // Mark as loaded
-    const waterTempCard = document.getElementById('waterTempCard');
     if (waterTempCard) {
       waterTempCard.classList.add('loaded');
     }
   } else {
-    console.warn('🌊 Water temp data is missing or invalid:', data.dashboard?.temperature?.actual);
+    // Check if pump is off - if so, show appropriate message
+    if (data.filter?.status === false) {
+      if (waterTempValue) {
+        waterTempValue.textContent = 'Pump Off';
+        waterTempValue.classList.remove('skeleton-value');
+        waterTempValue.classList.add('pump-off-indicator');
+      }
+      if (waterTempComfort) {
+        waterTempComfort.textContent = 'Sensor Unavailable';
+        waterTempComfort.classList.remove('skeleton-text');
+        waterTempComfort.classList.add('pump-off-indicator');
+      }
+      console.log('🌊 Water temp sensor unavailable - pump is off');
+    } else {
+      console.warn('🌊 Water temp data is missing or invalid:', data.dashboard?.temperature?.actual);
+    }
   }
 
   // Update cell voltage card
