@@ -12,6 +12,7 @@
     "test:ui": "jest tests/ui-optimizations.test.js"
   },
   "dependencies": {
+    "@influxdata/influxdb-client": "^1.33.2",
     "axios": "^1.6.0",
     "cheerio": "^1.0.0-rc.12",
     "cookie-parser": "^1.4.6",
@@ -20,7 +21,6 @@
     "express": "^4.18.2",
     "express-session": "^1.17.3",
     "helmet": "^7.1.0",
-    "influx": "^5.9.0",
     "node-cron": "^3.0.3"
   },
   "devDependencies": {
