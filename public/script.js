@@ -624,15 +624,22 @@ const updateStatusCards = (data) => {
       }
       console.log('🌊 Water temp sensor unavailable - pump is off');
     } else {
+      // Show default when no data available
+      if (waterTempValue) {
+        waterTempValue.textContent = '--';
+        waterTempValue.classList.remove('skeleton-value');
+        waterTempValue.classList.remove('pump-off-indicator');
+      }
       console.warn('🌊 Water temp data is missing or invalid:', data.dashboard?.temperature?.actual);
     }
   }
 
   // Update cell voltage card
+  const cellVoltageValue = document.getElementById('cellVoltageValue');
+  const cellVoltageStatus = document.getElementById('cellVoltageStatus');
+  const cellVoltageCard = document.getElementById('cellVoltageCard');
+  
   if (data.chlorinator?.cell?.voltage && data.chlorinator.cell.voltage !== null && data.chlorinator.cell.voltage !== '--') {
-    const cellVoltageValue = document.getElementById('cellVoltageValue');
-    const cellVoltageStatus = document.getElementById('cellVoltageStatus');
-    
     if (cellVoltageValue) {
       cellVoltageValue.textContent = data.chlorinator.cell.voltage;
       cellVoltageValue.classList.remove('skeleton-value');
@@ -647,9 +654,14 @@ const updateStatusCards = (data) => {
     }
     
     // Mark as loaded
-    const cellVoltageCard = document.getElementById('cellVoltageCard');
     if (cellVoltageCard) {
       cellVoltageCard.classList.add('loaded');
+    }
+  } else {
+    // Show default when no data available
+    if (cellVoltageValue) {
+      cellVoltageValue.textContent = '--';
+      cellVoltageValue.classList.remove('skeleton-value');
     }
   }
 

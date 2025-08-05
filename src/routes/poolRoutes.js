@@ -40,14 +40,29 @@ router.get('/data', async (req, res) => {
     // Get the most recent data point with valid data
     const dataProcessingStart = Date.now();
     
-    // Find the most recent data point that has at least some valid values
+    // Find the most recent data point with the most complete set of valid values
     let latestData = null;
+    let bestScore = -1;
+    
     for (let i = dataPoints.length - 1; i >= 0; i--) {
       const point = dataPoints[i];
-      // Check if this point has at least one valid numeric value
-      if (point.saltInstant !== null || point.waterTemp !== null || point.cellVoltage !== null || point.cellTemp !== null) {
+      // Calculate a score based on how many valid values this point has
+      let score = 0;
+      if (point.saltInstant !== null) score += 1;
+      if (point.waterTemp !== null) score += 1;
+      if (point.cellVoltage !== null) score += 1;
+      if (point.cellTemp !== null) score += 1;
+      if (point.pumpStatus !== null) score += 1;
+      
+      // Prefer points with more complete data, but prioritize more recent data
+      // Give a bonus for being recent (within last 2 hours)
+      const pointAge = Date.now() - new Date(point.timestamp).getTime();
+      const isRecent = pointAge < (2 * 60 * 60 * 1000); // 2 hours
+      if (isRecent) score += 0.5;
+      
+      if (score > bestScore) {
+        bestScore = score;
         latestData = point;
-        break;
       }
     }
     
