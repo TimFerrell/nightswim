@@ -73,13 +73,6 @@ router.get('/collect-data', async (req, res) => {
   try {
     console.log('🕐 Cron job: Starting automated data collection...');
     
-    // Debug credential status
-    const credStatus = credentials.logCredentialStatus(true);
-    console.log('🔐 Credential status:', credStatus);
-    console.log('🔐 Environment variables check:');
-    console.log('   HAYWARD_USERNAME:', process.env.HAYWARD_USERNAME ? '[SET]' : '[NOT SET]');
-    console.log('   HAYWARD_PASSWORD:', process.env.HAYWARD_PASSWORD ? '[SET]' : '[NOT SET]');
-    
     // Create a new session for the cron job
     const sessionId = `cron-${Date.now()}`;
     const session = sessionManager.getSession(sessionId);
@@ -95,7 +88,6 @@ router.get('/collect-data', async (req, res) => {
       });
     }
     
-    console.log('🔐 Using credentials for authentication...');
     const authResult = await session.authenticate(creds.username, creds.password);
     
     if (!authResult.success) {

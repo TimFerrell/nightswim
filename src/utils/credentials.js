@@ -27,26 +27,10 @@ const validateCredentialsProvided = () => {
 
 // Helper functions for credential management
 const getCredentials = () => {
-  // Try multiple possible environment variable names for Vercel compatibility
-  const username = process.env.HAYWARD_USERNAME || 
-                   process.env.HAYWARD_EMAIL || 
-                   process.env.POOL_USERNAME || 
-                   process.env.POOL_EMAIL;
-  
-  const password = process.env.HAYWARD_PASSWORD || 
-                   process.env.POOL_PASSWORD;
-  
-  console.log('🔐 Credential loading debug:');
-  console.log('   HAYWARD_USERNAME:', process.env.HAYWARD_USERNAME ? '[SET]' : '[NOT SET]');
-  console.log('   HAYWARD_EMAIL:', process.env.HAYWARD_EMAIL ? '[SET]' : '[NOT SET]');
-  console.log('   POOL_USERNAME:', process.env.POOL_USERNAME ? '[SET]' : '[NOT SET]');
-  console.log('   POOL_EMAIL:', process.env.POOL_EMAIL ? '[SET]' : '[NOT SET]');
-  console.log('   HAYWARD_PASSWORD:', process.env.HAYWARD_PASSWORD ? '[SET]' : '[NOT SET]');
-  console.log('   POOL_PASSWORD:', process.env.POOL_PASSWORD ? '[SET]' : '[NOT SET]');
-  console.log('   Final username:', username ? '[SET]' : '[NOT SET]');
-  console.log('   Final password:', password ? '[SET]' : '[NOT SET]');
-  
-  return { username, password };
+  return {
+    username: process.env.HAYWARD_USERNAME,
+    password: process.env.HAYWARD_PASSWORD
+  };
 };
 
 const validateCredentials = (creds) => {
