@@ -1,13 +1,9 @@
-// Load environment variables
-require('dotenv').config();
-
 const sessionManager = require('../src/services/sessionManager');
 const credentials = require('../src/utils/credentials');
-const { buildSystemUrl } = require('../src/utils/constants');
 const { POOL_CONSTANTS } = require('../src/utils/constants');
 
 async function debugHaywardHTML() {
-  console.log('🔍 Debugging Hayward HTML Content...\n');
+  console.log('🔍 Debugging Hayward Filter Page HTML...\n');
 
   try {
     // Create a session
@@ -25,66 +21,57 @@ async function debugHaywardHTML() {
     
     console.log('✅ Authentication successful\n');
 
-    // Fetch the filter settings page HTML
-    console.log('📄 Fetching filter settings page HTML...');
-    const response = await session.makeRequest(buildSystemUrl(POOL_CONSTANTS.ENDPOINTS.FILTER_SETTINGS));
+    // Fetch the filter page HTML
+    console.log('📄 Fetching filter page HTML...');
+    const filterResponse = await session.makeRequest(POOL_CONSTANTS.ENDPOINTS.FILTER_SETTINGS);
     
-    console.log('\n🏊‍♂️ Filter Settings Page HTML Analysis:');
-    console.log('=====================================');
+    console.log('\n🔍 Analyzing HTML for pump status elements...');
+    console.log('==============================================');
     
-    // Look for the specific element
-    const html = response.data;
+    // Look for elements containing pump/filter status keywords
+    const html = filterResponse.data;
+    const keywords = ['pump', 'filter', 'status', 'on', 'off', 'running', 'stopped', 'active', 'inactive'];
     
-    // Check for the main filter status element
-    const mainStatusMatch = html.match(/id="cphMainContent_divfilterStatus"[^>]*>([^<]*)</);
-    if (mainStatusMatch) {
-      console.log(`✅ Found #cphMainContent_divfilterStatus: "${mainStatusMatch[1].trim()}"`);
-    } else {
-      console.log('❌ #cphMainContent_divfilterStatus not found');
-    }
-    
-    // Check for other potential filter status elements
-    const statusSelectors = [
-      'cphMainContent_3_divStatusName',
-      'divfilterStatus',
-      'filterStatus',
-      'pumpStatus',
-      'divPump',
-      'lblFilter',
-      'lblPump'
-    ];
-    
-    console.log('\n🔍 Checking other potential status elements:');
-    statusSelectors.forEach(selector => {
-      const regex = new RegExp(`id="[^"]*${selector}[^"]*"[^>]*>([^<]*)<`, 'g');
+    keywords.forEach(keyword => {
+      const regex = new RegExp(`[^>]*${keyword}[^<]*`, 'gi');
       const matches = html.match(regex);
-      if (matches) {
-        matches.forEach(match => {
-          const contentMatch = match.match(/>([^<]*)</);
-          if (contentMatch) {
-            console.log(`✅ Found ${selector}: "${contentMatch[1].trim()}"`);
-          }
+      if (matches && matches.length > 0) {
+        console.log(`\n📋 Found "${keyword}" in HTML:`);
+        matches.slice(0, 5).forEach(match => {
+          console.log(`   ${match.trim()}`);
         });
+        if (matches.length > 5) {
+          console.log(`   ... and ${matches.length - 5} more matches`);
+        }
       }
     });
     
-    // Look for any div elements that might contain pump/filter status
-    console.log('\n🔍 Looking for pump/filter related content:');
-    const pumpFilterMatches = html.match(/<div[^>]*>([^<]*pump[^<]*|[^<]*filter[^<]*|[^<]*on[^<]*|[^<]*off[^<]*)/gi);
-    if (pumpFilterMatches) {
-      pumpFilterMatches.slice(0, 10).forEach(match => {
-        const contentMatch = match.match(/>([^<]*)</);
-        if (contentMatch && contentMatch[1].trim()) {
-          console.log(`📝 Potential status: "${contentMatch[1].trim()}"`);
+    // Look for specific ID patterns
+    console.log('\n🔍 Looking for ID patterns...');
+    const idPatterns = [
+      /id="[^"]*pump[^"]*"/gi,
+      /id="[^"]*filter[^"]*"/gi,
+      /id="[^"]*status[^"]*"/gi,
+      /id="[^"]*div[^"]*"/gi
+    ];
+    
+    idPatterns.forEach(pattern => {
+      const matches = html.match(pattern);
+      if (matches && matches.length > 0) {
+        console.log(`\n📋 Found ID pattern ${pattern}:`);
+        matches.slice(0, 10).forEach(match => {
+          console.log(`   ${match}`);
+        });
+        if (matches.length > 10) {
+          console.log(`   ... and ${matches.length - 10} more matches`);
         }
-      });
-    }
+      }
+    });
     
     // Save HTML to file for manual inspection
     const fs = require('fs');
-    const filename = `debug-filter-page-${Date.now()}.html`;
-    fs.writeFileSync(filename, html);
-    console.log(`\n💾 Full HTML saved to: ${filename}`);
+    fs.writeFileSync('debug-filter-page.html', html);
+    console.log('\n💾 Saved full HTML to debug-filter-page.html for manual inspection');
 
   } catch (error) {
     console.error('❌ Debug failed:', error);

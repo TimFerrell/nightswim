@@ -13,7 +13,7 @@
  * Pool system constants
  * @type {PoolConstants}
  */
-const POOL_CONSTANTS = {
+const POOL_CONSTANTS = Object.freeze({
   // System identifiers
   MSP_ID: 'DCEC367C6BDDCB06',
   BOW_ID: '48A6C0EBC3808A94',
@@ -23,7 +23,7 @@ const POOL_CONSTANTS = {
   HAYWARD_BASE_URL: 'https://haywardomnilogic.com',
 
   // API endpoints
-  ENDPOINTS: {
+  ENDPOINTS: Object.freeze({
     LOGIN: '/Login.aspx',
     DASHBOARD: '/Module/UserManagement/Dashboard.aspx',
     FILTER_SETTINGS: '/Module/UserManagement/Filter_Setting.aspx',
@@ -31,19 +31,19 @@ const POOL_CONSTANTS = {
     CHLORINATOR_SETTINGS: '/Module/UserManagement/Chlorinator_Setting.aspx',
     LIGHTS_SETTINGS: '/Module/UserManagement/Light_Setting.aspx',
     SCHEDULES: '/Module/UserManagement/Bow_Schedule_List.aspx'
-  },
+  }),
 
   // Units
-  UNITS: {
+  UNITS: Object.freeze({
     TEMPERATURE: '°F',
     SALT: 'PPM'
-  },
+  }),
 
   // Default values
-  DEFAULTS: {
+  DEFAULTS: Object.freeze({
     SYSTEM_STATUS: 'online'
-  }
-};
+  })
+});
 
 /**
  * Helper function to build URLs with system parameters

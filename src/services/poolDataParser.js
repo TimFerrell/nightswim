@@ -70,68 +70,63 @@ const { POOL_CONSTANTS } = require('../utils/constants');
 const parseDashboardData = (html) => {
   const $ = cheerio.load(html);
 
-  return {
-    temperature: {
-      target: (() => {
-        const temp = $('[id*="lblTempTarget"]').text().trim();
-        if (temp && temp !== '--' && temp !== '---') {
-          // Extract numeric temperature value (whole numbers or decimals)
-          const match = temp.match(/(\d+(?:\.\d+)?)/);
-          return match ? parseFloat(match[1]) : null;
-        }
-        return null;
-      })(),
-      actual: (() => {
-        const temp = $('[id*="lblTempActual"]').text().trim();
-        if (temp && temp !== '--' && temp !== '---') {
-          // Extract numeric temperature value (whole numbers or decimals)
-          const match = temp.match(/(\d+(?:\.\d+)?)/);
-          return match ? parseFloat(match[1]) : null;
-        }
-        return null;
-      })(),
-      unit: POOL_CONSTANTS.UNITS.TEMPERATURE
-    },
-    airTemperature: (() => {
-      // Primary selector for current temperature
-      const currentTemp = $('#lblCurrentTemp').text().trim();
-      if (currentTemp) {
-        // Extract numeric temperature value (whole numbers or decimals)
-        const match = currentTemp.match(/(\d+(?:\.\d+)?)/);
+  // Helper function to extract temperature value
+  const extractTemp = ($, selector) => {
+    const temp = $(selector).text().trim();
+    if (temp && temp !== '--' && temp !== '---') {
+      const match = temp.match(/(\d+(?:\.\d+)?)/);
+      return match ? parseFloat(match[1]) : null;
+    }
+    return null;
+  };
+
+  // Helper function to extract air temperature
+  const extractAirTemp = ($) => {
+    // Primary selector for current temperature
+    const currentTemp = $('#lblCurrentTemp').text().trim();
+    if (currentTemp) {
+      const match = currentTemp.match(/(\d+(?:\.\d+)?)/);
+      if (match) {
+        return parseFloat(match[1]);
+      }
+    }
+    
+    // Fallback selectors if lblCurrentTemp is not found
+    const fallbackSelectors = [
+      '[id*="lblAirTemp"]',
+      '[id*="AirTemp"]',
+      '[id*="airTemp"]',
+      '[id*="lblOutdoorTemp"]',
+      '[id*="OutdoorTemp"]',
+      '[id*="outdoorTemp"]',
+      '[id*="lblAmbientTemp"]',
+      '[id*="AmbientTemp"]',
+      '[id*="ambientTemp"]',
+      '[id*="lblWeatherTemp"]',
+      '[id*="WeatherTemp"]',
+      '[id*="weatherTemp"]'
+    ];
+    
+    for (const selector of fallbackSelectors) {
+      const temp = $(selector).text().trim();
+      if (temp) {
+        const match = temp.match(/(\d+(?:\.\d+)?)/);
         if (match) {
           return parseFloat(match[1]);
         }
       }
-      
-      // Fallback selectors if lblCurrentTemp is not found
-      const fallbackSelectors = [
-        '[id*="lblAirTemp"]',
-        '[id*="AirTemp"]',
-        '[id*="airTemp"]',
-        '[id*="lblOutdoorTemp"]',
-        '[id*="OutdoorTemp"]',
-        '[id*="outdoorTemp"]',
-        '[id*="lblAmbientTemp"]',
-        '[id*="AmbientTemp"]',
-        '[id*="ambientTemp"]',
-        '[id*="lblWeatherTemp"]',
-        '[id*="WeatherTemp"]',
-        '[id*="weatherTemp"]'
-      ];
-      
-      for (const selector of fallbackSelectors) {
-        const temp = $(selector).text().trim();
-        if (temp) {
-          // Extract numeric temperature value (whole numbers or decimals)
-          const match = temp.match(/(\d+(?:\.\d+)?)/);
-          if (match) {
-            return parseFloat(match[1]);
-          }
-        }
-      }
-      
-      return null;
-    })(),
+    }
+    
+    return null;
+  };
+
+  return {
+    temperature: {
+      target: extractTemp($, '[id*="lblTempTarget"]'),
+      actual: extractTemp($, '[id*="lblTempActual"]'),
+      unit: POOL_CONSTANTS.UNITS.TEMPERATURE
+    },
+    airTemperature: extractAirTemp($),
     systemStatus: POOL_CONSTANTS.DEFAULTS.SYSTEM_STATUS
   };
 };
@@ -233,44 +228,22 @@ const parseFilterData = (html) => {
 const parseHeaterData = (html) => {
   const $ = cheerio.load(html);
 
+  // Helper function to extract temperature value
+  const extractTemp = ($, selector) => {
+    const temp = $(selector).text().trim();
+    if (temp && temp !== '--' && temp !== '---') {
+      const match = temp.match(/(\d+(?:\.\d+)?)/);
+      return match ? parseFloat(match[1]) : null;
+    }
+    return null;
+  };
+
   return {
     temperature: {
-      min: (() => {
-        const temp = $('[id*="lblMinTargetTemp"]').text().trim();
-        if (temp && temp !== '--' && temp !== '---') {
-          // Extract numeric temperature value (whole numbers or decimals)
-          const match = temp.match(/(\d+(?:\.\d+)?)/);
-          return match ? parseFloat(match[1]) : null;
-        }
-        return null;
-      })(),
-      current: (() => {
-        const temp = $('[id*="lblTemp"]').text().trim();
-        if (temp && temp !== '--' && temp !== '---') {
-          // Extract numeric temperature value (whole numbers or decimals)
-          const match = temp.match(/(\d+(?:\.\d+)?)/);
-          return match ? parseFloat(match[1]) : null;
-        }
-        return null;
-      })(),
-      max: (() => {
-        const temp = $('[id*="lblMaxTargetTemp"]').text().trim();
-        if (temp && temp !== '--' && temp !== '---') {
-          // Extract numeric temperature value (whole numbers or decimals)
-          const match = temp.match(/(\d+(?:\.\d+)?)/);
-          return match ? parseFloat(match[1]) : null;
-        }
-        return null;
-      })(),
-      actual: (() => {
-        const temp = $('[id*="lblActualTemp"]').text().trim();
-        if (temp && temp !== '--' && temp !== '---') {
-          // Extract numeric temperature value (whole numbers or decimals)
-          const match = temp.match(/(\d+(?:\.\d+)?)/);
-          return match ? parseFloat(match[1]) : null;
-        }
-        return null;
-      })(),
+      min: extractTemp($, '[id*="lblMinTargetTemp"]'),
+      current: extractTemp($, '[id*="lblTemp"]'),
+      max: extractTemp($, '[id*="lblMaxTargetTemp"]'),
+      actual: extractTemp($, '[id*="lblActualTemp"]'),
       unit: POOL_CONSTANTS.UNITS.TEMPERATURE
     },
     status: $('input[type="radio"]:checked').attr('name') || null,
@@ -286,79 +259,60 @@ const parseHeaterData = (html) => {
 const parseChlorinatorData = (html) => {
   const $ = cheerio.load(html);
 
+  // Helper function to extract numeric value
+  const extractNumeric = ($, selector) => {
+    const text = $(selector).text().trim();
+    if (text && text !== '--' && text !== '---') {
+      const match = text.match(/(\d+(?:\.\d+)?)/);
+      return match ? parseFloat(match[1]) : null;
+    }
+    return null;
+  };
+
+  // Helper function to extract salt value
+  const extractSalt = ($) => {
+    const rawText = $('.boxchlppm').text().trim();
+    if (rawText) {
+      const match = rawText.match(/(\d+)/);
+      return match ? parseInt(match[1]) : null;
+    }
+    
+    // Try fallback selectors
+    const fallbackSelectors = [
+      '[id*="boxchlppm"]',
+      '[id*="lbInstantSalt"]',
+      '[id*="chlppm"]',
+      '[id*="salt"]',
+      '[id*="InstantSalt"]',
+      '[id*="SaltLevel"]'
+    ];
+    
+    for (const selector of fallbackSelectors) {
+      const text = $(selector).text().trim();
+      if (text) {
+        const match = text.match(/(\d+)/);
+        if (match) {
+          return parseInt(match[1]);
+        }
+      }
+    }
+    
+    return null;
+  };
+
   return {
     salt: {
-      instant: (() => {
-        const rawText = $('.boxchlppm').text().trim();
-        if (rawText) {
-          // Extract numeric salt value from text like "salt level\n2897\nppm"
-          const match = rawText.match(/(\d+)/);
-          return match ? parseInt(match[1]) : null;
-        }
-        
-        // Try fallback selectors
-        const fallbackSelectors = [
-          '[id*="boxchlppm"]',
-          '[id*="lbInstantSalt"]',
-          '[id*="chlppm"]',
-          '[id*="salt"]',
-          '[id*="InstantSalt"]',
-          '[id*="SaltLevel"]'
-        ];
-        
-        for (const selector of fallbackSelectors) {
-          const text = $(selector).text().trim();
-          if (text) {
-            const match = text.match(/(\d+)/);
-            if (match) {
-              return parseInt(match[1]);
-            }
-          }
-        }
-        
-        return null;
-      })(),
-      average: (() => {
-        const avgText = $('[id*="lbAverageSalt"]').text().trim() || $('[id*="AverageSalt"]').text().trim();
-        if (avgText) {
-          const match = avgText.match(/(\d+)/);
-          return match ? parseInt(match[1]) : null;
-        }
-        return null;
-      })(),
+      instant: extractSalt($),
+      average: extractNumeric($, '[id*="lbAverageSalt"]') || extractNumeric($, '[id*="AverageSalt"]'),
       unit: POOL_CONSTANTS.UNITS.SALT
     },
     cell: {
       temperature: {
-        value: (() => {
-          const temp = $('[id*="lbCellTemp"]').text().trim();
-          if (temp && temp !== '--' && temp !== '---') {
-            // Extract numeric temperature value (whole numbers or decimals)
-            const match = temp.match(/(\d+(?:\.\d+)?)/);
-            return match ? parseFloat(match[1]) : null;
-          }
-          return null;
-        })(),
+        value: extractNumeric($, '[id*="lbCellTemp"]'),
         unit: POOL_CONSTANTS.UNITS.TEMPERATURE
       },
-      voltage: (() => {
-        const voltage = $('[id*="lbCellVoltage"]').text().trim();
-        if (voltage && voltage !== '--' && voltage !== '---') {
-          // Extract numeric voltage value (whole numbers or decimals)
-          const match = voltage.match(/(\d+(?:\.\d+)?)/);
-          return match ? parseFloat(match[1]) : null;
-        }
-        return null;
-      })(),
-      current: (() => {
-        const current = $('[id*="lbCellCurrent"]').text().trim();
-        if (current && current !== '--' && current !== '---') {
-          // Extract numeric current value (whole numbers or decimals)
-          const match = current.match(/(\d+(?:\.\d+)?)/);
-          return match ? parseFloat(match[1]) : null;
-        }
-        return null;
-      })(),
+      voltage: extractNumeric($, '[id*="lbCellVoltage"]'),
+      current: extractNumeric($, '[id*="lbCellCurrent"]'),
       type: $('[id*="lbCellType"]').text().trim() || null
     },
     status: $('input[type="radio"]:checked').attr('name') || null,
@@ -452,6 +406,68 @@ const createPoolDataStructure = (data) => {
   };
 };
 
+/**
+ * Parse weather data from HTML
+ * @param {string} html - Raw HTML content
+ * @returns {object} Parsed weather data
+ */
+const parseWeatherData = (html) => {
+  if (!html) {
+    return {
+      temperature: null,
+      humidity: null,
+      conditions: null
+    };
+  }
+
+  const $ = cheerio.load(html);
+  
+  // Helper function to extract numeric value
+  const extractNumeric = ($, selector) => {
+    const text = $(selector).first().text().trim();
+    if (text && text !== '--' && text !== '---') {
+      const match = text.match(/(\d+(?:\.\d+)?)/);
+      return match ? parseFloat(match[1]) : null;
+    }
+    return null;
+  };
+  
+  return {
+    temperature: extractNumeric($, '[id*="weather"], [id*="temp"], [class*="weather"], [class*="temp"]'),
+    humidity: extractNumeric($, '[id*="humidity"], [class*="humidity"]'),
+    conditions: $('[id*="conditions"], [class*="conditions"]').first().text().trim() || null
+  };
+};
+
+/**
+ * Parse all data from HTML
+ * @param {string} html - Raw HTML content
+ * @returns {object} Complete parsed data structure
+ */
+const parseAllData = (html) => {
+  if (!html) {
+    return {
+      dashboard: {},
+      filter: {},
+      heater: {},
+      chlorinator: {},
+      lights: {},
+      weather: {},
+      schedules: []
+    };
+  }
+
+  return {
+    dashboard: parseDashboardData(html),
+    filter: parseFilterData(html),
+    heater: parseHeaterData(html),
+    chlorinator: parseChlorinatorData(html),
+    lights: parseLightsData(html),
+    weather: parseWeatherData(html),
+    schedules: parseSchedulesData(html)
+  };
+};
+
 module.exports = {
   parseDashboardData,
   parseFilterData,
@@ -459,5 +475,7 @@ module.exports = {
   parseChlorinatorData,
   parseLightsData,
   parseSchedulesData,
+  parseWeatherData,
+  parseAllData,
   createPoolDataStructure
 };

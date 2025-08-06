@@ -79,6 +79,17 @@ class TimeSeriesService {
   }
 
   /**
+   * Get the latest data point
+   * @returns {TimeSeriesPoint|null} The most recent data point or null
+   */
+  getLatestData() {
+    if (this.dataPoints.length === 0) {
+      return null;
+    }
+    return this.dataPoints[this.dataPoints.length - 1];
+  }
+
+  /**
    * Clear old data points (older than retention period)
    * Automatically called by the cleanup interval
    */
@@ -110,6 +121,13 @@ class TimeSeriesService {
       newestTimestamp: newestPoint,
       dataAgeHours: oldestPoint ? (now - oldestPoint) / (1000 * 60 * 60) : 0
     };
+  }
+
+  /**
+   * Clear all data points (for testing)
+   */
+  clearData() {
+    this.dataPoints = [];
   }
 }
 

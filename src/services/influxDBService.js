@@ -24,7 +24,6 @@ class InfluxDBService {
     this.writeApi = null;
     this.queryApi = null;
     this.isConnected = false;
-    this.initializationPromise = null;
     
     // Configuration from environment variables
     this.config = {
@@ -34,8 +33,7 @@ class InfluxDBService {
       bucket: process.env.INFLUXDB_BUCKET || 'pool_metrics'
     };
     
-    // Start initialization immediately
-    this.initializationPromise = this.initialize();
+    this.initialize();
   }
 
   /**
@@ -112,17 +110,6 @@ class InfluxDBService {
   }
 
   /**
-   * Wait for initialization to complete
-   * @returns {Promise<boolean>} Connection status
-   */
-  async waitForInitialization() {
-    if (this.initializationPromise) {
-      await this.initializationPromise;
-    }
-    return this.isConnected;
-  }
-
-  /**
    * Store a data point in InfluxDB
    * @param {object} dataPoint - Data point to store
    * @returns {Promise<boolean>} Success status
@@ -131,10 +118,7 @@ class InfluxDBService {
     const writeStartTime = Date.now();
     console.log(`💾 Storing data point: ${dataPoint.timestamp}`);
     
-    // Wait for initialization to complete
-    const isConnected = await this.waitForInitialization();
-    
-    if (!isConnected) {
+    if (!this.isConnected) {
       console.warn('❌ InfluxDB not connected, skipping data point storage');
       return false;
     }
@@ -324,10 +308,7 @@ class InfluxDBService {
     const queryStartTime = Date.now();
     console.log(`🔍 InfluxDB Query Start: ${startTime.toISOString()} to ${endTime.toISOString()}`);
     
-    // Wait for initialization to complete
-    const isConnected = await this.waitForInitialization();
-    
-    if (!isConnected) {
+    if (!this.isConnected) {
       console.warn('❌ InfluxDB not connected, cannot query data points');
       return [];
     }
@@ -526,9 +507,6 @@ class InfluxDBService {
   async testConnection() {
     console.log('🧪 Testing InfluxDB connection...');
     
-    // Wait for initialization to complete
-    const isConnected = await this.waitForInitialization();
-    
     const results = {
       configCheck: {
         url: !!this.config.url,
@@ -536,7 +514,7 @@ class InfluxDBService {
         org: !!this.config.org,
         bucket: this.config.bucket
       },
-      connectionStatus: isConnected,
+      connectionStatus: this.isConnected,
       clientExists: !!this.client,
       writeApiExists: !!this.writeApi,
       queryApiExists: !!this.queryApi
@@ -582,4 +560,7 @@ class InfluxDBService {
 // Create singleton instance
 const influxDBService = new InfluxDBService();
 
-module.exports = influxDBService; 
+module.exports = {
+  InfluxDBService,
+  influxDBService
+}; 
