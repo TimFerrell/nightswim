@@ -7,9 +7,9 @@ const axios = require('axios');
 class WeatherService {
   constructor() {
     this.zipCode = '32708';
-    // Coordinates for zip code 32708 (Oviedo, FL)
-    this.latitude = 28.6697;
-    this.longitude = -81.2081;
+    // Coordinates for zip code 32708 (Winter Springs, FL)
+    this.latitude = 28.6884611;
+    this.longitude = -81.2741674;
   }
 
   /**
