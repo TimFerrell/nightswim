@@ -372,8 +372,9 @@
         /* Weather Alerts Card Styles */
         .weather-alerts-container {
             margin-top: var(--space-4);
-            max-height: 120px;
+            max-height: 80px;
             overflow-y: auto;
+            flex-shrink: 0;
         }
 
         .no-alerts-message {
@@ -482,6 +483,16 @@
 
         .weather-alerts-value.error {
             color: var(--color-error);
+        }
+
+        /* Ensure weather alerts card bottom alignment matches other cards */
+        #weatherAlertsCard {
+            display: flex;
+            flex-direction: column;
+        }
+
+        #weatherAlertsCard .status-details {
+            margin-top: auto;
         }
 
         /* Charts section */
