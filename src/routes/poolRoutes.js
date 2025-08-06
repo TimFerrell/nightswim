@@ -1,10 +1,23 @@
 const express = require('express');
-const influxDBService = require('../services/influxDBService');
+const { influxDBService } = require('../services/influxDBService');
 const timeSeriesService = require('../services/timeSeriesService');
 const pumpStateTracker = require('../services/pumpStateTracker');
+const weatherAlertService = require('../services/weatherAlertService');
 
 /** @type {import('express').Router} */
 const router = express.Router();
+
+// Initialize weather alert service
+const weatherAlerts = new weatherAlertService();
+
+// Initialize the service when the module loads
+(async () => {
+  try {
+    await weatherAlerts.initialize();
+  } catch (error) {
+    console.error('Failed to initialize weather alert service:', error);
+  }
+})();
 
 // Get current pool data from InfluxDB (fastest response)
 router.get('/data', async (req, res) => {
@@ -432,8 +445,6 @@ router.get('/salt/average', async (req, res) => {
 // Debug endpoint for salt average calculation
 router.get('/salt/debug', async (req, res) => {
   try {
-    const influxDBService = require('../services/influxDBService');
-    
     // Test the connection
     const isConnected = influxDBService.isConnected;
     
@@ -507,6 +518,114 @@ router.get('/debug-influxdb', async (req, res) => {
   } catch (error) {
     console.error('❌ Debug query error:', error);
     res.status(500).json({ error: error.message });
+  }
+});
+
+// Weather Alert Endpoints
+
+// Get currently active weather alerts
+router.get('/alerts', async (req, res) => {
+  try {
+    console.log('⚠️ Fetching active weather alerts...');
+    
+    const dashboardAlerts = await weatherAlerts.getDashboardAlerts();
+    
+    res.json({
+      success: true,
+      data: dashboardAlerts,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Weather alerts fetch error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to fetch weather alerts',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Get weather alert history
+router.get('/alerts/history', async (req, res) => {
+  try {
+    const hours = parseInt(req.query.hours) || 24;
+    console.log(`⚠️ Fetching weather alert history for last ${hours} hours...`);
+    
+    const endTime = new Date();
+    const startTime = new Date(endTime.getTime() - (hours * 60 * 60 * 1000));
+    
+    const alerts = await influxDBService.queryWeatherAlerts(startTime, endTime);
+    const stats = await influxDBService.getWeatherAlertStats(startTime, endTime);
+    
+    res.json({
+      success: true,
+      data: {
+        alerts: alerts,
+        stats: stats,
+        timeRange: {
+          start: startTime.toISOString(),
+          end: endTime.toISOString(),
+          hours: hours
+        }
+      },
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Weather alert history fetch error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to fetch weather alert history',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Get weather alert statistics
+router.get('/alerts/stats', async (req, res) => {
+  try {
+    const hours = parseInt(req.query.hours) || 24;
+    console.log(`📊 Fetching weather alert statistics for last ${hours} hours...`);
+    
+    const stats = await weatherAlerts.getAlertStats(hours);
+    
+    res.json({
+      success: true,
+      data: stats,
+      timeRange: {
+        hours: hours,
+        endTime: new Date().toISOString()
+      },
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Weather alert stats fetch error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to fetch weather alert statistics',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Check if there are active weather alerts
+router.get('/alerts/active', async (req, res) => {
+  try {
+    const hasAlerts = await weatherAlerts.hasActiveAlerts();
+    
+    res.json({
+      success: true,
+      data: {
+        hasActiveAlerts: hasAlerts,
+        timestamp: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    console.error('Active alerts check error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to check active alerts',
+      timestamp: new Date().toISOString()
+    });
   }
 });
 

@@ -1,4 +1,4 @@
-const influxDBService = require('./influxDBService');
+const { influxDBService } = require('./influxDBService');
 
 /**
  * @typedef {object} PumpState

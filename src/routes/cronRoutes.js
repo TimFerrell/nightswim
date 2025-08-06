@@ -1,12 +1,69 @@
 const express = require('express');
 const sessionManager = require('../services/sessionManager');
 const poolDataService = require('../services/poolDataService');
-const influxDBService = require('../services/influxDBService');
+const { influxDBService } = require('../services/influxDBService');
 const weatherService = require('../services/weatherService');
+const weatherAlertService = require('../services/weatherAlertService');
 const credentials = require('../utils/credentials');
 
 /** @type {import('express').Router} */
 const router = express.Router();
+
+// Initialize weather alert service
+const weatherAlerts = new weatherAlertService();
+
+// Initialize the service when the module loads
+(async () => {
+  try {
+    await weatherAlerts.initialize();
+  } catch (error) {
+    console.error('Failed to initialize weather alert service:', error);
+  }
+})();
+
+/**
+ * Weather alert cron job endpoint
+ * Runs every 15 minutes via Vercel cron to check for new weather alerts
+ */
+router.get('/check-alerts', async (req, res) => {
+  try {
+    console.log('⚠️ Alert cron job: Checking for weather alerts...');
+    
+    // Check for new weather alerts and store them
+    const alertResult = await weatherAlerts.checkAndStoreAlerts();
+    
+    // Get current active alerts for response
+    const activeAlerts = await weatherAlerts.getActiveAlerts();
+    
+    console.log(`✅ Alert cron job: ${alertResult.newAlertsStored} new alerts stored, ${activeAlerts.length} currently active`);
+    
+    res.json({
+      success: true,
+      message: 'Weather alert check completed',
+      timestamp: new Date().toISOString(),
+      alertCheck: alertResult,
+      activeAlerts: {
+        count: activeAlerts.length,
+        alerts: activeAlerts.map(alert => ({
+          id: alert.id,
+          event: alert.event,
+          severity: alert.severity,
+          urgency: alert.urgency,
+          startTime: alert.startTime,
+          endTime: alert.endTime
+        }))
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Alert cron job: Weather alert check failed:', error);
+    res.status(500).json({ 
+      error: 'Weather alert check failed', 
+      message: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
 
 /**
  * Cron job endpoint for automated data collection
@@ -35,6 +92,23 @@ router.get('/collect-data', async (req, res) => {
     // Fetch all pool data (this will automatically store in InfluxDB)
     const poolData = await poolDataService.fetchAllPoolData(session);
     
+    // Check for weather alerts (non-blocking)
+    let alertInfo = null;
+    try {
+      const hasAlerts = await weatherAlerts.hasActiveAlerts();
+      if (hasAlerts) {
+        const activeAlerts = await weatherAlerts.getActiveAlerts();
+        alertInfo = {
+          hasActiveAlerts: true,
+          alertCount: activeAlerts.length,
+          mostSevereAlert: activeAlerts.length > 0 ? activeAlerts[0].event : null
+        };
+        console.log(`⚠️ Active weather alerts detected: ${activeAlerts.length} alerts`);
+      }
+    } catch (alertError) {
+      console.warn('⚠️ Weather alert check failed during data collection:', alertError.message);
+    }
+    
     console.log('✅ Cron job: Data collection completed successfully');
     
     res.json({
@@ -46,7 +120,8 @@ router.get('/collect-data', async (req, res) => {
         cellTemp: poolData.chlorinator?.cell?.temperature?.value || null,
         cellVoltage: poolData.chlorinator?.cell?.voltage || null,
         waterTemp: poolData.dashboard?.temperature?.actual || null
-      }
+      },
+      weatherAlerts: alertInfo
     });
     
   } catch (error) {

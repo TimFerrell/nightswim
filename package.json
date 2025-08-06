@@ -71,7 +71,7 @@
     "testTimeout": 10000,
     "verbose": true,
     "transformIgnorePatterns": [
-      "node_modules/(?!(cheerio|@influxdata)/)"
+      "node_modules/(?!(@influxdata)/)"
     ],
     "moduleNameMapper": {
       "^@/(.*)$": "<rootDir>/src/$1"

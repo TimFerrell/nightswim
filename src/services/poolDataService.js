@@ -1,10 +1,11 @@
 const { POOL_CONSTANTS } = require('../utils/constants');
 const { buildDashboardUrl, buildSystemUrl } = require('../utils/constants');
 const { parseDashboardData, parseFilterData, parseHeaterData, parseChlorinatorData, parseLightsData, parseSchedulesData, createPoolDataStructure } = require('./poolDataParser');
-const influxDBService = require('./influxDBService');
+const HaywardSession = require('./HaywardSession');
+const weatherService = require('./weatherService');
+const { influxDBService } = require('./influxDBService');
 const timeSeriesService = require('./timeSeriesService');
 const pumpStateTracker = require('./pumpStateTracker');
-const weatherService = require('./weatherService');
 
 // Simple in-memory cache for API responses
 const apiCache = new Map();

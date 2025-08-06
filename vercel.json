@@ -19,11 +19,15 @@
   "crons": [
     {
       "path": "/api/cron/collect-data",
-      "schedule": "*/5 * * * *"
+      "schedule": "*/1 * * * *"
     },
     {
       "path": "/api/cron/collect-weather",
       "schedule": "*/2 * * * *"
+    },
+    {
+      "path": "/api/cron/check-alerts",
+      "schedule": "*/15 * * * *"
     }
   ]
 } 

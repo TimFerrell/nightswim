@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const influxDBService = require('../src/services/influxDBService');
+const { influxDBService } = require('../src/services/influxDBService');
 
 async function testInfluxDB() {
   console.log('🔍 Testing InfluxDB Connection...');

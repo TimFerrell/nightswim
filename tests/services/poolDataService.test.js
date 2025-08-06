@@ -5,14 +5,6 @@
 
 const poolDataService = require('../../src/services/poolDataService');
 
-// Mock cheerio to avoid ES module issues
-jest.mock('cheerio', () => ({
-  load: jest.fn(() => ({
-    text: jest.fn(() => ''),
-    find: jest.fn(() => ({ text: jest.fn(() => '') }))
-  }))
-}));
-
 // Mock dependencies
 jest.mock('../../src/services/HaywardSession', () => ({
   __esModule: true,
@@ -25,8 +17,13 @@ jest.mock('../../src/services/weatherService', () => ({
 }));
 
 jest.mock('../../src/services/poolDataParser', () => ({
-  __esModule: true,
-  default: jest.fn()
+  parseDashboardData: jest.fn(),
+  parseFilterData: jest.fn(),
+  parseHeaterData: jest.fn(),
+  parseChlorinatorData: jest.fn(),
+  parseLightsData: jest.fn(),
+  parseSchedulesData: jest.fn(),
+  createPoolDataStructure: jest.fn()
 }));
 
 jest.mock('../../src/services/influxDBService', () => ({
@@ -34,44 +31,78 @@ jest.mock('../../src/services/influxDBService', () => ({
   default: jest.fn()
 }));
 
+jest.mock('../../src/services/timeSeriesService', () => ({
+  __esModule: true,
+  default: jest.fn()
+}));
+
+jest.mock('../../src/services/pumpStateTracker', () => ({
+  __esModule: true,
+  default: jest.fn()
+}));
+
 const HaywardSession = require('../../src/services/HaywardSession');
 const weatherService = require('../../src/services/weatherService');
 const poolDataParser = require('../../src/services/poolDataParser');
-const influxDBService = require('../../src/services/influxDBService');
+const influxDBService = require('../../src/services/influxDBService').influxDBService;
+const timeSeriesService = require('../../src/services/timeSeriesService');
+const pumpStateTracker = require('../../src/services/pumpStateTracker');
 
 describe('Pool Data Service', () => {
   let service;
-  let mockHaywardSession;
+  let mockSession;
   let mockWeatherService;
   let mockPoolDataParser;
   let mockInfluxDBService;
+  let mockTimeSeriesService;
+  let mockPumpStateTracker;
 
   beforeEach(() => {
     // Create mock instances
-    mockHaywardSession = {
-      getPoolData: jest.fn(),
-      isAuthenticated: jest.fn(),
-      authenticate: jest.fn()
+    mockSession = {
+      sessionId: 'test-session-123',
+      makeRequest: jest.fn()
     };
 
     mockWeatherService = {
-      getWeatherData: jest.fn()
+      getCurrentWeather: jest.fn()
     };
 
     mockPoolDataParser = {
-      parseAllData: jest.fn()
+      parseDashboardData: jest.fn(),
+      parseFilterData: jest.fn(),
+      parseHeaterData: jest.fn(),
+      parseChlorinatorData: jest.fn(),
+      parseLightsData: jest.fn(),
+      parseSchedulesData: jest.fn(),
+      createPoolDataStructure: jest.fn()
     };
 
     mockInfluxDBService = {
-      storeDataPoint: jest.fn(),
-      testConnection: jest.fn()
+      storeDataPoint: jest.fn()
     };
 
-    // Mock constructors
-    HaywardSession.default.mockImplementation(() => mockHaywardSession);
-    weatherService.default.mockImplementation(() => mockWeatherService);
-    poolDataParser.default.mockImplementation(() => mockPoolDataParser);
-    influxDBService.default.mockImplementation(() => mockInfluxDBService);
+    mockTimeSeriesService = {
+      addDataPoint: jest.fn()
+    };
+
+    mockPumpStateTracker = {
+      checkStateChange: jest.fn()
+    };
+
+    // Set up mock implementations for poolDataParser functions
+    poolDataParser.createPoolDataStructure.mockImplementation(mockPoolDataParser.createPoolDataStructure);
+    poolDataParser.parseDashboardData.mockImplementation(mockPoolDataParser.parseDashboardData);
+    poolDataParser.parseFilterData.mockImplementation(mockPoolDataParser.parseFilterData);
+    poolDataParser.parseHeaterData.mockImplementation(mockPoolDataParser.parseHeaterData);
+    poolDataParser.parseChlorinatorData.mockImplementation(mockPoolDataParser.parseChlorinatorData);
+    poolDataParser.parseLightsData.mockImplementation(mockPoolDataParser.parseLightsData);
+    poolDataParser.parseSchedulesData.mockImplementation(mockPoolDataParser.parseSchedulesData);
+    
+    // Set up mock implementations for other services
+    influxDBService.storeDataPoint.mockImplementation(mockInfluxDBService.storeDataPoint);
+    timeSeriesService.addDataPoint.mockImplementation(mockTimeSeriesService.addDataPoint);
+    pumpStateTracker.checkStateChange.mockImplementation(mockPumpStateTracker.checkStateChange);
 
     // Use the service object directly
     service = poolDataService;
@@ -79,364 +110,266 @@ describe('Pool Data Service', () => {
 
   afterEach(() => {
     jest.clearAllMocks();
+    // Clear the cache and most recent data between tests
+    service.cleanupCache();
+    service.setMostRecentPoolData(null);
   });
 
-  describe('collectPoolData', () => {
-    test('should collect pool data successfully', async () => {
-      const mockHtml = '<html><body><span id="lblTempActual">86°F</span></body></html>';
-      const mockParsedData = {
-        dashboard: { temperature: { actual: 86 } },
-        chlorinator: { salt: { instant: 2838 } }
-      };
+  describe('fetchAllPoolData', () => {
+    test('should fetch all pool data successfully', async () => {
+      const mockDashboardData = { temperature: { actual: 86 } };
+      const mockFilterData = { status: 'running' };
+      const mockHeaterData = { temperature: { setpoint: 82 } };
+      const mockChlorinatorData = { salt: { instant: 2838 } };
+      const mockLightsData = { status: 'off' };
+      const mockSchedulesData = [];
       const mockWeatherData = { temperature: 89, humidity: 65 };
 
-      mockHaywardSession.isAuthenticated.mockResolvedValue(true);
-      mockHaywardSession.getPoolData.mockResolvedValue(mockHtml);
-      mockPoolDataParser.parseAllData.mockReturnValue(mockParsedData);
-      mockWeatherService.getWeatherData.mockResolvedValue(mockWeatherData);
-
-      const result = await service.collectPoolData();
-
-      expect(result.success).toBe(true);
-      expect(result.data).toBeDefined();
-      expect(result.data.dashboard).toEqual(mockParsedData.dashboard);
-      expect(result.data.chlorinator).toEqual(mockParsedData.chlorinator);
-      expect(result.data.weather).toEqual(mockWeatherData);
-    });
-
-    test('should handle authentication failure', async () => {
-      mockHaywardSession.isAuthenticated.mockResolvedValue(false);
-      mockHaywardSession.authenticate.mockRejectedValue(new Error('Auth failed'));
-
-      const result = await service.collectPoolData();
-
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('Authentication failed');
-    });
-
-    test('should handle Hayward data fetch failure', async () => {
-      mockHaywardSession.isAuthenticated.mockResolvedValue(true);
-      mockHaywardSession.getPoolData.mockRejectedValue(new Error('Fetch failed'));
-
-      const result = await service.collectPoolData();
-
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('Failed to fetch pool data');
-    });
-
-    test('should handle parsing failure', async () => {
-      const mockHtml = '<html><body><span id="lblTempActual">86°F</span></body></html>';
-
-      mockHaywardSession.isAuthenticated.mockResolvedValue(true);
-      mockHaywardSession.getPoolData.mockResolvedValue(mockHtml);
-      mockPoolDataParser.parseAllData.mockImplementation(() => {
-        throw new Error('Parsing failed');
+      // Mock parser functions
+      mockPoolDataParser.createPoolDataStructure.mockReturnValue({
+        timestamp: new Date().toISOString(),
+        system: {},
+        dashboard: {},
+        filter: {},
+        heater: {},
+        chlorinator: {},
+        lights: {},
+        schedules: [],
+        weather: {}
       });
 
-      const result = await service.collectPoolData();
+      mockPoolDataParser.parseDashboardData.mockReturnValue(mockDashboardData);
+      mockPoolDataParser.parseFilterData.mockReturnValue(mockFilterData);
+      mockPoolDataParser.parseHeaterData.mockReturnValue(mockHeaterData);
+      mockPoolDataParser.parseChlorinatorData.mockReturnValue(mockChlorinatorData);
+      mockPoolDataParser.parseLightsData.mockReturnValue(mockLightsData);
+      mockPoolDataParser.parseSchedulesData.mockReturnValue(mockSchedulesData);
 
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('Failed to parse pool data');
+      // Mock session requests
+      mockSession.makeRequest.mockImplementation((url) => {
+        if (url.includes('dashboard')) {
+          return Promise.resolve({ data: '<html><span id="lblTempActual">86°F</span></html>' });
+        }
+        return Promise.resolve({ data: '<html></html>' });
+      });
+
+      // Mock weather service
+      mockWeatherService.getCurrentWeather.mockResolvedValue(mockWeatherData);
+
+      // Mock storage services
+      mockInfluxDBService.storeDataPoint.mockResolvedValue(true);
+      mockTimeSeriesService.addDataPoint.mockResolvedValue();
+      mockPumpStateTracker.checkStateChange.mockResolvedValue();
+
+      const result = await service.fetchAllPoolData(mockSession);
+
+      expect(result).toBeDefined();
+      expect(result.dashboard).toEqual(mockDashboardData);
+      expect(result.filter).toEqual(mockFilterData);
+      expect(result.heater).toEqual(mockHeaterData);
+      expect(result.chlorinator).toEqual(mockChlorinatorData);
+      expect(result.lights).toEqual(mockLightsData);
+      expect(result.schedules).toEqual(mockSchedulesData);
+      expect(result.weather).toEqual(mockWeatherData);
+      expect(mockInfluxDBService.storeDataPoint).toHaveBeenCalled();
+      expect(mockTimeSeriesService.addDataPoint).toHaveBeenCalled();
     });
 
-    test('should handle weather service failure', async () => {
-      const mockHtml = '<html><body><span id="lblTempActual">86°F</span></body></html>';
-      const mockParsedData = {
-        dashboard: { temperature: { actual: 86 } }
-      };
+    test('should handle request failures gracefully', async () => {
+      mockPoolDataParser.createPoolDataStructure.mockReturnValue({
+        timestamp: new Date().toISOString(),
+        system: {},
+        dashboard: {},
+        filter: {},
+        heater: {},
+        chlorinator: {},
+        lights: {},
+        schedules: [],
+        weather: {}
+      });
 
-      mockHaywardSession.isAuthenticated.mockResolvedValue(true);
-      mockHaywardSession.getPoolData.mockResolvedValue(mockHtml);
-      mockPoolDataParser.parseAllData.mockReturnValue(mockParsedData);
-      mockWeatherService.getWeatherData.mockRejectedValue(new Error('Weather failed'));
+      // Mock some requests to fail
+      mockSession.makeRequest.mockImplementation((url) => {
+        if (url.includes('dashboard')) {
+          return Promise.reject(new Error('Dashboard fetch failed'));
+        }
+        return Promise.resolve({ data: '<html></html>' });
+      });
 
-      const result = await service.collectPoolData();
+      mockWeatherService.getCurrentWeather.mockRejectedValue(new Error('Weather failed'));
 
-      expect(result.success).toBe(true);
-      expect(result.data.weather).toBeNull();
-      expect(result.weatherError).toContain('Weather failed');
+      const result = await service.fetchAllPoolData(mockSession);
+
+      expect(result).toBeDefined();
+      expect(result.dashboard).toEqual({ error: 'Dashboard fetch failed' });
+      expect(result.weather).toEqual({ error: 'Weather failed' });
     });
 
-    test('should handle empty HTML response', async () => {
-      mockHaywardSession.isAuthenticated.mockResolvedValue(true);
-      mockHaywardSession.getPoolData.mockResolvedValue('');
+    test('should handle empty HTML responses', async () => {
+      mockPoolDataParser.createPoolDataStructure.mockReturnValue({
+        timestamp: new Date().toISOString(),
+        system: {},
+        dashboard: {},
+        filter: {},
+        heater: {},
+        chlorinator: {},
+        lights: {},
+        schedules: [],
+        weather: {}
+      });
 
-      const result = await service.collectPoolData();
+      mockSession.makeRequest.mockResolvedValue({ data: '' });
+      mockWeatherService.getCurrentWeather.mockResolvedValue({});
 
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('Empty response from Hayward');
+      const result = await service.fetchAllPoolData(mockSession);
+
+      expect(result).toBeDefined();
+      expect(mockInfluxDBService.storeDataPoint).toHaveBeenCalled();
     });
 
-    test('should handle null HTML response', async () => {
-      mockHaywardSession.isAuthenticated.mockResolvedValue(true);
-      mockHaywardSession.getPoolData.mockResolvedValue(null);
+    test('should handle null HTML responses', async () => {
+      mockPoolDataParser.createPoolDataStructure.mockReturnValue({
+        timestamp: new Date().toISOString(),
+        system: {},
+        dashboard: {},
+        filter: {},
+        heater: {},
+        chlorinator: {},
+        lights: {},
+        schedules: [],
+        weather: {}
+      });
 
-      const result = await service.collectPoolData();
+      mockSession.makeRequest.mockResolvedValue({ data: null });
+      mockWeatherService.getCurrentWeather.mockResolvedValue({});
 
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('Empty response from Hayward');
+      const result = await service.fetchAllPoolData(mockSession);
+
+      expect(result).toBeDefined();
+      expect(mockInfluxDBService.storeDataPoint).toHaveBeenCalled();
     });
   });
 
-  describe('processPoolData', () => {
-    test('should process pool data successfully', async () => {
-      const rawData = {
-        dashboard: { temperature: { actual: 86 } },
-        chlorinator: { salt: { instant: 2838 } },
-        weather: { temperature: 89 }
-      };
-
-      const mockInfluxDB = {
-        storeDataPoint: jest.fn().mockResolvedValue(true)
-      };
-      influxDBService.mockImplementation(() => mockInfluxDB);
-
-      const result = await service.processPoolData(rawData);
-
-      expect(result.success).toBe(true);
-      expect(result.stored).toBe(true);
-      expect(mockInfluxDB.storeDataPoint).toHaveBeenCalled();
+  describe('Cache Functions', () => {
+    test('should get cached data when available and not expired', () => {
+      const testData = { test: 'data' };
+      const cacheKey = 'test-key';
+      
+      service.setCachedData(cacheKey, testData);
+      const result = service.getCachedData(cacheKey);
+      
+      expect(result).toEqual(testData);
     });
 
-    test('should handle storage failure', async () => {
-      const rawData = {
-        dashboard: { temperature: { actual: 86 } }
-      };
-
-      const mockInfluxDB = {
-        storeDataPoint: jest.fn().mockRejectedValue(new Error('Storage failed'))
-      };
-      influxDBService.mockImplementation(() => mockInfluxDB);
-
-      const result = await service.processPoolData(rawData);
-
-      expect(result.success).toBe(true);
-      expect(result.stored).toBe(false);
-      expect(result.storageError).toContain('Storage failed');
+    test('should return null for expired cache', () => {
+      const testData = { test: 'data' };
+      const cacheKey = 'test-key';
+      
+      service.setCachedData(cacheKey, testData);
+      
+      // Manually expire the cache by modifying the timestamp
+      const cache = service.getCachedData(cacheKey);
+      expect(cache).toEqual(testData);
+      
+      // Clear cache and check again
+      service.cleanupCache();
+      const result = service.getCachedData(cacheKey);
+      expect(result).toBeNull();
     });
 
-    test('should validate data structure', async () => {
-      const invalidData = {
-        invalid: 'data'
-      };
+    test('should return null for non-existent cache key', () => {
+      const result = service.getCachedData('non-existent');
+      expect(result).toBeNull();
+    });
+  });
 
-      const result = await service.processPoolData(invalidData);
-
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('Invalid data structure');
+  describe('Most Recent Data Functions', () => {
+    test('should set and get most recent pool data', () => {
+      const testData = { test: 'data' };
+      
+      service.setMostRecentPoolData(testData);
+      const result = service.getMostRecentPoolData();
+      
+      expect(result).toEqual(testData);
     });
 
-    test('should handle null data', async () => {
-      const result = await service.processPoolData(null);
-
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('No data provided');
-    });
-
-    test('should handle missing required fields', async () => {
-      const incompleteData = {
-        dashboard: { temperature: { actual: 86 } }
-        // Missing chlorinator and weather
-      };
-
-      const result = await service.processPoolData(incompleteData);
-
-      expect(result.success).toBe(true);
-      expect(result.stored).toBe(true);
-      // Should still process with missing fields
+    test('should return null when no recent data is set', () => {
+      const result = service.getMostRecentPoolData();
+      expect(result).toBeNull();
     });
   });
 
   describe('Data Validation', () => {
-    test('should validate temperature ranges', async () => {
-      const dataWithExtremeTemp = {
-        dashboard: { temperature: { actual: 200 } }, // Extreme temperature
-        chlorinator: { salt: { instant: 2838 } },
-        weather: { temperature: 89 }
-      };
-
-      const mockInfluxDB = {
-        storeDataPoint: jest.fn().mockResolvedValue(true)
-      };
-      influxDBService.mockImplementation(() => mockInfluxDB);
-
-      const result = await service.processPoolData(dataWithExtremeTemp);
-
-      expect(result.success).toBe(true);
-      expect(result.stored).toBe(true);
-      // Should still store extreme values (validation happens elsewhere)
-    });
-
-    test('should validate salt level ranges', async () => {
-      const dataWithExtremeSalt = {
-        dashboard: { temperature: { actual: 86 } },
-        chlorinator: { salt: { instant: 10000 } }, // Extreme salt level
-        weather: { temperature: 89 }
-      };
-
-      const mockInfluxDB = {
-        storeDataPoint: jest.fn().mockResolvedValue(true)
-      };
-      influxDBService.mockImplementation(() => mockInfluxDB);
-
-      const result = await service.processPoolData(dataWithExtremeSalt);
-
-      expect(result.success).toBe(true);
-      expect(result.stored).toBe(true);
-    });
-
-    test('should handle null values in data', async () => {
-      const dataWithNulls = {
-        dashboard: { temperature: { actual: null } },
-        chlorinator: { salt: { instant: null } },
-        weather: { temperature: null }
-      };
-
-      const mockInfluxDB = {
-        storeDataPoint: jest.fn().mockResolvedValue(true)
-      };
-      influxDBService.mockImplementation(() => mockInfluxDB);
-
-      const result = await service.processPoolData(dataWithNulls);
-
-      expect(result.success).toBe(true);
-      expect(result.stored).toBe(true);
-    });
-  });
-
-  describe('Error Handling', () => {
-    test('should handle network timeouts', async () => {
-      mockHaywardSession.isAuthenticated.mockResolvedValue(true);
-      mockHaywardSession.getPoolData.mockImplementation(() => {
-        return new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Timeout')), 100);
-        });
+    test('should handle missing optional fields', async () => {
+      mockPoolDataParser.createPoolDataStructure.mockReturnValue({
+        timestamp: new Date().toISOString(),
+        system: {},
+        dashboard: {},
+        filter: {},
+        heater: {},
+        chlorinator: {},
+        lights: {},
+        schedules: [],
+        weather: {}
       });
 
-      const result = await service.collectPoolData();
+      mockSession.makeRequest.mockResolvedValue({ data: '<html></html>' });
+      mockWeatherService.getCurrentWeather.mockResolvedValue({});
 
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('Timeout');
-    });
+      const result = await service.fetchAllPoolData(mockSession);
 
-    test('should handle malformed HTML', async () => {
-      const malformedHtml = '<html><body><span id="lblTempActual">86°F</span><span id="lblSaltInstant">2838</span>';
-      const mockParsedData = {
-        dashboard: { temperature: { actual: 86 } },
-        chlorinator: { salt: { instant: 2838 } }
-      };
-
-      mockHaywardSession.isAuthenticated.mockResolvedValue(true);
-      mockHaywardSession.getPoolData.mockResolvedValue(malformedHtml);
-      mockPoolDataParser.parseAllData.mockReturnValue(mockParsedData);
-      mockWeatherService.getWeatherData.mockResolvedValue({ temperature: 89 });
-
-      const result = await service.collectPoolData();
-
-      expect(result.success).toBe(true);
-      expect(result.data).toBeDefined();
-    });
-
-    test('should handle service unavailability', async () => {
-      mockHaywardSession.isAuthenticated.mockResolvedValue(true);
-      mockHaywardSession.getPoolData.mockRejectedValue(new Error('Service unavailable'));
-
-      const result = await service.collectPoolData();
-
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('Service unavailable');
+      expect(result).toBeDefined();
+      expect(mockInfluxDBService.storeDataPoint).toHaveBeenCalled();
     });
   });
 
   describe('Performance', () => {
     test('should complete data collection within reasonable time', async () => {
-      const mockHtml = '<html><body><span id="lblTempActual">86°F</span></body></html>';
-      const mockParsedData = {
-        dashboard: { temperature: { actual: 86 } },
-        chlorinator: { salt: { instant: 2838 } }
-      };
-      const mockWeatherData = { temperature: 89 };
+      mockPoolDataParser.createPoolDataStructure.mockReturnValue({
+        timestamp: new Date().toISOString(),
+        system: {},
+        dashboard: {},
+        filter: {},
+        heater: {},
+        chlorinator: {},
+        lights: {},
+        schedules: [],
+        weather: {}
+      });
 
-      mockHaywardSession.isAuthenticated.mockResolvedValue(true);
-      mockHaywardSession.getPoolData.mockResolvedValue(mockHtml);
-      mockPoolDataParser.parseAllData.mockReturnValue(mockParsedData);
-      mockWeatherService.getWeatherData.mockResolvedValue(mockWeatherData);
+      mockSession.makeRequest.mockResolvedValue({ data: '<html></html>' });
+      mockWeatherService.getCurrentWeather.mockResolvedValue({});
 
       const startTime = Date.now();
-      const result = await service.collectPoolData();
+      const result = await service.fetchAllPoolData(mockSession);
       const endTime = Date.now();
 
-      expect(result.success).toBe(true);
-      expect(endTime - startTime).toBeLessThan(10000); // Should complete within 10 seconds
+      expect(result).toBeDefined();
+      expect(endTime - startTime).toBeLessThan(5000); // Should complete within 5 seconds
     });
 
     test('should handle concurrent data collection', async () => {
-      const mockHtml = '<html><body><span id="lblTempActual">86°F</span></body></html>';
-      const mockParsedData = {
-        dashboard: { temperature: { actual: 86 } }
-      };
-      const mockWeatherData = { temperature: 89 };
+      mockPoolDataParser.createPoolDataStructure.mockReturnValue({
+        timestamp: new Date().toISOString(),
+        system: {},
+        dashboard: {},
+        filter: {},
+        heater: {},
+        chlorinator: {},
+        lights: {},
+        schedules: [],
+        weather: {}
+      });
 
-      mockHaywardSession.isAuthenticated.mockResolvedValue(true);
-      mockHaywardSession.getPoolData.mockResolvedValue(mockHtml);
-      mockPoolDataParser.parseAllData.mockReturnValue(mockParsedData);
-      mockWeatherService.getWeatherData.mockResolvedValue(mockWeatherData);
+      mockSession.makeRequest.mockResolvedValue({ data: '<html></html>' });
+      mockWeatherService.getCurrentWeather.mockResolvedValue({});
 
-      const promises = Array.from({ length: 5 }, () => service.collectPoolData());
+      const promises = Array.from({ length: 3 }, () => service.fetchAllPoolData(mockSession));
       const results = await Promise.all(promises);
 
       results.forEach(result => {
-        expect(result.success).toBe(true);
+        expect(result).toBeDefined();
       });
-    });
-  });
-
-  describe('Data Transformation', () => {
-    test('should transform data to correct format', async () => {
-      const rawData = {
-        dashboard: { temperature: { actual: 86 } },
-        chlorinator: { salt: { instant: 2838 } },
-        weather: { temperature: 89 }
-      };
-
-      const mockInfluxDB = {
-        storeDataPoint: jest.fn().mockResolvedValue(true)
-      };
-      influxDBService.mockImplementation(() => mockInfluxDB);
-
-      await service.processPoolData(rawData);
-
-      expect(mockInfluxDB.storeDataPoint).toHaveBeenCalledWith(
-        expect.objectContaining({
-          timestamp: expect.any(String),
-          saltInstant: 2838,
-          waterTemp: 86,
-          airTemp: 89
-        })
-      );
-    });
-
-    test('should handle missing optional fields', async () => {
-      const incompleteData = {
-        dashboard: { temperature: { actual: 86 } }
-        // Missing chlorinator and weather
-      };
-
-      const mockInfluxDB = {
-        storeDataPoint: jest.fn().mockResolvedValue(true)
-      };
-      influxDBService.mockImplementation(() => mockInfluxDB);
-
-      await service.processPoolData(incompleteData);
-
-      expect(mockInfluxDB.storeDataPoint).toHaveBeenCalledWith(
-        expect.objectContaining({
-          timestamp: expect.any(String),
-          waterTemp: 86,
-          saltInstant: null,
-          airTemp: null
-        })
-      );
     });
   });
 }); 

@@ -8,6 +8,7 @@ require('dotenv').config();
 // Import routes
 const poolRoutes = require('./src/routes/poolRoutes');
 const cronRoutes = require('./src/routes/cronRoutes');
+const { influxDBService } = require('./src/services/influxDBService');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -72,7 +73,6 @@ app.get('/api/health', (req, res) => {
 // InfluxDB test endpoint
 app.get('/api/test-influxdb', async (req, res) => {
   try {
-    const influxDBService = require('./src/services/influxDBService');
     const results = await influxDBService.testConnection();
     res.json({
       success: true,

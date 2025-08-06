@@ -555,6 +555,193 @@ class InfluxDBService {
       this.client.close();
     }
   }
+
+  /**
+   * Store a weather alert as a range annotation
+   * @param {object} alertData - Weather alert data
+   * @param {string} alertData.id - Alert ID
+   * @param {string} alertData.event - Event type (e.g., 'Severe Thunderstorm Warning')
+   * @param {string} alertData.severity - Alert severity
+   * @param {string} alertData.urgency - Alert urgency
+   * @param {string} alertData.certainty - Alert certainty
+   * @param {string} alertData.description - Alert description
+   * @param {string} alertData.instruction - Alert instructions
+   * @param {string} alertData.startTime - Alert start time (ISO string)
+   * @param {string} alertData.endTime - Alert end time (ISO string)
+   * @param {object} alertData.geometry - Alert geometry data
+   * @returns {Promise<boolean>} Success status
+   */
+  async storeWeatherAlert(alertData) {
+    if (!this.isConnected) {
+      console.warn('InfluxDB not connected, skipping weather alert storage');
+      return false;
+    }
+
+    try {
+      // Store the alert start
+      const startPoint = new Point('weather_alerts')
+        .timestamp(new Date(alertData.startTime))
+        .stringField('alert_id', alertData.id)
+        .stringField('event', alertData.event)
+        .stringField('severity', alertData.severity)
+        .stringField('urgency', alertData.urgency)
+        .stringField('certainty', alertData.certainty)
+        .stringField('description', alertData.description)
+        .stringField('instruction', alertData.instruction)
+        .stringField('status', 'start')
+        .stringField('geometry', JSON.stringify(alertData.geometry || {}));
+
+      // Store the alert end
+      const endPoint = new Point('weather_alerts')
+        .timestamp(new Date(alertData.endTime))
+        .stringField('alert_id', alertData.id)
+        .stringField('event', alertData.event)
+        .stringField('severity', alertData.severity)
+        .stringField('urgency', alertData.urgency)
+        .stringField('certainty', alertData.certainty)
+        .stringField('description', alertData.description)
+        .stringField('instruction', alertData.instruction)
+        .stringField('status', 'end')
+        .stringField('geometry', JSON.stringify(alertData.geometry || {}));
+
+      await this.writeApi.writePoint(startPoint);
+      await this.writeApi.writePoint(endPoint);
+      await this.writeApi.flush();
+      
+      console.log(`✅ Weather alert stored: ${alertData.event} (${alertData.id})`);
+      return true;
+    } catch (error) {
+      console.error('Failed to store weather alert:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Query weather alerts within a time range
+   * @param {Date} startTime - Start time for query
+   * @param {Date} endTime - End time for query
+   * @returns {Promise<Array>} Array of weather alert ranges
+   */
+  async queryWeatherAlerts(startTime, endTime) {
+    if (!this.isConnected) {
+      return [];
+    }
+
+    try {
+      const fluxQuery = `
+        from(bucket: "${this.config.bucket}")
+          |> range(start: ${startTime.toISOString()}, stop: ${endTime.toISOString()})
+          |> filter(fn: (r) => r._measurement == "weather_alerts")
+          |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
+          |> sort(columns: ["_time"])
+      `;
+
+      const alertStarts = new Map();
+      const alertEnds = new Map();
+      const results = [];
+      
+      for await (const {values, tableMeta} of this.queryApi.iterateRows(fluxQuery)) {
+        const o = tableMeta.toObject(values);
+        const alertId = o.alert_id;
+        const status = o.status;
+        
+        if (status === 'start') {
+          alertStarts.set(alertId, {
+            id: alertId,
+            event: o.event,
+            severity: o.severity,
+            urgency: o.urgency,
+            certainty: o.certainty,
+            description: o.description,
+            instruction: o.instruction,
+            startTime: o._time,
+            geometry: o.geometry ? JSON.parse(o.geometry) : {}
+          });
+        } else if (status === 'end') {
+          alertEnds.set(alertId, o._time);
+        }
+      }
+
+      // Combine start and end times to create range annotations
+      for (const [alertId, startData] of alertStarts) {
+        const endTime = alertEnds.get(alertId);
+        if (endTime) {
+          results.push({
+            ...startData,
+            endTime: endTime,
+            duration: new Date(endTime).getTime() - new Date(startData.startTime).getTime()
+          });
+        }
+      }
+
+      return results;
+    } catch (error) {
+      console.error('Failed to query weather alerts:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get currently active weather alerts
+   * @returns {Promise<Array>} Array of currently active alerts
+   */
+  async getActiveWeatherAlerts() {
+    const now = new Date();
+    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+    
+    const alerts = await this.queryWeatherAlerts(oneHourAgo, now);
+    
+    // Filter for alerts that are currently active
+    return alerts.filter(alert => {
+      const alertStart = new Date(alert.startTime);
+      const alertEnd = new Date(alert.endTime);
+      return alertStart <= now && alertEnd >= now;
+    });
+  }
+
+  /**
+   * Check if there are any active weather alerts
+   * @returns {Promise<boolean>} True if there are active alerts
+   */
+  async hasActiveWeatherAlerts() {
+    const activeAlerts = await this.getActiveWeatherAlerts();
+    return activeAlerts.length > 0;
+  }
+
+  /**
+   * Get weather alert statistics
+   * @param {Date} startTime - Start time for statistics
+   * @param {Date} endTime - End time for statistics
+   * @returns {Promise<object>} Alert statistics
+   */
+  async getWeatherAlertStats(startTime, endTime) {
+    const alerts = await this.queryWeatherAlerts(startTime, endTime);
+    
+    const stats = {
+      totalAlerts: alerts.length,
+      bySeverity: {},
+      byEvent: {},
+      totalDuration: 0,
+      averageDuration: 0
+    };
+
+    alerts.forEach(alert => {
+      // Count by severity
+      stats.bySeverity[alert.severity] = (stats.bySeverity[alert.severity] || 0) + 1;
+      
+      // Count by event type
+      stats.byEvent[alert.event] = (stats.byEvent[alert.event] || 0) + 1;
+      
+      // Sum durations
+      stats.totalDuration += alert.duration;
+    });
+
+    if (alerts.length > 0) {
+      stats.averageDuration = stats.totalDuration / alerts.length;
+    }
+
+    return stats;
+  }
 }
 
 // Create singleton instance
