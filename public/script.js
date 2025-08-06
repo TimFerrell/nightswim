@@ -889,6 +889,17 @@ const updateWeatherAlertsCard = (alertsData, historyData) => {
     weatherAlertsValue.classList.remove('skeleton-value', 'no-alerts', 'error');
     weatherAlertsValue.classList.add('has-alerts');
     
+    // Log active alerts to console
+    console.log('⚠️ Currently active weather alerts:');
+    alertsData.alerts.forEach((alert, index) => {
+      console.log(`   ${index + 1}. ${alert.event} (${alert.severity})`);
+      console.log(`      Description: ${alert.description}`);
+      console.log(`      Valid until: ${new Date(alert.endTime).toLocaleString()}`);
+      console.log(`      Urgency: ${alert.urgency}, Certainty: ${alert.certainty}`);
+      console.log('');
+    });
+    console.log(`📊 Total active alerts: ${alertsData.alertCount}`);
+    
     // Clear container and add alert items
     weatherAlertsContainer.innerHTML = '';
     
@@ -903,6 +914,9 @@ const updateWeatherAlertsCard = (alertsData, historyData) => {
     weatherAlertsValue.classList.remove('skeleton-value', 'has-alerts', 'error');
     weatherAlertsValue.classList.add('no-alerts');
     
+    // Log no active alerts to console
+    console.log('✅ No currently active weather alerts');
+    
     // Clear container - no message needed
     weatherAlertsContainer.innerHTML = '';
   }
@@ -912,6 +926,21 @@ const updateWeatherAlertsCard = (alertsData, historyData) => {
     const past24HCount = historyData?.alerts?.length || 0;
     weatherAlertsPast24H.textContent = `${past24HCount} Warnings`;
     weatherAlertsPast24H.classList.remove('skeleton-text');
+    
+    // Log alerts in the past 24 hours to console
+    if (historyData?.alerts && historyData.alerts.length > 0) {
+      console.log('📅 Alerts in the past 24 hours:');
+      historyData.alerts.forEach((alert, index) => {
+        console.log(`   ${index + 1}. ${alert.event} (${alert.severity})`);
+        console.log(`      Description: ${alert.description}`);
+        console.log(`      Valid: ${new Date(alert.startTime).toLocaleString()} - ${new Date(alert.endTime).toLocaleString()}`);
+        console.log(`      Duration: ${Math.round((new Date(alert.endTime) - new Date(alert.startTime)) / (1000 * 60))} minutes`);
+        console.log('');
+      });
+      console.log(`📊 Total alerts in past 24 hours: ${past24HCount}`);
+    } else {
+      console.log('📅 No alerts in the past 24 hours');
+    }
   }
   
   // Mark as loaded
