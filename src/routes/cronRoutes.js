@@ -73,12 +73,30 @@ router.get('/collect-data', async (req, res) => {
   try {
     console.log('🕐 Cron job: Starting automated data collection...');
     
+    // Debug credential status
+    const credStatus = credentials.logCredentialStatus(true);
+    console.log('🔐 Credential status:', credStatus);
+    console.log('🔐 Environment variables check:');
+    console.log('   HAYWARD_USERNAME:', process.env.HAYWARD_USERNAME ? '[SET]' : '[NOT SET]');
+    console.log('   HAYWARD_PASSWORD:', process.env.HAYWARD_PASSWORD ? '[SET]' : '[NOT SET]');
+    
     // Create a new session for the cron job
     const sessionId = `cron-${Date.now()}`;
     const session = sessionManager.getSession(sessionId);
     
     // Authenticate using credentials
-    const authResult = await session.authenticate(credentials.username, credentials.password);
+    const creds = credentials.getAndValidateCredentials();
+    if (!creds) {
+      console.error('❌ Cron job: No valid credentials available');
+      return res.status(401).json({ 
+        error: 'Authentication failed', 
+        message: 'No valid credentials available',
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+    console.log('🔐 Using credentials for authentication...');
+    const authResult = await session.authenticate(creds.username, creds.password);
     
     if (!authResult.success) {
       console.error('❌ Cron job: Authentication failed:', authResult.message);

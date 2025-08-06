@@ -568,6 +568,7 @@ const startChartAutoRefresh = () => {
   chartRefreshInterval = setInterval(() => {
     updateAllCharts();
     updateSparklines();
+    loadWeatherAlerts(); // Refresh weather alerts every 30 seconds
   }, 30000); // Refresh every 30 seconds
 };
 
@@ -601,6 +602,7 @@ const startStatsAutoRefresh = () => {
   
   statsRefreshInterval = setInterval(() => {
     loadPoolData();
+    loadWeatherAlerts(); // Refresh weather alerts every 30 seconds
   }, 30000); // Refresh every 30 seconds (more frequent since no manual button)
 };
 
@@ -786,6 +788,214 @@ const updateStatusCards = (data) => {
   if (timestampElement) {
     timestampElement.textContent = new Date().toLocaleTimeString();
   }
+};
+
+/**
+ * Load and display weather alerts from InfluxDB
+ */
+const loadWeatherAlerts = async () => {
+  try {
+    console.log('⚠️ Loading weather alerts from InfluxDB...');
+    const startTime = Date.now();
+
+    // Fetch both active alerts and 24-hour history
+    const [alertsResponse, historyResponse] = await Promise.all([
+      fetch('/api/pool/alerts', { credentials: 'include' }),
+      fetch('/api/pool/alerts/history?hours=24', { credentials: 'include' })
+    ]);
+
+    if (!alertsResponse.ok) {
+      throw new Error(`HTTP ${alertsResponse.status}: ${alertsResponse.statusText}`);
+    }
+
+    if (!historyResponse.ok) {
+      throw new Error(`HTTP ${historyResponse.status}: ${historyResponse.statusText}`);
+    }
+
+    const alertsResult = await alertsResponse.json();
+    const historyResult = await historyResponse.json();
+    
+    if (!alertsResult.success) {
+      throw new Error(alertsResult.error || 'Invalid weather alerts response format');
+    }
+
+    if (!historyResult.success) {
+      throw new Error(historyResult.error || 'Invalid weather alerts history response format');
+    }
+
+    const alertsData = alertsResult.data;
+    const historyData = historyResult.data;
+    const loadTime = Date.now() - startTime;
+    console.log(`✅ Weather alerts loaded in ${loadTime}ms`);
+    console.log('📊 Weather alerts data:', alertsData);
+    console.log('📊 Weather alerts history:', historyData);
+    
+    // Update weather alerts card with both active alerts and 24-hour count
+    updateWeatherAlertsCard(alertsData, historyData);
+
+  } catch (error) {
+    console.error('Error loading weather alerts:', error);
+    // Show error state in the card
+    updateWeatherAlertsCard({ 
+      hasActiveAlerts: false, 
+      alertCount: 0, 
+      alerts: [],
+      error: error.message 
+    }, { alerts: [] });
+  }
+};
+
+/**
+ * Update weather alerts card with data
+ */
+const updateWeatherAlertsCard = (alertsData, historyData) => {
+  console.log('🔄 Updating weather alerts card with data:', alertsData);
+  
+  const weatherAlertsValue = document.getElementById('weatherAlertsValue');
+  const weatherAlertsContainer = document.getElementById('weatherAlertsContainer');
+  const weatherAlertsPast24H = document.getElementById('weatherAlertsPast24H');
+  const weatherAlertsCard = document.getElementById('weatherAlertsCard');
+  
+  if (!weatherAlertsValue || !weatherAlertsContainer || !weatherAlertsPast24H) {
+    console.warn('Weather alerts DOM elements not found');
+    return;
+  }
+
+  // Handle error state
+  if (alertsData.error) {
+    weatherAlertsValue.textContent = '!';
+    weatherAlertsValue.classList.remove('skeleton-value', 'has-alerts', 'no-alerts');
+    weatherAlertsValue.classList.add('error');
+    
+    // Show error message in container
+    weatherAlertsContainer.innerHTML = `<div class="no-alerts-message" style="color: var(--color-error);">Error: ${alertsData.error}</div>`;
+    
+    // Update 24-hour count
+    if (weatherAlertsPast24H) {
+      weatherAlertsPast24H.textContent = 'Error';
+      weatherAlertsPast24H.classList.remove('skeleton-text');
+    }
+    
+    // Mark as loaded
+    if (weatherAlertsCard) {
+      weatherAlertsCard.classList.add('loaded');
+    }
+    return;
+  }
+
+  // Update the main value (number of active alerts)
+  if (alertsData.hasActiveAlerts && alertsData.alertCount > 0) {
+    weatherAlertsValue.textContent = alertsData.alertCount;
+    weatherAlertsValue.classList.remove('skeleton-value', 'no-alerts', 'error');
+    weatherAlertsValue.classList.add('has-alerts');
+    
+    // Clear container and add alert items
+    weatherAlertsContainer.innerHTML = '';
+    
+    alertsData.alerts.forEach(alert => {
+      const alertItem = createWeatherAlertItem(alert);
+      weatherAlertsContainer.appendChild(alertItem);
+    });
+    
+  } else {
+    // No active alerts
+    weatherAlertsValue.textContent = '0';
+    weatherAlertsValue.classList.remove('skeleton-value', 'has-alerts', 'error');
+    weatherAlertsValue.classList.add('no-alerts');
+    
+    // Clear container - no message needed
+    weatherAlertsContainer.innerHTML = '';
+  }
+  
+  // Update 24-hour count
+  if (weatherAlertsPast24H) {
+    const past24HCount = historyData?.alerts?.length || 0;
+    weatherAlertsPast24H.textContent = `${past24HCount} warnings`;
+    weatherAlertsPast24H.classList.remove('skeleton-text');
+  }
+  
+  // Mark as loaded
+  if (weatherAlertsCard) {
+    weatherAlertsCard.classList.add('loaded');
+  }
+};
+
+/**
+ * Create a weather alert item element
+ */
+const createWeatherAlertItem = (alert) => {
+  const alertItem = document.createElement('div');
+  alertItem.className = `weather-alert-item ${getSeverityClass(alert.severity)}`;
+  
+  const severityClass = getSeverityClass(alert.severity);
+  const severityText = getSeverityText(alert.severity);
+  
+  alertItem.innerHTML = `
+    <div class="weather-alert-header">
+      <h4 class="weather-alert-title">${alert.event}</h4>
+      <span class="weather-alert-severity ${severityClass}">${severityText}</span>
+    </div>
+    <div class="weather-alert-description">${truncateText(alert.description, 100)}</div>
+    <div class="weather-alert-time">
+      Until ${formatTime(alert.endTime)}
+    </div>
+  `;
+  
+  return alertItem;
+};
+
+/**
+ * Get CSS class for alert severity
+ */
+const getSeverityClass = (severity) => {
+  switch (severity?.toLowerCase()) {
+    case 'extreme':
+    case 'severe':
+      return 'severe';
+    case 'moderate':
+      return 'moderate';
+    case 'minor':
+    case 'unknown':
+    default:
+      return 'minor';
+  }
+};
+
+/**
+ * Get display text for alert severity
+ */
+const getSeverityText = (severity) => {
+  switch (severity?.toLowerCase()) {
+    case 'extreme':
+      return 'Extreme';
+    case 'severe':
+      return 'Severe';
+    case 'moderate':
+      return 'Moderate';
+    case 'minor':
+      return 'Minor';
+    case 'unknown':
+    default:
+      return 'Unknown';
+  }
+};
+
+/**
+ * Truncate text to specified length
+ */
+const truncateText = (text, maxLength) => {
+  if (!text) return '';
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength) + '...';
+};
+
+/**
+ * Format time for display
+ */
+const formatTime = (timeString) => {
+  if (!timeString) return '';
+  const date = new Date(timeString);
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };
 
 /**
@@ -1220,6 +1430,7 @@ const fetchSaltRollingAverage = async () => {
 // Initialize dashboard when page loads
 document.addEventListener('DOMContentLoaded', () => {
   loadPoolData();
+  loadWeatherAlerts(); // Load weather alerts on page load
   
   // Listen for dark mode changes
   const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');

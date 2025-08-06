@@ -3,6 +3,7 @@ const { influxDBService } = require('../services/influxDBService');
 const timeSeriesService = require('../services/timeSeriesService');
 const pumpStateTracker = require('../services/pumpStateTracker');
 const weatherAlertService = require('../services/weatherAlertService');
+const credentials = require('../utils/credentials');
 
 /** @type {import('express').Router} */
 const router = express.Router();
@@ -43,9 +44,16 @@ router.get('/data', async (req, res) => {
     if (dataPoints.length === 0) {
       const totalTime = Date.now() - requestStartTime;
       console.log(`❌ No data available after ${totalTime}ms`);
-      return res.status(404).json({ 
-        error: 'No data available',
-        message: 'Pool data not yet collected. Check cron job status.',
+      return res.status(200).json({ 
+        success: true,
+        data: {
+          chlorinator: { salt: { instant: null }, cell: { voltage: null, temperature: { value: null } } },
+          dashboard: { temperature: { actual: null } },
+          filter: { status: null },
+          weather: { temperature: null }
+        },
+        source: 'influxdb',
+        message: 'No data available yet',
         performance: { totalTime }
       });
     }
@@ -624,6 +632,72 @@ router.get('/alerts/active', async (req, res) => {
     res.status(500).json({ 
       success: false, 
       error: 'Failed to check active alerts',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Test endpoint for generating mock data (development only)
+router.get('/test/mock-data', async (req, res) => {
+  try {
+    console.log('🧪 Generating mock pool data for testing...');
+    
+    // Generate mock data point
+    const mockData = {
+      timestamp: new Date().toISOString(),
+      saltInstant: 3200 + Math.floor(Math.random() * 200), // Random salt between 3200-3400
+      waterTemp: 82 + Math.floor(Math.random() * 6), // Random temp between 82-88
+      cellVoltage: 23.5 + Math.random() * 2, // Random voltage between 23.5-25.5
+      cellTemp: 85 + Math.floor(Math.random() * 5), // Random cell temp between 85-90
+      pumpStatus: Math.random() > 0.3, // 70% chance pump is on
+      weatherTemp: 75 + Math.floor(Math.random() * 10) // Random weather temp between 75-85
+    };
+    
+    // Store mock data in InfluxDB
+    await influxDBService.storeDataPoint(mockData);
+    
+    console.log('✅ Mock data stored successfully');
+    
+    res.json({
+      success: true,
+      message: 'Mock data generated and stored',
+      data: mockData,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('Error generating mock data:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to generate mock data',
+      message: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Debug endpoint to check credential status (development only)
+router.get('/debug/credentials', async (req, res) => {
+  try {
+    const credStatus = credentials.logCredentialStatus(true);
+    const envVars = {
+      HAYWARD_USERNAME: process.env.HAYWARD_USERNAME ? '[SET]' : '[NOT SET]',
+      HAYWARD_PASSWORD: process.env.HAYWARD_PASSWORD ? '[SET]' : '[NOT SET]'
+    };
+    
+    res.json({
+      success: true,
+      credentialStatus: credStatus,
+      environmentVariables: envVars,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('Error checking credentials:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to check credentials',
+      message: error.message,
       timestamp: new Date().toISOString()
     });
   }
