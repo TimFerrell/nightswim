@@ -910,7 +910,7 @@ const updateWeatherAlertsCard = (alertsData, historyData) => {
   // Update 24-hour count
   if (weatherAlertsPast24H) {
     const past24HCount = historyData?.alerts?.length || 0;
-    weatherAlertsPast24H.textContent = `${past24HCount} warnings`;
+    weatherAlertsPast24H.textContent = `${past24HCount} Warnings`;
     weatherAlertsPast24H.classList.remove('skeleton-text');
   }
   
