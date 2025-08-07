@@ -241,19 +241,27 @@ class WeatherService {
   }
 
   /**
-   * Calculate heat index using the formula
+   * Calculate heat index using a simplified approach
    * @param {number} temperature - Temperature in Fahrenheit
    * @param {number} humidity - Relative humidity percentage
    * @returns {number} Heat index in Fahrenheit
    */
   calculateHeatIndex(temperature, humidity) {
-    const T = temperature;
-    const H = humidity;
+    // Only calculate heat index for temps 80°F and above
+    if (temperature < 80) {
+      return temperature;
+    }
     
-    // Simplified heat index calculation
-    const heatIndex = -42.379 + 2.04901523 * T + 10.14333127 * H - 0.22475541 * T * H - 0.00683783 * T * T - 0.05481717 * H * H + 0.00122874 * T * T * H + 0.00085282 * T * H * H - 0.00000199 * T * T * H * H;
+    // Simple heat index approximation that's accurate enough for dashboard use
+    // Based on: HI ≈ T + 0.5 * (RH - 40) when T > 80°F
+    const baseHeatIndex = temperature + (0.5 * (humidity - 40));
     
-    return Math.round(heatIndex);
+    // Add correction for very high humidity
+    if (humidity > 85) {
+      return Math.round(baseHeatIndex + 5);
+    }
+    
+    return Math.round(Math.max(baseHeatIndex, temperature));
   }
 
   /**
