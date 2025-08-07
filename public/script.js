@@ -1,6 +1,6 @@
 // Global chart variables
 let tempChart, electricalChart, chemistryChart;
-let saltSparkline, waterTempSparkline, cellVoltageSparkline, weatherSparkline, filterPumpSparkline;
+let saltSparkline, waterTempSparkline, cellVoltageSparkline, weatherSparkline, filterPumpSparkline, weatherTimeSeriesChart;
 
 // DOM element cache for performance
 const domCache = {
@@ -19,6 +19,12 @@ const domCache = {
   weatherTempValue: null,
   weatherCard: null,
   
+  // Weather time series elements
+  rainValue: null,
+  heatIndexValue: null,
+  weatherTimeSeriesAlertsValue: null,
+  weatherTimeSeriesCard: null,
+  
   // Initialize cache
   init() {
     this.saltValue = document.getElementById('saltValue');
@@ -34,6 +40,12 @@ const domCache = {
     this.filterPumpCard = document.getElementById('filterPumpCard');
     this.weatherTempValue = document.getElementById('weatherTempValue');
     this.weatherCard = document.getElementById('weatherCard');
+    
+    // Weather time series elements
+    this.rainValue = document.getElementById('rainValue');
+    this.heatIndexValue = document.getElementById('heatIndexValue');
+    this.weatherTimeSeriesAlertsValue = document.getElementById('weatherTimeSeriesAlertsValue');
+    this.weatherTimeSeriesCard = document.getElementById('weatherTimeSeriesCard');
   }
 };
 
@@ -569,6 +581,7 @@ const startChartAutoRefresh = () => {
     updateAllCharts();
     updateSparklines();
     loadWeatherAlerts(); // Refresh weather alerts every 30 seconds
+    loadWeatherTimeSeries(); // Refresh weather time series every 30 seconds
   }, 30000); // Refresh every 30 seconds
 };
 
@@ -603,6 +616,7 @@ const startStatsAutoRefresh = () => {
   statsRefreshInterval = setInterval(() => {
     loadPoolData();
     loadWeatherAlerts(); // Refresh weather alerts every 30 seconds
+    loadWeatherTimeSeries(); // Refresh weather time series every 30 seconds
   }, 30000); // Refresh every 30 seconds (more frequent since no manual button)
 };
 
@@ -1028,6 +1042,140 @@ const formatTime = (timeString) => {
 };
 
 /**
+ * Load and display weather time series data
+ */
+const loadWeatherTimeSeries = async () => {
+  try {
+    console.log('🌦️ Loading weather time series data...');
+    const startTime = Date.now();
+
+    const response = await fetch('/api/pool/weather/timeseries?days=7', {
+      credentials: 'include'
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to load weather time series data');
+    }
+
+    const result = await response.json();
+    if (!result.success || !result.data) {
+      throw new Error(result.error || 'Invalid weather time series response format');
+    }
+
+    const data = result.data;
+    const loadTime = Date.now() - startTime;
+    console.log(`✅ Weather time series data loaded in ${loadTime}ms`);
+    console.log('📊 Weather time series data:', data);
+
+    // Update weather time series card with data
+    updateWeatherTimeSeriesCard(data);
+
+  } catch (error) {
+    console.error('Error loading weather time series:', error);
+    updateWeatherTimeSeriesCard({
+      error: error.message,
+      metrics: {
+        totalRain24h: 0,
+        maxHeatIndex7d: 0,
+        extremeWeatherEvents: []
+      },
+      alertCount7d: 0
+    });
+  }
+};
+
+/**
+ * Update weather time series card with data
+ */
+const updateWeatherTimeSeriesCard = (data) => {
+  console.log('🔄 Updating weather time series card with data:', data);
+
+  const { rainValue, heatIndexValue, weatherTimeSeriesAlertsValue, weatherTimeSeriesCard } = domCache;
+
+  if (!rainValue || !heatIndexValue || !weatherTimeSeriesAlertsValue) {
+    console.warn('Weather time series DOM elements not found');
+    return;
+  }
+
+  // Handle error state
+  if (data.error) {
+    rainValue.textContent = '--';
+    rainValue.classList.remove('skeleton-value');
+    rainValue.classList.add('error');
+
+    heatIndexValue.textContent = '--';
+    heatIndexValue.classList.remove('skeleton-value');
+    heatIndexValue.classList.add('error');
+
+    weatherTimeSeriesAlertsValue.textContent = '--';
+    weatherTimeSeriesAlertsValue.classList.remove('skeleton-value');
+    weatherTimeSeriesAlertsValue.classList.add('error');
+
+    if (weatherTimeSeriesCard) {
+      weatherTimeSeriesCard.classList.add('loaded');
+    }
+    return;
+  }
+
+  // Update metric values
+  const metrics = data.metrics || {};
+  
+  // Rain value
+  rainValue.textContent = metrics.totalRain24h || '0.00';
+  rainValue.classList.remove('skeleton-value', 'error');
+  
+  // Heat index value
+  heatIndexValue.textContent = metrics.maxHeatIndex7d || '--';
+  heatIndexValue.classList.remove('skeleton-value', 'error');
+  
+  // Alerts count
+  weatherTimeSeriesAlertsValue.textContent = data.alertCount7d || '0';
+  weatherTimeSeriesAlertsValue.classList.remove('skeleton-value', 'error');
+
+  // Update chart
+  updateWeatherTimeSeriesChart(data);
+
+  // Mark as loaded
+  if (weatherTimeSeriesCard) {
+    weatherTimeSeriesCard.classList.add('loaded');
+  }
+};
+
+/**
+ * Update weather time series chart with data
+ */
+const updateWeatherTimeSeriesChart = (data) => {
+  if (!weatherTimeSeriesChart || !data.dailySummaries) {
+    return;
+  }
+
+  const dailyData = data.dailySummaries;
+  const extremeEvents = data.metrics?.extremeWeatherEvents || [];
+
+  // Prepare chart data
+  const labels = dailyData.map(day => day.date);
+  const temperatures = dailyData.map(day => (day.maxTemp + day.minTemp) / 2); // Average temp
+  const precipitation = dailyData.map(day => day.totalPrecipitation || 0);
+  
+  // Create alerts data (1 for days with alerts, 0 for days without)
+  const alertsData = labels.map(date => {
+    const hasAlert = extremeEvents.some(event => event.date === date);
+    return hasAlert ? 1 : 0;
+  });
+
+  // Update chart data
+  weatherTimeSeriesChart.data.labels = labels;
+  weatherTimeSeriesChart.data.datasets[0].data = temperatures;
+  weatherTimeSeriesChart.data.datasets[1].data = precipitation;
+  weatherTimeSeriesChart.data.datasets[2].data = alertsData;
+
+  // Update chart
+  weatherTimeSeriesChart.update('none');
+
+  console.log('📊 Weather time series chart updated with', dailyData.length, 'days of data');
+};
+
+/**
  * Load and display pool data from InfluxDB
  */
 const loadPoolData = async (retryCount = 0) => {
@@ -1135,6 +1283,7 @@ const initializeSparklines = () => {
     cleanupChart(cellVoltageSparkline);
     cleanupChart(weatherSparkline);
     cleanupChart(filterPumpSparkline);
+    cleanupChart(weatherTimeSeriesChart);
 
     // Initialize salt spark line
     const saltCanvas = document.getElementById('saltSparkline');
@@ -1328,6 +1477,123 @@ const initializeSparklines = () => {
         }
       });
     }
+
+    // Initialize weather time series chart
+    const weatherTimeSeriesCanvas = document.getElementById('weatherTimeSeriesChart');
+    if (weatherTimeSeriesCanvas) {
+      weatherTimeSeriesChart = new Chart(weatherTimeSeriesCanvas, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [
+            {
+              label: 'Temperature',
+              data: [],
+              borderColor: '#ef4444',
+              backgroundColor: 'rgba(239, 68, 68, 0.1)',
+              borderWidth: 2,
+              fill: false,
+              tension: 0.4,
+              pointRadius: 2,
+              pointHoverRadius: 4,
+              yAxisID: 'y'
+            },
+            {
+              label: 'Rain',
+              data: [],
+              borderColor: '#3b82f6',
+              backgroundColor: 'rgba(59, 130, 246, 0.2)',
+              borderWidth: 2,
+              fill: true,
+              tension: 0.4,
+              pointRadius: 1,
+              pointHoverRadius: 3,
+              yAxisID: 'y1'
+            },
+            {
+              label: 'Alerts',
+              data: [],
+              borderColor: '#f59e0b',
+              backgroundColor: 'rgba(245, 158, 11, 0.8)',
+              borderWidth: 0,
+              fill: true,
+              stepped: true,
+              pointRadius: 0,
+              yAxisID: 'y2'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { 
+            legend: { display: false },
+            tooltip: {
+              mode: 'index',
+              intersect: false,
+              callbacks: {
+                title: function(tooltipItems) {
+                  return new Date(tooltipItems[0].parsed.x).toLocaleDateString();
+                },
+                label: function(context) {
+                  const label = context.dataset.label;
+                  const value = context.parsed.y;
+                  if (label === 'Temperature') return `${label}: ${value}°F`;
+                  if (label === 'Rain') return `${label}: ${value}"`;
+                  if (label === 'Alerts') return `${label}: ${value}`;
+                  return `${label}: ${value}`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: { 
+              display: true,
+              type: 'time',
+              time: {
+                unit: 'day',
+                displayFormats: {
+                  day: 'MMM d'
+                }
+              },
+              grid: { display: false },
+              ticks: { 
+                maxTicksLimit: 7,
+                color: 'var(--color-text-muted)'
+              }
+            },
+            y: {
+              type: 'linear',
+              display: true,
+              position: 'left',
+              title: {
+                display: true,
+                text: 'Temperature (°F)',
+                color: 'var(--color-text-secondary)'
+              },
+              grid: { color: 'var(--color-border)' },
+              ticks: { color: 'var(--color-text-muted)' }
+            },
+            y1: {
+              type: 'linear',
+              display: false,
+              position: 'right',
+              min: 0,
+              grid: { drawOnChartArea: false }
+            },
+            y2: {
+              type: 'linear',
+              display: false,
+              position: 'right',
+              min: 0,
+              max: 1,
+              grid: { drawOnChartArea: false }
+            }
+          },
+          interaction: { intersect: false, mode: 'index' }
+        }
+      });
+    }
   } catch (error) {
     console.error('Error initializing spark lines:', error);
   }
@@ -1460,6 +1726,7 @@ const fetchSaltRollingAverage = async () => {
 document.addEventListener('DOMContentLoaded', () => {
   loadPoolData();
   loadWeatherAlerts(); // Load weather alerts on page load
+  loadWeatherTimeSeries(); // Load weather time series on page load
   
   // Listen for dark mode changes
   const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
@@ -1498,6 +1765,10 @@ const handleDarkModeChange = (e) => {
   if (filterPumpSparkline) {
     filterPumpSparkline.destroy();
     filterPumpSparkline = null;
+  }
+  if (weatherTimeSeriesChart) {
+    weatherTimeSeriesChart.destroy();
+    weatherTimeSeriesChart = null;
   }
   
   // Reinitialize spark lines
