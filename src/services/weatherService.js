@@ -241,27 +241,38 @@ class WeatherService {
   }
 
   /**
-   * Calculate heat index using a simplified approach
+   * Calculate heat index using the National Weather Service regression formula
    * @param {number} temperature - Temperature in Fahrenheit
    * @param {number} humidity - Relative humidity percentage
    * @returns {number} Heat index in Fahrenheit
    */
   calculateHeatIndex(temperature, humidity) {
-    // Only calculate heat index for temps 80°F and above
-    if (temperature < 80) {
-      return temperature;
+    const T = temperature;
+    const H = humidity;
+    
+    // Only calculate heat index for temps 80°F and above with humidity > 40%
+    if (T < 80 || H < 40) {
+      return Math.round(T);
     }
     
-    // Simple heat index approximation that's accurate enough for dashboard use
-    // Based on: HI ≈ T + 0.5 * (RH - 40) when T > 80°F
-    const baseHeatIndex = temperature + (0.5 * (humidity - 40));
+    // National Weather Service Heat Index Regression Formula
+    // This is a 9-term polynomial that models how temperature and humidity combine
+    // to create the perceived temperature (what it "feels like" to humans)
     
-    // Add correction for very high humidity
-    if (humidity > 85) {
-      return Math.round(baseHeatIndex + 5);
-    }
+    const heatIndex = 
+      -42.379 +                           // Base constant
+      (2.04901523 * T) +                  // Linear temperature term
+      (10.14333127 * H) +                 // Linear humidity term
+      (-0.22475541 * T * H) +             // Temperature-humidity interaction (cooling effect)
+      (-0.00683783 * T * T) +             // Quadratic temperature term (diminishing returns)
+      (-0.05481717 * H * H) +             // Quadratic humidity term (diminishing returns)
+      (0.00122874 * T * T * H) +          // High temp amplifies humidity effect
+      (0.00085282 * T * H * H) +          // High humidity amplifies temperature effect
+      (-0.00000199 * T * T * H * H);      // Correction for extreme conditions
     
-    return Math.round(Math.max(baseHeatIndex, temperature));
+    // The formula can sometimes give values lower than actual temperature at low humidity
+    // Heat index should never be less than the actual temperature
+    return Math.round(Math.max(heatIndex, T));
   }
 
   /**
