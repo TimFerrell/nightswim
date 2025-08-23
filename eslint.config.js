@@ -1,6 +1,5 @@
 const js = require('@eslint/js');
 const globals = require('globals');
-const jsdoc = require('eslint-plugin-jsdoc');
 
 module.exports = [
   js.configs.recommended,
@@ -30,9 +29,6 @@ module.exports = [
     }
   },
   {
-    plugins: {
-      jsdoc
-    },
     languageOptions: {
       ecmaVersion: 2021,
       sourceType: 'module',
@@ -82,12 +78,7 @@ module.exports = [
       'no-nested-ternary': 'warn',
       'no-const-assign': 'error',
 
-      // JSDoc rules - relaxed for this project
-      'jsdoc/check-types': 'warn',
-      'jsdoc/require-jsdoc': 'off', // Turn off JSDoc requirements
-      'jsdoc/require-param-type': 'off',
-      'jsdoc/require-returns-type': 'off',
-      'jsdoc/valid-types': 'warn'
+
     }
   }
 ];
