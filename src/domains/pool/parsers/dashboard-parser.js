@@ -13,7 +13,7 @@ class DashboardParser {
     }
 
     const $ = cheerio.load(html);
-    
+
     return {
       temperature: {
         target: this.extractTemperature($, '[id*="lblTempTarget"]'),

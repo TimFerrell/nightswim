@@ -21,7 +21,7 @@ class PoolDataCollector {
   async collectAllData() {
     try {
       console.log('🏊‍♂️ Starting pool data collection...');
-      
+
       // Authenticate if needed
       if (!this.session.isSessionValid()) {
         console.log('🔐 Session invalid, authenticating...');
@@ -32,7 +32,7 @@ class PoolDataCollector {
       }
 
       // Collect data from various endpoints
-      const [dashboardData, filterData, heaterData, chlorinatorData, lightsData, scheduleData] = 
+      const [dashboardData, filterData, heaterData, chlorinatorData, lightsData, scheduleData] =
         await Promise.allSettled([
           this.collectDashboardData(),
           this.collectFilterData(),
@@ -54,7 +54,7 @@ class PoolDataCollector {
 
       const poolData = new PoolData(combinedData);
       console.log('✅ Pool data collection completed successfully');
-      
+
       return poolData;
     } catch (error) {
       console.error('❌ Pool data collection failed:', error.message);
@@ -128,18 +128,18 @@ class PoolDataCollector {
     for (let attempt = 1; attempt <= this.retryAttempts; attempt++) {
       try {
         console.log(`📡 Fetching ${dataType} data (attempt ${attempt}/${this.retryAttempts})`);
-        
+
         const response = await this.session.makeRequest(url);
         if (response.data) {
           console.log(`✅ ${dataType} data fetched successfully`);
           return response.data;
-        } else {
-          throw new Error(`No data received for ${dataType}`);
         }
+        throw new Error(`No data received for ${dataType}`);
+
       } catch (error) {
         lastError = error;
         console.warn(`⚠️ Attempt ${attempt} failed for ${dataType}:`, error.message);
-        
+
         if (attempt < this.retryAttempts) {
           console.log(`🔄 Retrying in ${this.retryDelay}ms...`);
           await this.sleep(this.retryDelay);
@@ -158,10 +158,10 @@ class PoolDataCollector {
   getSettledValue(settledPromise) {
     if (settledPromise.status === 'fulfilled') {
       return settledPromise.value;
-    } else {
-      console.warn('⚠️ Data collection partially failed:', settledPromise.reason?.message);
-      return null;
     }
+    console.warn('⚠️ Data collection partially failed:', settledPromise.reason?.message);
+    return null;
+
   }
 
   /**

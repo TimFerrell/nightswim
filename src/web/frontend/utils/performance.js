@@ -8,17 +8,17 @@
  */
 function debounce(func, wait, immediate = false) {
   let timeout;
-  
+
   return function executedFunction(...args) {
     const later = () => {
       timeout = null;
       if (!immediate) func.apply(this, args);
     };
-    
+
     const callNow = immediate && !timeout;
     clearTimeout(timeout);
     timeout = setTimeout(later, wait);
-    
+
     if (callNow) func.apply(this, args);
   };
 }
@@ -28,7 +28,7 @@ function debounce(func, wait, immediate = false) {
  */
 function throttle(func, limit) {
   let inThrottle;
-  
+
   return function(...args) {
     if (!inThrottle) {
       func.apply(this, args);
@@ -54,16 +54,16 @@ class RequestCache {
 
   get(key) {
     const item = this.cache.get(key);
-    
+
     if (!item) {
       return null;
     }
-    
+
     if (Date.now() > item.expiry) {
       this.cache.delete(key);
       return null;
     }
-    
+
     return item.value;
   }
 
@@ -114,7 +114,7 @@ function measurePerformance(name, fn) {
   const start = performance.now();
   const result = fn();
   const end = performance.now();
-  
+
   console.log(`⚡ ${name} took ${(end - start).toFixed(2)}ms`);
   return result;
 }

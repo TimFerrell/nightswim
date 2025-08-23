@@ -31,9 +31,9 @@ class PoolDataParser {
   // Legacy parsers (to be moved to separate files later)
   static parseHeaterData(html) {
     if (!html) return this.getEmptyHeaterData();
-    
+
     const $ = cheerio.load(html);
-    
+
     return {
       temperature: {
         min: this.extractTemp($, '[id*="lblMinTargetTemp"]'),
@@ -49,9 +49,9 @@ class PoolDataParser {
 
   static parseLightsData(html) {
     if (!html) return this.getEmptyLightsData();
-    
+
     const $ = cheerio.load(html);
-    
+
     return {
       status: $('[id*="status"]').text().trim() || null,
       brightness: $('[id*="brightness"]').text().trim() || null,
@@ -61,7 +61,7 @@ class PoolDataParser {
 
   static parseSchedulesData(html) {
     if (!html) return [];
-    
+
     const $ = cheerio.load(html);
     const schedules = [];
 

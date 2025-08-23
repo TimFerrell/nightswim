@@ -23,7 +23,7 @@ class PoolSession {
   async authenticate() {
     try {
       console.log('🔐 Starting authentication with Hayward system...');
-      
+
       if (!this.credentials.username || !this.credentials.password) {
         throw new Error('Username and password are required');
       }
@@ -48,13 +48,13 @@ class PoolSession {
         this.isAuthenticated = true;
         this.lastActivity = new Date();
         this.sessionId = this.extractSessionId(response);
-        
+
         console.log('✅ Authentication successful');
         return true;
-      } else {
-        console.log('❌ Authentication failed');
-        return false;
       }
+      console.log('❌ Authentication failed');
+      return false;
+
     } catch (error) {
       console.error('❌ Authentication error:', error.message);
       this.isAuthenticated = false;
@@ -117,7 +117,7 @@ class PoolSession {
   // Private helper methods
   isAuthenticationSuccessful(response) {
     // Check for redirect to dashboard or successful status
-    return response.status === 200 || 
+    return response.status === 200 ||
            (response.status >= 300 && response.status < 400 &&
             response.headers.location?.includes('Dashboard'));
   }

@@ -12,7 +12,7 @@ class FilterParser {
     }
 
     const $ = cheerio.load(html);
-    
+
     return {
       status: this.extractPumpStatus($),
       diagnostic: this.extractDiagnosticInfo($)
@@ -59,13 +59,13 @@ class FilterParser {
       }
     }
 
-    console.log(`🏊‍♂️ Final filter pump status: null`);
+    console.log('🏊‍♂️ Final filter pump status: null');
     return null;
   }
 
   static parseStatusText(text) {
     const lowerText = text.toLowerCase();
-    
+
     // Check for "on" indicators
     const isOn = lowerText.includes('on') ||
                 lowerText.includes('running') ||

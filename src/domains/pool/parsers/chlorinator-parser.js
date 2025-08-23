@@ -13,11 +13,11 @@ class ChlorinatorParser {
     }
 
     const $ = cheerio.load(html);
-    
+
     return {
       salt: {
         instant: this.extractSaltLevel($),
-        average: this.extractNumeric($, '[id*="lbAverageSalt"]') || 
+        average: this.extractNumeric($, '[id*="lbAverageSalt"]') ||
                  this.extractNumeric($, '[id*="AverageSalt"]'),
         unit: POOL_SYSTEM.UNITS.SALT
       },

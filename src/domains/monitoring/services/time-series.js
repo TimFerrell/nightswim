@@ -21,7 +21,7 @@ class TimeSeriesService {
 
     try {
       const timestamp = new Date(dataPoint.timestamp).getTime();
-      
+
       // Check for duplicates
       if (this.indexMap.has(timestamp)) {
         console.log(`📊 Updating existing data point at ${dataPoint.timestamp}`);
@@ -35,10 +35,10 @@ class TimeSeriesService {
 
       // Maintain size limit
       this.enforceMaxPoints();
-      
+
       // Keep data sorted by timestamp
       this.sortDataPoints();
-      
+
       console.log(`📊 Time series now has ${this.dataPoints.length} data points`);
       return true;
     } catch (error) {
@@ -130,13 +130,13 @@ class TimeSeriesService {
 
     const excessCount = this.dataPoints.length - this.maxPoints;
     console.log(`🔄 Removing ${excessCount} old data points to maintain limit of ${this.maxPoints}`);
-    
+
     // Remove oldest data points
     const removedPoints = this.dataPoints.splice(0, excessCount);
-    
+
     // Update index map
     this.rebuildIndexMap();
-    
+
     console.log(`📊 Removed ${removedPoints.length} old data points`);
   }
 
@@ -165,7 +165,7 @@ class TimeSeriesService {
     const pointSize = JSON.stringify(this.dataPoints[0] || {}).length;
     const totalSize = this.dataPoints.length * pointSize;
     const maxSize = this.maxPoints * pointSize;
-    
+
     return {
       dataPoints: this.dataPoints.length,
       maxPoints: this.maxPoints,

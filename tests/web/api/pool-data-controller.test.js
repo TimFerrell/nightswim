@@ -33,7 +33,7 @@ const PoolDataController = {
     try {
       const { timeSeriesService } = require('../../../src/domains/monitoring');
       const latestData = timeSeriesService.getLatestData();
-      
+
       res.json({
         success: true,
         data: latestData,
@@ -53,7 +53,7 @@ const PoolDataController = {
       const { timeSeriesService, influxDBClient } = require('../../../src/domains/monitoring');
       const memoryStats = timeSeriesService.getMemoryStats();
       const influxStatus = influxDBClient.getConnectionStatus();
-      
+
       res.json({
         success: true,
         status: {
@@ -78,11 +78,11 @@ describe('PoolDataController', () => {
   beforeEach(() => {
     app = express();
     app.use(express.json());
-    
+
     // Setup routes
     app.get('/data', PoolDataController.getCurrentData);
     app.get('/status', PoolDataController.getSystemStatus);
-    
+
     // Clear all mocks
     jest.clearAllMocks();
   });
@@ -133,12 +133,12 @@ describe('PoolDataController', () => {
   describe('getSystemStatus', () => {
     it('should return system status with memory and influx stats', async () => {
       const { timeSeriesService, influxDBClient } = require('../../../src/domains/monitoring');
-      
+
       timeSeriesService.getMemoryStats.mockReturnValue({
         dataPoints: 100,
         maxPoints: 10000
       });
-      
+
       influxDBClient.getConnectionStatus.mockReturnValue({
         connected: true,
         url: 'http://localhost:8086'

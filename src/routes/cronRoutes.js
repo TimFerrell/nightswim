@@ -1,9 +1,9 @@
 const express = require('express');
 
-// New architecture imports
-const { envConfig } = require('../config');
-const { PoolDataCollector } = require('../domains/pool');
-const { timeSeriesService, influxDBClient } = require('../domains/monitoring');
+// New architecture imports (for future migration)
+// const { envConfig } = require('../config');
+// const { PoolDataCollector } = require('../domains/pool');
+// const { timeSeriesService, influxDBClient } = require('../domains/monitoring');
 
 // Legacy services (to be migrated gradually)
 const sessionManager = require('../services/sessionManager');

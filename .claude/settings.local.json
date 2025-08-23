@@ -13,7 +13,8 @@
       "Bash(tree:*)",
       "Bash(npm start)",
       "Bash(curl:*)",
-      "Bash(npm test:*)"
+      "Bash(npm test:*)",
+      "Bash(npm run validate:*)"
     ],
     "deny": [],
     "ask": []

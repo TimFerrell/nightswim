@@ -17,14 +17,14 @@ class PoolDataController {
     try {
       // Try to get data from InfluxDB first
       const influxData = await influxDBClient.queryDataPoints(24, 1);
-      
+
       if (influxData.length > 0) {
         const latestData = influxData[influxData.length - 1];
         const poolData = PoolData.fromTimeSeriesPoint(latestData);
-        
+
         const totalTime = Date.now() - requestStartTime;
         console.log(`✅ [New Architecture] Data retrieved in ${totalTime}ms`);
-        
+
         return res.json({
           success: true,
           data: poolData.toJSON(),
@@ -38,10 +38,10 @@ class PoolDataController {
       const memoryData = timeSeriesService.getLatestData();
       if (memoryData) {
         const poolData = PoolData.fromTimeSeriesPoint(memoryData);
-        
+
         const totalTime = Date.now() - requestStartTime;
         console.log(`✅ [New Architecture] Data retrieved from memory in ${totalTime}ms`);
-        
+
         return res.json({
           success: true,
           data: poolData.toJSON(),
@@ -54,7 +54,7 @@ class PoolDataController {
       // No data available
       const totalTime = Date.now() - requestStartTime;
       console.log(`❌ [New Architecture] No data available after ${totalTime}ms`);
-      
+
       return res.status(200).json({
         success: false,
         error: 'No data available',
@@ -65,7 +65,7 @@ class PoolDataController {
     } catch (error) {
       const totalTime = Date.now() - requestStartTime;
       console.error('❌ [New Architecture] Error fetching pool data:', error);
-      
+
       return res.status(500).json({
         success: false,
         error: 'Internal server error',
@@ -87,7 +87,7 @@ class PoolDataController {
 
       // Try InfluxDB first
       const influxData = await influxDBClient.queryDataPoints(hours, limit);
-      
+
       if (influxData.length > 0) {
         return res.json({
           success: true,
@@ -101,7 +101,7 @@ class PoolDataController {
 
       // Fall back to memory
       const memoryData = timeSeriesService.getDataPoints(hours);
-      
+
       return res.json({
         success: true,
         data: memoryData.slice(0, limit),
@@ -113,7 +113,7 @@ class PoolDataController {
 
     } catch (error) {
       console.error('❌ [New Architecture] Error fetching time series:', error);
-      
+
       return res.status(500).json({
         success: false,
         error: 'Internal server error',
@@ -136,7 +136,7 @@ class PoolDataController {
           influxdb: influxStatus.connected ? 'connected' : 'disconnected',
           memory: {
             dataPoints: memoryStats.dataPoints,
-            utilization: memoryStats.utilizationPercent + '%',
+            utilization: `${memoryStats.utilizationPercent  }%`,
             size: memoryStats.estimatedSize
           },
           lastDataUpdate: timeSeriesService.getLatestData()?.timestamp || null,
@@ -147,7 +147,7 @@ class PoolDataController {
 
     } catch (error) {
       console.error('❌ [New Architecture] Error getting system status:', error);
-      
+
       return res.status(500).json({
         success: false,
         error: 'Internal server error',
@@ -165,7 +165,7 @@ class PoolDataController {
       const hours = parseInt(req.query.hours) || 24;
 
       const stats = timeSeriesService.getStatistics(metric, hours);
-      
+
       return res.json({
         success: true,
         metric,
@@ -175,7 +175,7 @@ class PoolDataController {
 
     } catch (error) {
       console.error('❌ [New Architecture] Error getting metric stats:', error);
-      
+
       return res.status(500).json({
         success: false,
         error: 'Internal server error',

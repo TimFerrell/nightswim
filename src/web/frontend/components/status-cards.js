@@ -65,7 +65,7 @@ class StatusCards {
     const level = saltData.instant;
     if (level !== null && level !== undefined) {
       saltValue.textContent = `${level} ${saltData.unit}`;
-      
+
       const severity = this.getSaltSeverity(level);
       this.updateCardSeverity(saltCard, severity);
     } else {
@@ -89,11 +89,11 @@ class StatusCards {
 
     if (actual !== null && actual !== undefined) {
       waterTempValue.textContent = `${actual}${tempData.unit}`;
-      
+
       if (waterTempComfort) {
         waterTempComfort.textContent = this.getTemperatureComfort(actual, target);
       }
-      
+
       const severity = this.getTemperatureSeverity(actual, target);
       this.updateCardSeverity(waterTempCard, severity);
     } else {
@@ -118,11 +118,11 @@ class StatusCards {
     const voltage = cellData.voltage;
     if (voltage !== null && voltage !== undefined) {
       cellVoltageValue.textContent = `${voltage}V`;
-      
+
       if (cellVoltageStatus) {
         cellVoltageStatus.textContent = this.getCellVoltageStatus(voltage);
       }
-      
+
       const severity = this.getCellVoltageSeverity(voltage);
       this.updateCardSeverity(cellVoltageCard, severity);
     } else {
@@ -148,11 +148,11 @@ class StatusCards {
     if (status !== null && status !== undefined) {
       const isOn = status === true;
       filterPumpValue.textContent = isOn ? 'ON' : 'OFF';
-      
+
       if (filterPumpState) {
         filterPumpState.textContent = isOn ? 'Running' : 'Stopped';
       }
-      
+
       const severity = isOn ? 'normal' : 'warning';
       this.updateCardSeverity(filterPumpCard, severity);
     } else {
@@ -188,12 +188,12 @@ class StatusCards {
    */
   updateCardSeverity(cardElement, severity) {
     if (!cardElement) return;
-    
+
     // Remove all existing severity classes
     Object.values(this.severityClasses).forEach(className => {
       cardElement.classList.remove(className);
     });
-    
+
     // Add new severity class
     const severityClass = this.severityClasses[severity] || this.severityClasses.unknown;
     cardElement.classList.add(severityClass);
@@ -210,7 +210,7 @@ class StatusCards {
 
   getTemperatureSeverity(actual, target) {
     if (!target) return 'normal';
-    
+
     const diff = Math.abs(actual - target);
     if (diff > 10) return 'warning';
     if (diff > 15) return 'critical';
@@ -228,7 +228,7 @@ class StatusCards {
   // Status text helpers
   getTemperatureComfort(actual, target) {
     if (!target) return 'Unknown';
-    
+
     const diff = actual - target;
     if (diff > 5) return 'Too Hot';
     if (diff < -5) return 'Too Cold';

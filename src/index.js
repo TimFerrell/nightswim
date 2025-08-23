@@ -20,11 +20,11 @@ const legacyExports = require('./shared/compatibility/legacy-exports');
 module.exports = {
   // Configuration
   config,
-  
+
   // Domains
   pool,
   monitoring,
-  
+
   // Web components
   web: {
     utils: webUtils,
@@ -32,10 +32,10 @@ module.exports = {
       statusCards
     }
   },
-  
+
   // Legacy compatibility layer
   legacy: legacyExports,
-  
+
   // Direct exports for common use cases
   PoolData: pool.PoolData,
   PoolDataParser: pool.PoolDataParser,

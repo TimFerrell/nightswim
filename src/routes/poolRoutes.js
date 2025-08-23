@@ -1,8 +1,8 @@
 const express = require('express');
 
 // New architecture imports
-const { envConfig } = require('../config');
-const { timeSeriesService, influxDBClient } = require('../domains/monitoring');
+// const { envConfig } = require('../config');  // Not yet used
+const { timeSeriesService } = require('../domains/monitoring');
 
 // Legacy services (to be migrated gradually)
 const { influxDBService } = require('../services/influxDBService');
@@ -223,7 +223,7 @@ router.get('/timeseries', async (req, res) => {
     if (dataPoints.length === 0) {
       console.log('InfluxDB data not available, falling back to in-memory storage');
       const fallbackData = timeSeriesService.getDataPoints(hours);
-      const fallbackStats = timeSeriesService.getStats();
+      const fallbackStats = timeSeriesService.getMemoryStats();
 
       return res.json({
         success: true,
@@ -248,7 +248,7 @@ router.get('/timeseries', async (req, res) => {
     try {
       const hours = parseInt(req.query.hours) || 24;
       const dataPoints = timeSeriesService.getDataPoints(hours);
-      const stats = timeSeriesService.getStats();
+      const stats = timeSeriesService.getMemoryStats();
 
       res.json({
         success: true,
@@ -267,7 +267,7 @@ router.get('/timeseries', async (req, res) => {
 // Get time series statistics
 router.get('/timeseries/stats', (req, res) => {
   try {
-    const stats = timeSeriesService.getStats();
+    const stats = timeSeriesService.getMemoryStats();
 
     res.json({
       success: true,

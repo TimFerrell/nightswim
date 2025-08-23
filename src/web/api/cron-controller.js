@@ -18,7 +18,7 @@ class CronController {
     try {
       // Get pool credentials from environment
       const poolCredentials = envConfig.getPoolCredentials();
-      
+
       if (!poolCredentials.username || !poolCredentials.password) {
         console.error('❌ [New Architecture] Pool credentials not configured');
         return res.status(500).json({
@@ -30,26 +30,26 @@ class CronController {
 
       // Create data collector
       const collector = new PoolDataCollector(poolCredentials);
-      
+
       // Collect all pool data
       console.log('📊 [New Architecture] Collecting pool data...');
       const poolData = await collector.collectAllData();
-      
+
       if (!poolData || !poolData.isValid()) {
         throw new Error('Invalid pool data collected');
       }
 
       // Convert to time series point
       const timeSeriesPoint = poolData.toTimeSeriesPoint();
-      
+
       // Store in memory time series
       console.log('💾 [New Architecture] Storing data in memory time series...');
       await timeSeriesService.addDataPoint(timeSeriesPoint);
-      
+
       // Store in InfluxDB
       console.log('💾 [New Architecture] Storing data in InfluxDB...');
       const influxResult = await influxDBClient.storeDataPoint(timeSeriesPoint);
-      
+
       if (!influxResult) {
         console.warn('⚠️ [New Architecture] InfluxDB storage failed, but memory storage succeeded');
       }
@@ -84,7 +84,7 @@ class CronController {
     } catch (error) {
       const totalTime = Date.now() - startTime;
       console.error('❌ [New Architecture] Pool data collection failed:', error);
-      
+
       return res.status(500).json({
         success: false,
         error: 'Collection failed',
@@ -122,7 +122,7 @@ class CronController {
 
     } catch (error) {
       console.error('❌ [New Architecture] Error getting collection stats:', error);
-      
+
       return res.status(500).json({
         success: false,
         error: 'Stats retrieval failed',
@@ -136,7 +136,7 @@ class CronController {
    */
   static async triggerCollection(req, res) {
     console.log('🚀 [New Architecture] Manual data collection triggered');
-    
+
     // Reuse the main collection logic
     return await CronController.collectPoolData(req, res);
   }
@@ -147,11 +147,11 @@ class CronController {
   static async clearData(req, res) {
     try {
       const beforeCount = timeSeriesService.getDataCount();
-      
+
       timeSeriesService.clearData();
-      
+
       console.log(`🗑️ [New Architecture] Cleared ${beforeCount} data points from memory`);
-      
+
       return res.json({
         success: true,
         message: `Cleared ${beforeCount} data points from memory`,
@@ -161,7 +161,7 @@ class CronController {
 
     } catch (error) {
       console.error('❌ [New Architecture] Error clearing data:', error);
-      
+
       return res.status(500).json({
         success: false,
         error: 'Clear data failed',
@@ -173,12 +173,12 @@ class CronController {
   // Helper method to calculate data completeness
   static calculateDataCompleteness(dataPoint) {
     if (!dataPoint) return 0;
-    
+
     const requiredFields = ['waterTemp', 'saltInstant', 'pumpStatus', 'cellVoltage'];
-    const presentFields = requiredFields.filter(field => 
+    const presentFields = requiredFields.filter(field =>
       dataPoint[field] !== null && dataPoint[field] !== undefined
     );
-    
+
     return Math.round((presentFields.length / requiredFields.length) * 100);
   }
 }

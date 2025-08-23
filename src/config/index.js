@@ -10,12 +10,12 @@ module.exports = {
   // Environment configuration
   envConfig,
   EnvironmentConfig,
-  
+
   // Pool system constants
   POOL_SYSTEM,
   buildSystemUrl,
   buildDashboardUrl,
-  
+
   // Legacy compatibility - maintain old constant names
   POOL_CONSTANTS: POOL_SYSTEM
 };

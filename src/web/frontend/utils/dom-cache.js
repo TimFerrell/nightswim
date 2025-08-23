@@ -19,32 +19,32 @@ class DOMCache {
     }
 
     console.log('🏗️ Initializing DOM cache...');
-    
+
     // Status cards
     this.cacheElements({
       // Salt monitoring
       saltValue: 'saltValue',
       saltCard: 'saltCard',
-      
+
       // Temperature monitoring
       waterTempValue: 'waterTempValue',
       waterTempComfort: 'waterTempComfort',
       waterTempCard: 'waterTempCard',
-      
+
       // Cell monitoring
       cellVoltageValue: 'cellVoltageValue',
       cellVoltageStatus: 'cellVoltageStatus',
       cellVoltageCard: 'cellVoltageCard',
-      
+
       // Filter pump
       filterPumpValue: 'filterPumpValue',
       filterPumpState: 'filterPumpState',
       filterPumpCard: 'filterPumpCard',
-      
+
       // Weather
       weatherTempValue: 'weatherTempValue',
       weatherCard: 'weatherCard',
-      
+
       // Weather time series
       rainValue: 'rainValue',
       heatIndexValue: 'heatIndexValue',
@@ -78,7 +78,7 @@ class DOMCache {
     if (!this.initialized) {
       throw new Error('DOMCache not initialized. Call init() first.');
     }
-    
+
     return this.cache.get(key) || null;
   }
 
@@ -113,7 +113,7 @@ class DOMCache {
     const total = this.cache.size;
     const valid = Array.from(this.cache.values()).filter(el => el !== null).length;
     const invalid = total - valid;
-    
+
     return { total, valid, invalid };
   }
 }

@@ -11,7 +11,7 @@ const POOL_SYSTEM = {
 
   // Base URLs and endpoints
   BASE_URL: 'https://hayward.com/PoolFusion/',
-  
+
   ENDPOINTS: {
     LOGIN: 'aspx/Login.aspx',
     DASHBOARD: 'Dashboard.aspx',

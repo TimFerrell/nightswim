@@ -19,7 +19,7 @@ describe('TimeSeriesService (New Architecture)', () => {
       };
 
       await timeSeriesService.addDataPoint(dataPoint);
-      
+
       const stats = timeSeriesService.getMemoryStats();
       expect(stats.dataPoints).toBe(1);
     });
@@ -54,7 +54,7 @@ describe('TimeSeriesService (New Architecture)', () => {
 
       await timeSeriesService.addDataPoint(dataPoint1);
       await timeSeriesService.addDataPoint(dataPoint2);
-      
+
       const latest = timeSeriesService.getLatestData();
       expect(latest.waterTemp).toBe(79.0);
       expect(latest.timestamp).toBe(new Date('2024-01-01T13:00:00.000Z').getTime());
@@ -69,7 +69,7 @@ describe('TimeSeriesService (New Architecture)', () => {
       };
 
       await timeSeriesService.addDataPoint(dataPoint);
-      
+
       const stats = timeSeriesService.getMemoryStats();
       expect(stats).toHaveProperty('dataPoints');
       expect(stats).toHaveProperty('maxPoints');
@@ -86,7 +86,7 @@ describe('TimeSeriesService (New Architecture)', () => {
 
       await timeSeriesService.addDataPoint(dataPoint);
       expect(timeSeriesService.getDataCount()).toBe(1);
-      
+
       timeSeriesService.clearData();
       expect(timeSeriesService.getDataCount()).toBe(0);
     });

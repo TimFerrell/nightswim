@@ -14,7 +14,7 @@ class InfluxDBClient {
     this.isConnected = false;
     this.connectionAttempts = 0;
     this.maxRetries = 3;
-    
+
     this.config = envConfig.getInfluxDBConfig();
     this.initialize();
   }
@@ -25,7 +25,7 @@ class InfluxDBClient {
   async initialize() {
     try {
       console.log('📊 Initializing InfluxDB client...');
-      
+
       if (!this.config.url || !this.config.token) {
         console.warn('⚠️ InfluxDB configuration missing');
         return false;
@@ -33,22 +33,22 @@ class InfluxDBClient {
 
       this.client = new InfluxDB({
         url: this.config.url,
-        token: this.config.token,
+        token: this.config.token
       });
 
       this.writeApi = this.client.getWriteApi(this.config.org, this.config.bucket);
       this.queryApi = this.client.getQueryApi(this.config.org);
-      
+
       // Test connection
       const connected = await this.testConnection();
       if (connected) {
         this.isConnected = true;
         console.log('✅ InfluxDB client initialized successfully');
         return true;
-      } else {
-        console.error('❌ InfluxDB connection test failed');
-        return false;
       }
+      console.error('❌ InfluxDB connection test failed');
+      return false;
+
     } catch (error) {
       console.error('❌ InfluxDB initialization error:', error.message);
       this.isConnected = false;
@@ -67,7 +67,7 @@ class InfluxDBClient {
 
     try {
       const timestamp = dataPoint.timestamp ? new Date(dataPoint.timestamp) : new Date();
-      
+
       const point = new Point('pool_data')
         .timestamp(timestamp)
         .floatField('saltInstant', this.ensureNumeric(dataPoint.saltInstant))
@@ -81,7 +81,7 @@ class InfluxDBClient {
 
       this.writeApi.writePoint(point);
       await this.writeApi.flush();
-      
+
       console.log('💾 Data point stored in InfluxDB successfully');
       return true;
     } catch (error) {
@@ -110,7 +110,7 @@ class InfluxDBClient {
       `;
 
       const dataPoints = [];
-      const queryResult = this.queryApi.queryRows(query, {
+      const _queryResult = this.queryApi.queryRows(query, {
         next: (row, tableMeta) => {
           const dataPoint = tableMeta.toObject(row);
           dataPoints.push(this.transformInfluxPoint(dataPoint));
@@ -123,7 +123,7 @@ class InfluxDBClient {
         }
       });
 
-      await queryResult;
+      await _queryResult;
       return dataPoints;
     } catch (error) {
       console.error('❌ Error querying data points:', error.message);
@@ -150,7 +150,7 @@ class InfluxDBClient {
       `;
 
       const stats = [];
-      const queryResult = this.queryApi.queryRows(query, {
+      const _queryResult = this.queryApi.queryRows(query, {
         next: (row, tableMeta) => {
           const point = tableMeta.toObject(row);
           stats.push({
@@ -166,7 +166,7 @@ class InfluxDBClient {
         }
       });
 
-      await queryResult;
+      await _queryResult;
       return stats;
     } catch (error) {
       console.error('❌ Error getting stats:', error.message);
@@ -185,11 +185,11 @@ class InfluxDBClient {
 
       // Simple query to test connection
       const query = `from(bucket: "${this.config.bucket}") |> range(start: -1m) |> limit(n: 1)`;
-      
+
       return new Promise((resolve) => {
         let hasData = false;
-        
-        const queryResult = this.queryApi.queryRows(query, {
+
+        const _queryResult = this.queryApi.queryRows(query, {
           next: () => { hasData = true; },
           error: () => resolve(false),
           complete: () => resolve(true) // Connection works even if no data
@@ -215,11 +215,11 @@ class InfluxDBClient {
         await this.writeApi.close();
         this.writeApi = null;
       }
-      
+
       if (this.client) {
         this.client = null;
       }
-      
+
       this.isConnected = false;
       console.log('📊 InfluxDB client closed');
     } catch (error) {

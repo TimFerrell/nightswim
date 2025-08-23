@@ -7,7 +7,7 @@ function updateArchitectureStatus(version) {
   const statusElement = document.getElementById('architectureVersion');
   if (statusElement) {
     statusElement.textContent = version;
-    statusElement.className = 'status-value' + (version.startsWith('v2') ? ' v2' : '');
+    statusElement.className = `status-value${  version.startsWith('v2') ? ' v2' : ''}`;
   }
 }
 
@@ -297,7 +297,7 @@ const loadPoolData = async (retryCount = 0) => {
   try {
     console.log(`🔄 Loading pool data from InfluxDB (attempt ${retryCount + 1})...`);
     const startTime = Date.now();
-    
+
     // Try new architecture endpoint first (v2), fallback to legacy (v1)
     let response;
     try {
@@ -305,7 +305,7 @@ const loadPoolData = async (retryCount = 0) => {
       if (!response.ok) throw new Error('v2 endpoint failed');
       console.log('📊 Using new architecture (v2) endpoint');
       updateArchitectureStatus('v2 (domain-driven)');
-    } catch (v2Error) {
+    } catch {
       console.log('📊 Falling back to legacy (v1) endpoint');
       response = await fetch('/api/pool/data', { credentials: 'include' });
       updateArchitectureStatus('v1 (legacy)');

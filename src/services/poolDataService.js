@@ -203,7 +203,7 @@ const poolDataService = {
     // Store in InfluxDB using new architecture (primary storage)
     const newInfluxResult = await influxDBClient.storeDataPoint(timeSeriesPoint);
     console.log('💾 New InfluxDB storage result:', newInfluxResult);
-    
+
     // Fallback to legacy InfluxDB service for compatibility
     let legacyInfluxResult = null;
     if (!newInfluxResult) {

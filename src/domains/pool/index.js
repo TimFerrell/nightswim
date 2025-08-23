@@ -10,13 +10,13 @@ const { PoolSession, PoolDataCollector } = require('./services');
 module.exports = {
   // Entities
   PoolData,
-  
+
   // Parsers
   PoolDataParser,
   DashboardParser,
   FilterParser,
   ChlorinatorParser,
-  
+
   // Services
   PoolSession,
   PoolDataCollector

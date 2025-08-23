@@ -52,19 +52,19 @@ const legacyConstants = {
 module.exports = {
   // Pool data parsing
   ...legacyPoolDataParser,
-  
+
   // Pool data service
   ...legacyPoolDataService,
-  
+
   // Time series service
   timeSeriesService: legacyTimeSeriesService,
-  
+
   // InfluxDB service
   ...legacyInfluxDBService,
-  
+
   // Constants
   ...legacyConstants,
-  
+
   // Direct exports for specific legacy imports
   PoolDataParser: legacyPoolDataParser,
   poolDataService: legacyPoolDataService,
