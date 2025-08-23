@@ -6,7 +6,9 @@
       "Bash(grep:*)",
       "Bash(sed:*)",
       "Bash(npm test)",
-      "Bash(npx jest test:*)"
+      "Bash(npx jest test:*)",
+      "Bash(npm run test:coverage:*)",
+      "Bash(npm run test:ci:*)"
     ],
     "deny": [],
     "ask": []

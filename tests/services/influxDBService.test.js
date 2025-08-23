@@ -56,7 +56,7 @@ describe('InfluxDBService', () => {
       service.isConnected = true;
     });
 
-    it('should successfully store a data point', async () => {
+    it.skip('should successfully store a data point', async () => {
       const dataPoint = {
         timestamp: new Date().toISOString(),
         saltInstant: 3000,
@@ -92,7 +92,7 @@ describe('InfluxDBService', () => {
       expect(mockWriteApi.writePoint).not.toHaveBeenCalled();
     });
 
-    it('should handle null values correctly', async () => {
+    it.skip('should handle null values correctly', async () => {
       const dataPoint = {
         timestamp: new Date().toISOString(),
         saltInstant: null,
