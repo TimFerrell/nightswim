@@ -1,0 +1,27 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Get the commit message
+commit_msg=$(cat "$1")
+
+# Check if commit message is not empty
+if [ -z "$commit_msg" ]; then
+  echo "❌ Error: Commit message cannot be empty"
+  exit 1
+fi
+
+# Check if commit message is too short (less than 10 characters)
+if [ ${#commit_msg} -lt 10 ]; then
+  echo "❌ Error: Commit message is too short (minimum 10 characters)"
+  echo "Current message: '$commit_msg'"
+  exit 1
+fi
+
+# Check if commit message starts with a capital letter
+if ! [[ "$commit_msg" =~ ^[A-Z] ]]; then
+  echo "❌ Error: Commit message should start with a capital letter"
+  echo "Current message: '$commit_msg'"
+  exit 1
+fi
+
+echo "✅ Commit message validation passed!" 
