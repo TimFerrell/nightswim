@@ -9,16 +9,8 @@
   },
   "crons": [
     {
-      "path": "/api/cron/collect-data",
-      "schedule": "*/1 * * * *"
-    },
-    {
-      "path": "/api/cron/collect-weather",
-      "schedule": "*/2 * * * *"
-    },
-    {
-      "path": "/api/cron/check-alerts",
-      "schedule": "*/15 * * * *"
+      "path": "/api/cron/collect-all",
+      "schedule": "*/5 * * * *"
     }
   ],
   "env": {

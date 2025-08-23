@@ -213,4 +213,72 @@ router.get('/collect-weather', async (req, res) => {
   }
 });
 
+// Consolidated cron endpoint for all tasks
+router.post('/collect-all', async (req, res) => {
+  console.log('🚀 Starting consolidated cron job - all tasks');
+  const startTime = Date.now();
+
+  try {
+    // Get credentials
+    const credentials = await getAndValidateCredentials();
+    if (!credentials) {
+      console.error('❌ Failed to get credentials');
+      return res.status(500).json({ error: 'Failed to get credentials' });
+    }
+
+    // Initialize services
+    const session = new HaywardSession(credentials.username, credentials.password);
+    const poolDataService = new PoolDataService();
+    const weatherAlertService = new WeatherAlertService();
+
+    // Task 1: Collect pool data (every 5 minutes)
+    console.log('📊 Task 1: Collecting pool data...');
+    try {
+      const poolData = await poolDataService.fetchAllPoolData(session);
+      console.log('✅ Pool data collection completed');
+    } catch (error) {
+      console.error('❌ Pool data collection failed:', error.message);
+    }
+
+    // Task 2: Collect weather data (every 5 minutes)
+    console.log('🌤️ Task 2: Collecting weather data...');
+    try {
+      const weatherData = await poolDataService.fetchWeatherData();
+      console.log('✅ Weather data collection completed');
+    } catch (error) {
+      console.error('❌ Weather data collection failed:', error.message);
+    }
+
+    // Task 3: Check weather alerts (every 5 minutes)
+    console.log('⚠️ Task 3: Checking weather alerts...');
+    try {
+      const alertInfo = await weatherAlertService.checkForAlerts();
+      if (alertInfo && alertInfo.alerts && alertInfo.alerts.length > 0) {
+        console.log(`✅ Found ${alertInfo.alerts.length} active weather alerts`);
+      } else {
+        console.log('✅ No active weather alerts');
+      }
+    } catch (error) {
+      console.error('❌ Weather alert check failed:', error.message);
+    }
+
+    const duration = Date.now() - startTime;
+    console.log(`🎉 Consolidated cron job completed in ${duration}ms`);
+
+    res.json({
+      success: true,
+      message: 'Consolidated cron job completed',
+      duration: `${duration}ms`,
+      tasks: ['pool-data', 'weather-data', 'weather-alerts']
+    });
+
+  } catch (error) {
+    console.error('❌ Consolidated cron job failed:', error);
+    res.status(500).json({ 
+      error: 'Consolidated cron job failed',
+      message: error.message 
+    });
+  }
+});
+
 module.exports = router;
