@@ -1,11 +1,18 @@
 {
   "version": 2,
   "name": "nightswim",
-  "functions": {
-    "server.js": {
-      "maxDuration": 30
+  "builds": [
+    {
+      "src": "server.js",
+      "use": "@vercel/node"
     }
-  },
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/server.js"
+    }
+  ],
   "crons": [
     {
       "path": "/api/cron/collect-all",
