@@ -237,7 +237,7 @@ router.post('/collect-all', async (req, res) => {
       return res.status(401).json({ error: 'Authentication failed' });
     }
 
-    // Task 1: Collect pool data (every 5 minutes)
+    // Task 1: Collect pool data (daily)
     console.log('📊 Task 1: Collecting pool data...');
     try {
       const _poolData = await poolDataService.fetchAllPoolData(session);
@@ -246,7 +246,7 @@ router.post('/collect-all', async (req, res) => {
       console.error('❌ Pool data collection failed:', error.message);
     }
 
-    // Task 2: Collect weather data (every 5 minutes)
+    // Task 2: Collect weather data (daily)
     console.log('🌤️ Task 2: Collecting weather data...');
     try {
       const _weatherData = await weatherService.getCurrentWeather();
@@ -255,7 +255,7 @@ router.post('/collect-all', async (req, res) => {
       console.error('❌ Weather data collection failed:', error.message);
     }
 
-    // Task 3: Check weather alerts (every 5 minutes)
+    // Task 3: Check weather alerts (daily)
     console.log('⚠️ Task 3: Checking weather alerts...');
     try {
       const alertResult = await weatherAlerts.checkAndStoreAlerts();
@@ -269,9 +269,10 @@ router.post('/collect-all', async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Consolidated cron job completed',
+      message: 'Daily consolidated cron job completed',
       duration: `${duration}ms`,
-      tasks: ['pool-data', 'weather-data', 'weather-alerts']
+      tasks: ['pool-data', 'weather-data', 'weather-alerts'],
+      schedule: 'Daily at 12:00 PM UTC'
     });
 
   } catch (error) {
