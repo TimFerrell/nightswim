@@ -214,7 +214,7 @@ router.get('/collect-weather', async (req, res) => {
 });
 
 // Consolidated cron endpoint for all tasks
-router.post('/collect-all', async (req, res) => {
+router.get('/collect-all', async (req, res) => {
   console.log('🚀 Starting consolidated cron job - all tasks');
   const startTime = Date.now();
 
