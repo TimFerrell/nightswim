@@ -97,7 +97,7 @@ class WeatherAlertService {
    * @param {object} coordinates - Location coordinates
    * @returns {boolean} True if location is affected
    */
-  isLocationInAlertArea(alert, coordinates) {
+  isLocationInAlertArea(alert, _coordinates) {
     try {
       // If alert has geometry, check if our coordinates are within it
       if (alert.geometry && alert.geometry.coordinates) {

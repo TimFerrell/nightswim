@@ -1,7 +1,7 @@
 const { POOL_CONSTANTS } = require('../utils/constants');
 const { buildDashboardUrl, buildSystemUrl } = require('../utils/constants');
 const { parseDashboardData, parseFilterData, parseHeaterData, parseChlorinatorData, parseLightsData, parseSchedulesData, createPoolDataStructure } = require('./poolDataParser');
-const HaywardSession = require('./HaywardSession');
+// const HaywardSession = require('./HaywardSession');
 const weatherService = require('./weatherService');
 const { influxDBService } = require('./influxDBService');
 const timeSeriesService = require('./timeSeriesService');

@@ -161,7 +161,7 @@ describe('Pool Data Service - InfluxDB Integration', () => {
       };
 
       // Call the service
-      const result = await poolDataService.fetchAllPoolData(mockSession);
+      const _result = await poolDataService.fetchAllPoolData(mockSession);
 
       // Verify InfluxDB storage was called
       expect(influxDBService.storeDataPoint).toHaveBeenCalledTimes(1);

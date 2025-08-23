@@ -252,7 +252,8 @@ router.get('/timeseries', async (req, res) => {
         stats,
         source: 'memory'
       });
-    } catch (_fallbackError) {
+    } catch (fallbackError) {
+      console.error('Fallback data fetch error:', fallbackError);
       res.status(500).json({ error: 'Failed to fetch time series data' });
     }
   }
@@ -397,8 +398,8 @@ router.get('/pump/state', async (req, res) => {
 router.get('/salt/average', async (req, res) => {
   try {
     // Use the time series endpoint that we know works
-    const endTime = new Date();
-    const startTime = new Date(endTime.getTime() - (24 * 60 * 60 * 1000));
+    // const endTime = new Date();
+    // const startTime = new Date(endTime.getTime() - (24 * 60 * 60 * 1000));
 
     // Get data from the time series endpoint
     const timeSeriesResponse = await fetch(`${req.protocol}://${req.get('host')}/api/pool/timeseries?hours=24`);

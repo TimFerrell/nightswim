@@ -1,4 +1,4 @@
-const { InfluxDB, Point, WriteApi } = require('@influxdata/influxdb-client');
+const { InfluxDB, Point } = require('@influxdata/influxdb-client');
 
 /**
  * @typedef {object} TimeSeriesPoint
@@ -91,7 +91,7 @@ class InfluxDBService {
       let testResult = false;
 
       try {
-        for await (const { values, tableMeta } of this.queryApi.iterateRows(testQuery)) {
+        for await (const { values: _values, tableMeta: _tableMeta } of this.queryApi.iterateRows(testQuery)) {
           testResult = true;
           break;
         }

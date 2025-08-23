@@ -162,9 +162,10 @@ class HaywardSession {
     const startTime = Date.now();
     console.log(`🌐 Making request to: ${path}`);
 
+    // Add timeout to prevent hanging requests
+    const timeout = 10000; // 10 seconds timeout
+
     try {
-      // Add timeout to prevent hanging requests
-      const timeout = 10000; // 10 seconds timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), timeout);
 

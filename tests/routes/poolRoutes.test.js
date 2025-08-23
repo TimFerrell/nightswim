@@ -246,7 +246,7 @@ describe('Pool Routes', () => {
       const mockDataPoints = [];
       mockInfluxDB.queryDataPoints.mockResolvedValue(mockDataPoints);
 
-      const response = await request(app)
+      const _response = await request(app)
         .get('/api/pool/timeseries')
         .expect(200);
 
@@ -318,7 +318,7 @@ describe('Pool Routes', () => {
 
   describe('GET /api/pool/status', () => {
     test('should return system status', async () => {
-      const mockStatus = {
+      const _mockStatus = {
         influxdb: 'connected',
         lastDataUpdate: '2024-01-01T12:00:00Z',
         dataPoints: 100
