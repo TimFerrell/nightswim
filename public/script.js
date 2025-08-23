@@ -326,11 +326,8 @@ const loadPoolData = async (retryCount = 0) => {
     console.log(`✅ Pool data loaded in ${loadTime}ms`);
     console.log('📊 Pool data:', data);
 
-    // Update stats display with new data
-    // updateStatsDisplay(data);
-
-    // Update all 3 main charts with new data
-    // updateAllCharts(data);
+    // Store the data globally for other functions to use
+    window.currentPoolData = data;
 
   } catch (error) {
     console.error(`Failed to load pool data (attempt ${retryCount + 1}):`, error);
@@ -1330,6 +1327,14 @@ document.addEventListener('DOMContentLoaded', () => {
   loadPoolData();
   loadWeatherAlerts(); // Load weather alerts on page load
   loadWeatherTimeSeries(); // Load weather time series on page load
+
+  // Process the loaded data after functions are defined
+  setTimeout(() => {
+    if (window.currentPoolData) {
+      _updateStatusCards(window.currentPoolData);
+      updateAllCharts();
+    }
+  }, 100);
 
   // Listen for dark mode changes
   const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
