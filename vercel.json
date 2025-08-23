@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "name": "nightswim",
   "builds": [
     {
       "src": "server.js",
@@ -29,5 +30,13 @@
       "path": "/api/cron/check-alerts",
       "schedule": "*/15 * * * *"
     }
-  ]
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  },
+  "functions": {
+    "server.js": {
+      "maxDuration": 30
+    }
+  }
 } 
