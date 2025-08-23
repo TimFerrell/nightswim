@@ -48,6 +48,7 @@
   },
   "jest": {
     "testEnvironment": "jsdom",
+    "extensionsToTreatAsEsm": [],
     "setupFilesAfterEnv": [
       "<rootDir>/tests/setup.js"
     ],
@@ -78,7 +79,7 @@
     "testTimeout": 10000,
     "verbose": true,
     "transformIgnorePatterns": [
-      "node_modules/(?!(@influxdata)/)"
+      "node_modules/(?!(@influxdata|cheerio|domutils|dom-serializer|domelementtype|htmlparser2)/)"
     ],
     "moduleNameMapper": {
       "^@/(.*)$": "<rootDir>/src/$1"
