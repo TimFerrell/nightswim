@@ -13,6 +13,7 @@ A Node.js Express server that acts as a proxy to the Hayward OmniLogic pool cont
 - **Clean JSON API**: Returns structured JSON data for easy integration
 - **Session Management**: Handles authentication sessions automatically
 - **Browser Interface**: Simple web interface to view pool data with interactive charts
+- **Modern Architecture**: Built with domain-driven design principles for improved maintainability
 
 ## 📁 Project Structure
 
