@@ -3,8 +3,7 @@
   "name": "nightswim",
   "functions": {
     "server.js": {
-      "maxDuration": 30,
-      "runtime": "nodejs20.x"
+      "maxDuration": 30
     }
   },
   "crons": [
