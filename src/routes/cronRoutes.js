@@ -102,6 +102,16 @@ router.get('/collect-data', async (req, res) => {
     // Fetch all pool data (this will automatically store in InfluxDB)
     const poolData = await poolDataService.fetchAllPoolData(session);
     
+    // Debug: Check if data was stored in InfluxDB
+    console.log('🔍 Pool data collection completed, checking InfluxDB storage...');
+    const endTime = new Date();
+    const startTime = new Date(endTime.getTime() - (5 * 60 * 1000)); // Last 5 minutes
+    const recentData = await influxDBService.queryDataPoints(startTime, endTime);
+    console.log(`📊 Recent data points in InfluxDB: ${recentData.length}`);
+    if (recentData.length > 0) {
+      console.log('📝 Most recent data point:', recentData[recentData.length - 1]);
+    }
+    
     // Check for weather alerts (non-blocking)
     let alertInfo = null;
     try {

@@ -195,8 +195,11 @@ const poolDataService = {
       weatherHumidity: poolData.weather?.humidity || null
     };
 
+    console.log('💾 Time series point to store:', timeSeriesPoint);
+
     // Store in InfluxDB for persistent storage (primary storage)
-    await influxDBService.storeDataPoint(timeSeriesPoint);
+    const storageResult = await influxDBService.storeDataPoint(timeSeriesPoint);
+    console.log('💾 InfluxDB storage result:', storageResult);
     
     // Also store in local memory for immediate chart access
     timeSeriesService.addDataPoint(timeSeriesPoint);
