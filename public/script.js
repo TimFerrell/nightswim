@@ -2,6 +2,15 @@
 let tempChart, electricalChart, chemistryChart;
 let saltSparkline, waterTempSparkline, cellVoltageSparkline, filterPumpSparkline, weatherTimeSeriesChart;
 
+// Update architecture status indicator
+function updateArchitectureStatus(version) {
+  const statusElement = document.getElementById('architectureVersion');
+  if (statusElement) {
+    statusElement.textContent = version;
+    statusElement.className = 'status-value' + (version.startsWith('v2') ? ' v2' : '');
+  }
+}
+
 // DOM element cache for performance
 const domCache = {
   // Status cards
@@ -288,7 +297,19 @@ const loadPoolData = async (retryCount = 0) => {
   try {
     console.log(`🔄 Loading pool data from InfluxDB (attempt ${retryCount + 1})...`);
     const startTime = Date.now();
-    const response = await fetch('/api/pool/data', { credentials: 'include' });
+    
+    // Try new architecture endpoint first (v2), fallback to legacy (v1)
+    let response;
+    try {
+      response = await fetch('/api/pool/v2/data', { credentials: 'include' });
+      if (!response.ok) throw new Error('v2 endpoint failed');
+      console.log('📊 Using new architecture (v2) endpoint');
+      updateArchitectureStatus('v2 (domain-driven)');
+    } catch (v2Error) {
+      console.log('📊 Falling back to legacy (v1) endpoint');
+      response = await fetch('/api/pool/data', { credentials: 'include' });
+      updateArchitectureStatus('v1 (legacy)');
+    }
 
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);

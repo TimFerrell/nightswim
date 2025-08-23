@@ -81,6 +81,40 @@ class PoolData {
     return new PoolData(legacyData);
   }
 
+  // Create from time series point
+  static fromTimeSeriesPoint(timeSeriesPoint) {
+    return new PoolData({
+      timestamp: timeSeriesPoint.timestamp,
+      dashboard: {
+        temperature: {
+          actual: timeSeriesPoint.waterTemp,
+          unit: '°F'
+        },
+        airTemperature: timeSeriesPoint.airTemp
+      },
+      filter: {
+        status: timeSeriesPoint.pumpStatus
+      },
+      chlorinator: {
+        salt: {
+          instant: timeSeriesPoint.saltInstant,
+          unit: 'PPM'
+        },
+        cell: {
+          temperature: {
+            value: timeSeriesPoint.cellTemp,
+            unit: '°F'
+          },
+          voltage: timeSeriesPoint.cellVoltage
+        }
+      },
+      weather: {
+        temperature: timeSeriesPoint.weatherTemp,
+        humidity: timeSeriesPoint.weatherHumidity
+      }
+    });
+  }
+
   // Serialize for JSON
   toJSON() {
     return {

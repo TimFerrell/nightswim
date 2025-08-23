@@ -1,3 +1,6 @@
+// Legacy session manager - being migrated to new architecture
+// Use ../domains/pool/infrastructure/hayward-session.js for new code
+
 const HaywardSession = require('./HaywardSession');
 
 // Store for user sessions and their cookie jars

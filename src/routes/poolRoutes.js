@@ -1,6 +1,11 @@
 const express = require('express');
+
+// New architecture imports
+const { envConfig } = require('../config');
+const { timeSeriesService, influxDBClient } = require('../domains/monitoring');
+
+// Legacy services (to be migrated gradually)
 const { influxDBService } = require('../services/influxDBService');
-const timeSeriesService = require('../services/timeSeriesService');
 const pumpStateTracker = require('../services/pumpStateTracker');
 const weatherAlertService = require('../services/weatherAlertService');
 const weatherService = require('../services/weatherService');

@@ -10,7 +10,10 @@
       "Bash(npm run test:coverage:*)",
       "Bash(npm run test:ci:*)",
       "Bash(find:*)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(npm start)",
+      "Bash(curl:*)",
+      "Bash(npm test:*)"
     ],
     "deny": [],
     "ask": []

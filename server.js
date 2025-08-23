@@ -5,13 +5,23 @@ const cors = require('cors');
 const helmet = require('helmet');
 require('dotenv').config();
 
-// Import routes
+// Import new architecture modules
+const { envConfig } = require('./src/config');
+const { influxDBClient } = require('./src/domains/monitoring');
+
+// Import routes (will be migrated gradually)
 const poolRoutes = require('./src/routes/poolRoutes');
 const cronRoutes = require('./src/routes/cronRoutes');
+
+// New architecture API routes
+const newPoolRoutes = require('./src/web/api/routes');
+const newCronRoutes = require('./src/web/api/cron-routes');
+
+// Legacy compatibility during migration
 const { influxDBService } = require('./src/services/influxDBService');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = envConfig.get('PORT') || 3000;
 
 // Middleware
 app.use(helmet({
@@ -48,7 +58,7 @@ app.use(express.static('public', {
   }
 }));
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'hayward-proxy-secret-key',
+  secret: envConfig.get('SESSION_SECRET') || 'hayward-proxy-secret-key',
   resave: true,
   saveUninitialized: true,
   cookie: {
@@ -89,8 +99,10 @@ app.get('/api/test-influxdb', async (req, res) => {
 });
 
 // Routes
-app.use('/api/pool', poolRoutes);
-app.use('/api/cron', cronRoutes);
+app.use('/api/pool', poolRoutes); // Legacy routes (v1)
+app.use('/api/pool', newPoolRoutes); // New architecture routes (v2)
+app.use('/api/cron', cronRoutes); // Legacy cron routes (v1)
+app.use('/api/cron', newCronRoutes); // New architecture cron routes (v2)
 
 // GET / - Main pool data page
 app.get('/', (req, res) => {

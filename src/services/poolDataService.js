@@ -3,8 +3,11 @@ const { buildDashboardUrl, buildSystemUrl } = require('../utils/constants');
 const { parseDashboardData, parseFilterData, parseHeaterData, parseChlorinatorData, parseLightsData, parseSchedulesData, createPoolDataStructure } = require('./poolDataParser');
 // const HaywardSession = require('./HaywardSession');
 const weatherService = require('./weatherService');
+
+// New architecture imports
+const { timeSeriesService, influxDBClient } = require('../domains/monitoring');
+// Keep legacy influx service for backward compatibility during migration
 const { influxDBService } = require('./influxDBService');
-const timeSeriesService = require('./timeSeriesService');
 const pumpStateTracker = require('./pumpStateTracker');
 
 // Simple in-memory cache for API responses
@@ -197,12 +200,19 @@ const poolDataService = {
 
     console.log('💾 Time series point to store:', timeSeriesPoint);
 
-    // Store in InfluxDB for persistent storage (primary storage)
-    const storageResult = await influxDBService.storeDataPoint(timeSeriesPoint);
-    console.log('💾 InfluxDB storage result:', storageResult);
+    // Store in InfluxDB using new architecture (primary storage)
+    const newInfluxResult = await influxDBClient.storeDataPoint(timeSeriesPoint);
+    console.log('💾 New InfluxDB storage result:', newInfluxResult);
+    
+    // Fallback to legacy InfluxDB service for compatibility
+    let legacyInfluxResult = null;
+    if (!newInfluxResult) {
+      legacyInfluxResult = await influxDBService.storeDataPoint(timeSeriesPoint);
+      console.log('💾 Legacy InfluxDB storage result:', legacyInfluxResult);
+    }
 
-    // Also store in local memory for immediate chart access
-    timeSeriesService.addDataPoint(timeSeriesPoint);
+    // Store in memory using new architecture
+    await timeSeriesService.addDataPoint(timeSeriesPoint);
 
     // Check for pump state changes and generate annotations
     if (poolData.filter && poolData.filter.status !== null && poolData.filter.status !== undefined) {

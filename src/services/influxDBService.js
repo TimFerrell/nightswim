@@ -19,7 +19,8 @@ const { InfluxDB, Point } = require('@influxdata/influxdb-client');
  */
 
 /**
- *
+ * Legacy InfluxDB service - being migrated to new architecture
+ * Use ../domains/monitoring/infrastructure/influx-client.js for new code
  */
 class InfluxDBService {
   /**

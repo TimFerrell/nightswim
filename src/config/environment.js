@@ -3,11 +3,9 @@
  * Centralized environment variable handling with validation
  */
 
+// InfluxDB vars are optional for development - app should work without them
 const requiredEnvVars = [
-  'INFLUXDB_URL',
-  'INFLUXDB_TOKEN',
-  'INFLUXDB_ORG',
-  'INFLUXDB_BUCKET'
+  // No required vars for basic operation
 ];
 
 const optionalEnvVars = {
@@ -17,7 +15,12 @@ const optionalEnvVars = {
   WEATHER_API_KEY: null,
   POOL_USERNAME: null,
   POOL_PASSWORD: null,
-  LOG_LEVEL: 'info'
+  LOG_LEVEL: 'info',
+  // InfluxDB configuration (optional)
+  INFLUXDB_URL: null,
+  INFLUXDB_TOKEN: null,
+  INFLUXDB_ORG: null,
+  INFLUXDB_BUCKET: 'pool_metrics'
 };
 
 class EnvironmentConfig {

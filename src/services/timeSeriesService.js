@@ -11,6 +11,8 @@
  */
 
 /**
+ * Legacy time series service - being migrated to new architecture
+ * Use ../domains/monitoring/services/time-series-service.js for new code
  * Backend time series storage with 24-hour retention
  * Stores data in memory with automatic cleanup of old entries
  */

@@ -25,6 +25,8 @@
             --color-secondary: #8b5cf6;
             --color-accent: #06b6d4;
             --color-success: #10b981;
+            --color-success-bg: #ecfdf5;
+            --color-success-text: #047857;
             --color-warning: #f59e0b;
             --color-error: #ef4444;
             --color-text: #1f2937;
@@ -199,6 +201,34 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+        }
+
+        .architecture-status {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            font-size: 0.875rem;
+            color: var(--color-text-muted);
+        }
+
+        .status-label {
+            font-weight: 500;
+        }
+
+        .status-value {
+            padding: var(--space-1) var(--space-2);
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            font-family: 'Courier New', monospace;
+            font-size: 0.8125rem;
+            font-weight: 600;
+        }
+
+        .status-value.v2 {
+            background: var(--color-success-bg);
+            color: var(--color-success-text);
+            border-color: var(--color-success);
         }
 
         .logo {
@@ -816,6 +846,10 @@
                     <div class="logo-icon"></div>
                     <span class="logo-text">Night Swim</span>
                 </a>
+                <div class="architecture-status" id="architectureStatus">
+                    <span class="status-label">Architecture:</span>
+                    <span class="status-value" id="architectureVersion">v1 (legacy)</span>
+                </div>
             </div>
         </div>
     </header>
