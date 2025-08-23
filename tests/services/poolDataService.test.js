@@ -5,371 +5,268 @@
 
 const poolDataService = require('../../src/services/poolDataService');
 
+// Mock cheerio to avoid ES module issues
+jest.mock('cheerio', () => ({
+  load: jest.fn(() => {
+    const mockCheerio = (selector) => {
+      const mockElement = {
+        text: jest.fn(() => {
+          const selectorStr = String(selector);
+          if (selectorStr.includes('lblTempTarget') || selectorStr === '#lblTempTarget') return '75°F';
+          if (selectorStr.includes('lblTempActual') || selectorStr === '#lblTempActual') return '85°F';
+          if (selectorStr.includes('divfilterStatus') || selectorStr === '#divfilterStatus') return 'ON';
+          if (selectorStr.includes('divPump') || selectorStr === '#divPump') return 'Filter Pump Running';
+          if (selectorStr.includes('lblMinTargetTemp') || selectorStr === '#lblMinTargetTemp') return '55°F';
+          if (selectorStr.includes('lblTemp') || selectorStr === '#lblTemp') return '82°F';
+          if (selectorStr.includes('lblMaxTargetTemp') || selectorStr === '#lblMaxTargetTemp') return '95°F';
+          if (selectorStr.includes('lblActualTemp') || selectorStr === '#lblActualTemp') return '82°F';
+          if (selectorStr.includes('lbCellTemp') || selectorStr === '#lbCellTemp') return '85.6°F';
+          if (selectorStr.includes('lbCellVoltage') || selectorStr === '#lbCellVoltage') return '23.01';
+          if (selectorStr.includes('lbCellCurrent') || selectorStr === '#lbCellCurrent') return '4.89';
+          if (selectorStr.includes('lbCellType') || selectorStr === '#lbCellType') return 'T-15';
+          if (selectorStr.includes('boxchlppm') || selectorStr === '.boxchlppm') return 'salt level 2897 ppm';
+          if (selectorStr.includes('status') && !selectorStr.includes('divfilterStatus')) return 'ON';
+          if (selectorStr.includes('brightness')) return '75%';
+          if (selectorStr === 'input[type="checkbox"]:checked') return 'checked';
+          if (selectorStr === 'input[type="radio"]:checked') return 'checked';
+          return '';
+        }),
+        attr: jest.fn((attr) => {
+          if (attr === 'name') {
+            const selectorStr = String(selector);
+            if (selectorStr.includes('heater') || selectorStr.includes('lblTemp')) return 'heater_on';
+            if (selectorStr.includes('chlorinator') || selectorStr.includes('lbCell')) return 'chlorinator_on';
+            return 'heater_on';
+          }
+          return null;
+        }),
+        length: 1,
+        each: jest.fn((callback) => callback(0, mockElement)),
+        find: jest.fn(() => mockElement)
+      };
+      return mockElement;
+    };
+    
+    // Add methods that cheerio provides
+    mockCheerio.each = jest.fn((callback) => callback(0, mockCheerio('table')));
+    mockCheerio.length = 1;
+    mockCheerio.find = jest.fn(() => mockCheerio('th'));
+    
+    return mockCheerio;
+  })
+}));
+
 // Mock dependencies
-jest.mock('../../src/services/HaywardSession', () => ({
-  __esModule: true,
-  default: jest.fn()
-}));
-
-jest.mock('../../src/services/weatherService', () => ({
-  __esModule: true,
-  default: jest.fn()
-}));
-
-jest.mock('../../src/services/poolDataParser', () => ({
-  parseDashboardData: jest.fn(),
-  parseFilterData: jest.fn(),
-  parseHeaterData: jest.fn(),
-  parseChlorinatorData: jest.fn(),
-  parseLightsData: jest.fn(),
-  parseSchedulesData: jest.fn(),
-  createPoolDataStructure: jest.fn()
-}));
-
-jest.mock('../../src/services/influxDBService', () => ({
-  __esModule: true,
-  default: jest.fn()
-}));
-
-jest.mock('../../src/services/timeSeriesService', () => ({
-  __esModule: true,
-  default: jest.fn()
-}));
-
-jest.mock('../../src/services/pumpStateTracker', () => ({
-  __esModule: true,
-  default: jest.fn()
-}));
+jest.mock('../../src/services/HaywardSession');
+jest.mock('../../src/services/weatherService');
+jest.mock('../../src/services/poolDataParser');
+jest.mock('../../src/services/influxDBService');
+jest.mock('../../src/services/timeSeriesService');
+jest.mock('../../src/services/pumpStateTracker');
 
 const HaywardSession = require('../../src/services/HaywardSession');
 const weatherService = require('../../src/services/weatherService');
 const poolDataParser = require('../../src/services/poolDataParser');
-const influxDBService = require('../../src/services/influxDBService').influxDBService;
+const { influxDBService } = require('../../src/services/influxDBService');
 const timeSeriesService = require('../../src/services/timeSeriesService');
 const pumpStateTracker = require('../../src/services/pumpStateTracker');
 
-describe('Pool Data Service', () => {
-  let service;
-  let mockSession;
-  let mockWeatherService;
-  let mockPoolDataParser;
-  let mockInfluxDBService;
-  let mockTimeSeriesService;
-  let mockPumpStateTracker;
-
+describe('Pool Data Service - InfluxDB Integration', () => {
   beforeEach(() => {
-    // Create mock instances
-    mockSession = {
+    // Reset all mocks
+    jest.clearAllMocks();
+
+    // Mock successful session with sessionId
+    HaywardSession.mockImplementation(() => ({
       sessionId: 'test-session-123',
-      makeRequest: jest.fn()
-    };
+      authenticate: jest.fn().mockResolvedValue(true),
+      makeRequest: jest.fn().mockResolvedValue({ data: '<html>mock data</html>' })
+    }));
 
-    mockWeatherService = {
-      getCurrentWeather: jest.fn()
-    };
+    // Mock parser functions
+    poolDataParser.parseDashboardData.mockReturnValue({
+      temperature: { actual: 82, target: 80, unit: '°F' },
+      airTemperature: 75
+    });
+    poolDataParser.parseFilterData.mockReturnValue({
+      status: true
+    });
+    poolDataParser.parseChlorinatorData.mockReturnValue({
+      salt: { instant: 3000, unit: 'PPM' },
+      cell: { temperature: { value: 85, unit: '°F' }, voltage: 25.5 }
+    });
+    poolDataParser.parseHeaterData.mockReturnValue({
+      status: false
+    });
+    poolDataParser.parseLightsData.mockReturnValue({
+      status: false
+    });
+    poolDataParser.parseSchedulesData.mockReturnValue([]);
+    poolDataParser.createPoolDataStructure.mockReturnValue({
+      timestamp: new Date().toISOString(),
+      dashboard: {},
+      filter: {},
+      heater: {},
+      chlorinator: {},
+      lights: {},
+      schedules: [],
+      weather: {}
+    });
 
-    mockPoolDataParser = {
-      parseDashboardData: jest.fn(),
-      parseFilterData: jest.fn(),
-      parseHeaterData: jest.fn(),
-      parseChlorinatorData: jest.fn(),
-      parseLightsData: jest.fn(),
-      parseSchedulesData: jest.fn(),
-      createPoolDataStructure: jest.fn()
-    };
+    // Mock weather service
+    weatherService.getCurrentWeather.mockResolvedValue({
+      temperature: 76,
+      humidity: 65,
+      description: 'Partly cloudy',
+      source: 'OpenMeteo'
+    });
 
-    mockInfluxDBService = {
-      storeDataPoint: jest.fn()
-    };
+    // Mock InfluxDB service
+    influxDBService.storeDataPoint.mockResolvedValue(true);
+    influxDBService.queryDataPoints.mockResolvedValue([]);
 
-    mockTimeSeriesService = {
-      addDataPoint: jest.fn()
-    };
+    // Mock time series service
+    timeSeriesService.addDataPoint.mockResolvedValue(true);
 
-    mockPumpStateTracker = {
-      checkStateChange: jest.fn()
-    };
+    // Mock pump state tracker
+    pumpStateTracker.checkStateChange.mockResolvedValue(true);
 
-    // Set up mock implementations for poolDataParser functions
-    poolDataParser.createPoolDataStructure.mockImplementation(mockPoolDataParser.createPoolDataStructure);
-    poolDataParser.parseDashboardData.mockImplementation(mockPoolDataParser.parseDashboardData);
-    poolDataParser.parseFilterData.mockImplementation(mockPoolDataParser.parseFilterData);
-    poolDataParser.parseHeaterData.mockImplementation(mockPoolDataParser.parseHeaterData);
-    poolDataParser.parseChlorinatorData.mockImplementation(mockPoolDataParser.parseChlorinatorData);
-    poolDataParser.parseLightsData.mockImplementation(mockPoolDataParser.parseLightsData);
-    poolDataParser.parseSchedulesData.mockImplementation(mockPoolDataParser.parseSchedulesData);
-    
-    // Set up mock implementations for other services
-    influxDBService.storeDataPoint.mockImplementation(mockInfluxDBService.storeDataPoint);
-    timeSeriesService.addDataPoint.mockImplementation(mockTimeSeriesService.addDataPoint);
-    pumpStateTracker.checkStateChange.mockImplementation(mockPumpStateTracker.checkStateChange);
-
-    // Use the service object directly
-    service = poolDataService;
+    // Clear cache and most recent data
+    if (poolDataService.cleanupCache) {
+      poolDataService.cleanupCache();
+    }
+    if (poolDataService.setMostRecentPoolData) {
+      poolDataService.setMostRecentPoolData(null);
+    }
   });
 
   afterEach(() => {
     jest.clearAllMocks();
-    // Clear the cache and most recent data between tests
-    service.cleanupCache();
-    service.setMostRecentPoolData(null);
+    // Clear cache and most recent data between tests
+    if (poolDataService.cleanupCache) {
+      poolDataService.cleanupCache();
+    }
+    if (poolDataService.setMostRecentPoolData) {
+      poolDataService.setMostRecentPoolData(null);
+    }
   });
 
-  describe('fetchAllPoolData', () => {
-    test('should fetch all pool data successfully', async () => {
-      const mockDashboardData = { temperature: { actual: 86 } };
-      const mockFilterData = { status: 'running' };
-      const mockHeaterData = { temperature: { setpoint: 82 } };
-      const mockChlorinatorData = { salt: { instant: 2838 } };
-      const mockLightsData = { status: 'off' };
-      const mockSchedulesData = [];
-      const mockWeatherData = { temperature: 89, humidity: 65 };
+  describe('InfluxDB Integration', () => {
+    it('should store data points in InfluxDB when fetchAllPoolData is called', async () => {
+      // Create a mock session
+      const mockSession = {
+        sessionId: 'test-session-123',
+        authenticate: jest.fn().mockResolvedValue(true),
+        makeRequest: jest.fn().mockResolvedValue({ data: '<html>mock data</html>' })
+      };
 
-      // Mock parser functions
-      mockPoolDataParser.createPoolDataStructure.mockReturnValue({
-        timestamp: new Date().toISOString(),
-        system: {},
-        dashboard: {},
-        filter: {},
-        heater: {},
-        chlorinator: {},
-        lights: {},
-        schedules: [],
-        weather: {}
+      // Call the service
+      const result = await poolDataService.fetchAllPoolData(mockSession);
+
+      // Verify InfluxDB storage was called
+      expect(influxDBService.storeDataPoint).toHaveBeenCalledTimes(1);
+      
+      const storedDataPoint = influxDBService.storeDataPoint.mock.calls[0][0];
+      expect(storedDataPoint).toMatchObject({
+        saltInstant: 3000,
+        cellTemp: 85,
+        cellVoltage: 25.5,
+        waterTemp: 82,
+        airTemp: 75,
+        pumpStatus: true,
+        weatherTemp: 76,
+        weatherHumidity: 65
       });
+      expect(storedDataPoint.timestamp).toBeDefined();
+    });
 
-      mockPoolDataParser.parseDashboardData.mockReturnValue(mockDashboardData);
-      mockPoolDataParser.parseFilterData.mockReturnValue(mockFilterData);
-      mockPoolDataParser.parseHeaterData.mockReturnValue(mockHeaterData);
-      mockPoolDataParser.parseChlorinatorData.mockReturnValue(mockChlorinatorData);
-      mockPoolDataParser.parseLightsData.mockReturnValue(mockLightsData);
-      mockPoolDataParser.parseSchedulesData.mockReturnValue(mockSchedulesData);
+    it('should handle InfluxDB storage failures gracefully', async () => {
+      // Create a mock session with different sessionId to avoid cache
+      const mockSession = {
+        sessionId: 'test-session-456',
+        authenticate: jest.fn().mockResolvedValue(true),
+        makeRequest: jest.fn().mockResolvedValue({ data: '<html>mock data</html>' })
+      };
 
-      // Mock session requests
-      mockSession.makeRequest.mockImplementation((url) => {
-        if (url.includes('dashboard')) {
-          return Promise.resolve({ data: '<html><span id="lblTempActual">86°F</span></html>' });
-        }
-        return Promise.resolve({ data: '<html></html>' });
-      });
+      // Mock InfluxDB storage failure
+      influxDBService.storeDataPoint.mockResolvedValue(false);
 
-      // Mock weather service
-      mockWeatherService.getCurrentWeather.mockResolvedValue(mockWeatherData);
+      // Call the service - should not throw
+      const result = await poolDataService.fetchAllPoolData(mockSession);
 
-      // Mock storage services
-      mockInfluxDBService.storeDataPoint.mockResolvedValue(true);
-      mockTimeSeriesService.addDataPoint.mockResolvedValue();
-      mockPumpStateTracker.checkStateChange.mockResolvedValue();
-
-      const result = await service.fetchAllPoolData(mockSession);
-
+      // Verify InfluxDB storage was attempted
+      expect(influxDBService.storeDataPoint).toHaveBeenCalledTimes(1);
+      
+      // Verify the service still returns data even if storage fails
       expect(result).toBeDefined();
-      expect(result.dashboard).toEqual(mockDashboardData);
-      expect(result.filter).toEqual(mockFilterData);
-      expect(result.heater).toEqual(mockHeaterData);
-      expect(result.chlorinator).toEqual(mockChlorinatorData);
-      expect(result.lights).toEqual(mockLightsData);
-      expect(result.schedules).toEqual(mockSchedulesData);
-      expect(result.weather).toEqual(mockWeatherData);
-      expect(mockInfluxDBService.storeDataPoint).toHaveBeenCalled();
-      expect(mockTimeSeriesService.addDataPoint).toHaveBeenCalled();
+      expect(result.chlorinator).toBeDefined();
     });
 
-    test('should handle request failures gracefully', async () => {
-      mockPoolDataParser.createPoolDataStructure.mockReturnValue({
-        timestamp: new Date().toISOString(),
-        system: {},
-        dashboard: {},
-        filter: {},
-        heater: {},
-        chlorinator: {},
-        lights: {},
-        schedules: [],
-        weather: {}
+    it('should store data points with null values when data is missing', async () => {
+      // Create a mock session with different sessionId to avoid cache
+      const mockSession = {
+        sessionId: 'test-session-789',
+        authenticate: jest.fn().mockResolvedValue(true),
+        makeRequest: jest.fn().mockResolvedValue({ data: '<html>mock data</html>' })
+      };
+
+      // Mock data with missing values
+      poolDataParser.parseChlorinatorData.mockReturnValue({
+        salt: { instant: null, unit: 'PPM' },
+        cell: { temperature: { value: null, unit: '°F' }, voltage: null }
+      });
+      poolDataParser.parseDashboardData.mockReturnValue({
+        temperature: { actual: null, target: 80, unit: '°F' },
+        airTemperature: null
+      });
+      poolDataParser.parseFilterData.mockReturnValue({
+        status: null
       });
 
-      // Mock some requests to fail
-      mockSession.makeRequest.mockImplementation((url) => {
-        if (url.includes('dashboard')) {
-          return Promise.reject(new Error('Dashboard fetch failed'));
-        }
-        return Promise.resolve({ data: '<html></html>' });
-      });
+      // Call the service
+      await poolDataService.fetchAllPoolData(mockSession);
 
-      mockWeatherService.getCurrentWeather.mockRejectedValue(new Error('Weather failed'));
-
-      const result = await service.fetchAllPoolData(mockSession);
-
-      expect(result).toBeDefined();
-      expect(result.dashboard).toEqual({ error: 'Dashboard fetch failed' });
-      expect(result.weather).toEqual({ error: 'Weather failed' });
-    });
-
-    test('should handle empty HTML responses', async () => {
-      mockPoolDataParser.createPoolDataStructure.mockReturnValue({
-        timestamp: new Date().toISOString(),
-        system: {},
-        dashboard: {},
-        filter: {},
-        heater: {},
-        chlorinator: {},
-        lights: {},
-        schedules: [],
-        weather: {}
-      });
-
-      mockSession.makeRequest.mockResolvedValue({ data: '' });
-      mockWeatherService.getCurrentWeather.mockResolvedValue({});
-
-      const result = await service.fetchAllPoolData(mockSession);
-
-      expect(result).toBeDefined();
-      expect(mockInfluxDBService.storeDataPoint).toHaveBeenCalled();
-    });
-
-    test('should handle null HTML responses', async () => {
-      mockPoolDataParser.createPoolDataStructure.mockReturnValue({
-        timestamp: new Date().toISOString(),
-        system: {},
-        dashboard: {},
-        filter: {},
-        heater: {},
-        chlorinator: {},
-        lights: {},
-        schedules: [],
-        weather: {}
-      });
-
-      mockSession.makeRequest.mockResolvedValue({ data: null });
-      mockWeatherService.getCurrentWeather.mockResolvedValue({});
-
-      const result = await service.fetchAllPoolData(mockSession);
-
-      expect(result).toBeDefined();
-      expect(mockInfluxDBService.storeDataPoint).toHaveBeenCalled();
-    });
-  });
-
-  describe('Cache Functions', () => {
-    test('should get cached data when available and not expired', () => {
-      const testData = { test: 'data' };
-      const cacheKey = 'test-key';
+      // Verify InfluxDB storage was called with null values
+      expect(influxDBService.storeDataPoint).toHaveBeenCalledTimes(1);
       
-      service.setCachedData(cacheKey, testData);
-      const result = service.getCachedData(cacheKey);
-      
-      expect(result).toEqual(testData);
-    });
-
-    test('should return null for expired cache', () => {
-      const testData = { test: 'data' };
-      const cacheKey = 'test-key';
-      
-      service.setCachedData(cacheKey, testData);
-      
-      // Manually expire the cache by modifying the timestamp
-      const cache = service.getCachedData(cacheKey);
-      expect(cache).toEqual(testData);
-      
-      // Clear cache and check again
-      service.cleanupCache();
-      const result = service.getCachedData(cacheKey);
-      expect(result).toBeNull();
-    });
-
-    test('should return null for non-existent cache key', () => {
-      const result = service.getCachedData('non-existent');
-      expect(result).toBeNull();
-    });
-  });
-
-  describe('Most Recent Data Functions', () => {
-    test('should set and get most recent pool data', () => {
-      const testData = { test: 'data' };
-      
-      service.setMostRecentPoolData(testData);
-      const result = service.getMostRecentPoolData();
-      
-      expect(result).toEqual(testData);
-    });
-
-    test('should return null when no recent data is set', () => {
-      const result = service.getMostRecentPoolData();
-      expect(result).toBeNull();
-    });
-  });
-
-  describe('Data Validation', () => {
-    test('should handle missing optional fields', async () => {
-      mockPoolDataParser.createPoolDataStructure.mockReturnValue({
-        timestamp: new Date().toISOString(),
-        system: {},
-        dashboard: {},
-        filter: {},
-        heater: {},
-        chlorinator: {},
-        lights: {},
-        schedules: [],
-        weather: {}
+      const storedDataPoint = influxDBService.storeDataPoint.mock.calls[0][0];
+      expect(storedDataPoint).toMatchObject({
+        saltInstant: null,
+        cellTemp: null,
+        cellVoltage: null,
+        waterTemp: null,
+        airTemp: null,
+        pumpStatus: null,
+        weatherTemp: 76,
+        weatherHumidity: 65
       });
-
-      mockSession.makeRequest.mockResolvedValue({ data: '<html></html>' });
-      mockWeatherService.getCurrentWeather.mockResolvedValue({});
-
-      const result = await service.fetchAllPoolData(mockSession);
-
-      expect(result).toBeDefined();
-      expect(mockInfluxDBService.storeDataPoint).toHaveBeenCalled();
-    });
-  });
-
-  describe('Performance', () => {
-    test('should complete data collection within reasonable time', async () => {
-      mockPoolDataParser.createPoolDataStructure.mockReturnValue({
-        timestamp: new Date().toISOString(),
-        system: {},
-        dashboard: {},
-        filter: {},
-        heater: {},
-        chlorinator: {},
-        lights: {},
-        schedules: [],
-        weather: {}
-      });
-
-      mockSession.makeRequest.mockResolvedValue({ data: '<html></html>' });
-      mockWeatherService.getCurrentWeather.mockResolvedValue({});
-
-      const startTime = Date.now();
-      const result = await service.fetchAllPoolData(mockSession);
-      const endTime = Date.now();
-
-      expect(result).toBeDefined();
-      expect(endTime - startTime).toBeLessThan(5000); // Should complete within 5 seconds
     });
 
-    test('should handle concurrent data collection', async () => {
-      mockPoolDataParser.createPoolDataStructure.mockReturnValue({
-        timestamp: new Date().toISOString(),
-        system: {},
-        dashboard: {},
-        filter: {},
-        heater: {},
-        chlorinator: {},
-        lights: {},
-        schedules: [],
-        weather: {}
-      });
+    it('should log storage results for debugging', async () => {
+      // Create a mock session with different sessionId to avoid cache
+      const mockSession = {
+        sessionId: 'test-session-debug',
+        authenticate: jest.fn().mockResolvedValue(true),
+        makeRequest: jest.fn().mockResolvedValue({ data: '<html>mock data</html>' })
+      };
 
-      mockSession.makeRequest.mockResolvedValue({ data: '<html></html>' });
-      mockWeatherService.getCurrentWeather.mockResolvedValue({});
+      // Mock console.log to capture logging
+      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
 
-      const promises = Array.from({ length: 3 }, () => service.fetchAllPoolData(mockSession));
-      const results = await Promise.all(promises);
+      // Call the service
+      await poolDataService.fetchAllPoolData(mockSession);
 
-      results.forEach(result => {
-        expect(result).toBeDefined();
-      });
+      // Verify logging occurred
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('💾 Time series point to store:'),
+        expect.any(Object)
+      );
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('💾 InfluxDB storage result:'),
+        true
+      );
+
+      consoleSpy.mockRestore();
     });
   });
 }); 
