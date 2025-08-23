@@ -27,7 +27,7 @@ describe('InfluxDBService', () => {
   beforeEach(() => {
     // Reset mocks
     jest.clearAllMocks();
-    
+
     // Create mock write API
     mockWriteApi = {
       writePoint: jest.fn(),
@@ -209,4 +209,4 @@ describe('InfluxDBService', () => {
       expect(influxDBService).toBeDefined();
     });
   });
-}); 
+});

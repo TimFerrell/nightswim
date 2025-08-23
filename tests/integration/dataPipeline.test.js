@@ -65,9 +65,9 @@ describe('Data Pipeline Integration', () => {
               </html>
             `
           });
-        } else {
-          return Promise.resolve({ data: '<html><body></body></html>' });
         }
+        return Promise.resolve({ data: '<html><body></body></html>' });
+
       })
     }));
 
@@ -94,7 +94,7 @@ describe('Data Pipeline Integration', () => {
     // Import routes
     const poolRoutes = require('../../src/routes/poolRoutes');
     const cronRoutes = require('../../src/routes/cronRoutes');
-    
+
     app.use('/api/pool', poolRoutes);
     app.use('/api/cron', cronRoutes);
   });
@@ -160,7 +160,7 @@ describe('Data Pipeline Integration', () => {
 
       expect(collectionResponse.body.success).toBe(true);
       expect(collectionResponse.body.dataPoints).toBeDefined();
-      
+
       // Should handle null values gracefully
       expect(collectionResponse.body.dataPoints.saltInstant).toBeNull();
       expect(collectionResponse.body.dataPoints.cellTemp).toBeNull();
@@ -209,7 +209,7 @@ describe('Data Pipeline Integration', () => {
 
     it('should handle concurrent data collection requests', async () => {
       // Simulate multiple concurrent cron jobs
-      const promises = Array(3).fill().map(() => 
+      const promises = Array(3).fill().map(() =>
         request(app)
           .post('/api/cron/collect-data')
           .expect(200)
@@ -314,7 +314,7 @@ describe('Data Pipeline Integration', () => {
       const startTime = Date.now();
 
       // Make 5 rapid requests
-      const promises = Array(5).fill().map(() => 
+      const promises = Array(5).fill().map(() =>
         request(app)
           .post('/api/cron/collect-data')
           .expect(200)
@@ -333,4 +333,4 @@ describe('Data Pipeline Integration', () => {
       expect(duration).toBeLessThan(30000); // 30 seconds for 5 requests
     });
   });
-}); 
+});

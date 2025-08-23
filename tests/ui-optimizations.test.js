@@ -103,7 +103,7 @@ describe('UI Optimization Tests', () => {
         filterPumpCard: null,
         weatherTempValue: null,
         weatherCard: null,
-        
+
         init() {
           this.saltValue = document.getElementById('saltValue');
           this.saltCard = document.getElementById('saltCard');
@@ -124,10 +124,10 @@ describe('UI Optimization Tests', () => {
       // Test initialization
       expect(domCache).toBeDefined();
       expect(typeof domCache.init).toBe('function');
-      
+
       // Initialize cache
       domCache.init();
-      
+
       // Verify all elements are cached
       expect(domCache.saltValue).toBe(document.getElementById('saltValue'));
       expect(domCache.saltCard).toBe(document.getElementById('saltCard'));
@@ -148,7 +148,7 @@ describe('UI Optimization Tests', () => {
       const domCache = {
         saltValue: null,
         waterTempValue: null,
-        
+
         init() {
           this.saltValue = document.getElementById('saltValue');
           this.waterTempValue = document.getElementById('waterTempValue');
@@ -157,10 +157,10 @@ describe('UI Optimization Tests', () => {
 
       // Remove some elements
       document.getElementById('saltValue').remove();
-      
+
       // Should not throw error
       expect(() => domCache.init()).not.toThrow();
-      
+
       // Missing elements should be null
       expect(domCache.saltValue).toBeNull();
       expect(domCache.waterTempValue).toBe(document.getElementById('waterTempValue'));
@@ -183,12 +183,12 @@ describe('UI Optimization Tests', () => {
 
       const mockFn = jest.fn();
       const debouncedFn = debounce(mockFn, 100);
-      
+
       // Call multiple times rapidly
       debouncedFn();
       debouncedFn();
       debouncedFn();
-      
+
       // Should only be called once after delay
       setTimeout(() => {
         expect(mockFn).toHaveBeenCalledTimes(1);
@@ -211,9 +211,9 @@ describe('UI Optimization Tests', () => {
 
       const mockFn = jest.fn();
       const debouncedFn = debounce(mockFn, 50);
-      
+
       debouncedFn('test', 123);
-      
+
       setTimeout(() => {
         expect(mockFn).toHaveBeenCalledWith('test', 123);
         done();
@@ -227,20 +227,20 @@ describe('UI Optimization Tests', () => {
         data: null,
         timestamp: 0,
         ttl: 5000,
-        
+
         isValid() {
           return this.data && (Date.now() - this.timestamp) < this.ttl;
         },
-        
+
         set(data) {
           this.data = data;
           this.timestamp = Date.now();
         },
-        
+
         get() {
           return this.isValid() ? this.data : null;
         },
-        
+
         clear() {
           this.data = null;
           this.timestamp = 0;
@@ -248,7 +248,7 @@ describe('UI Optimization Tests', () => {
       };
 
       const testData = { test: 'data' };
-      
+
       // Set cache
       requestCache.set(testData);
       expect(requestCache.get()).toBe(testData);
@@ -260,16 +260,16 @@ describe('UI Optimization Tests', () => {
         data: null,
         timestamp: 0,
         ttl: 50, // Short TTL for testing
-        
+
         isValid() {
           return this.data && (Date.now() - this.timestamp) < this.ttl;
         },
-        
+
         set(data) {
           this.data = data;
           this.timestamp = Date.now();
         },
-        
+
         get() {
           return this.isValid() ? this.data : null;
         }
@@ -277,7 +277,7 @@ describe('UI Optimization Tests', () => {
 
       const testData = { test: 'data' };
       requestCache.set(testData);
-      
+
       setTimeout(() => {
         expect(requestCache.isValid()).toBe(false);
         expect(requestCache.get()).toBeNull();
@@ -290,20 +290,20 @@ describe('UI Optimization Tests', () => {
         data: null,
         timestamp: 0,
         ttl: 5000,
-        
+
         isValid() {
           return this.data && (Date.now() - this.timestamp) < this.ttl;
         },
-        
+
         set(data) {
           this.data = data;
           this.timestamp = Date.now();
         },
-        
+
         get() {
           return this.isValid() ? this.data : null;
         },
-        
+
         clear() {
           this.data = null;
           this.timestamp = 0;
@@ -312,7 +312,7 @@ describe('UI Optimization Tests', () => {
 
       const testData = { test: 'data' };
       requestCache.set(testData);
-      
+
       requestCache.clear();
       expect(requestCache.get()).toBeNull();
       expect(requestCache.isValid()).toBeFalsy();
@@ -328,7 +328,7 @@ describe('UI Optimization Tests', () => {
         saltCard: null,
         waterTempValue: null,
         waterTempCard: null,
-        
+
         init() {
           this.saltValue = document.getElementById('saltValue');
           this.saltCard = document.getElementById('saltCard');
@@ -338,7 +338,7 @@ describe('UI Optimization Tests', () => {
       };
 
       domCache.init();
-      
+
       const testData = {
         chlorinator: {
           salt: { instant: 2800 }
@@ -348,14 +348,14 @@ describe('UI Optimization Tests', () => {
         },
         filter: { status: true }
       };
-      
+
       // Test salt level update
       if (testData.chlorinator?.salt?.instant && testData.chlorinator.salt.instant !== null && testData.chlorinator.salt.instant !== '--') {
         domCache.saltValue.textContent = testData.chlorinator.salt.instant;
         domCache.saltValue.classList.remove('skeleton-value');
         domCache.saltCard.classList.add('loaded');
       }
-      
+
       expect(domCache.saltValue.textContent).toBe('2800');
       expect(domCache.saltValue.classList.contains('skeleton-value')).toBe(false);
       expect(domCache.saltCard.classList.contains('loaded')).toBe(true);
@@ -365,7 +365,7 @@ describe('UI Optimization Tests', () => {
       const domCache = {
         saltValue: null,
         waterTempValue: null,
-        
+
         init() {
           this.saltValue = document.getElementById('saltValue');
           this.waterTempValue = document.getElementById('waterTempValue');
@@ -373,19 +373,19 @@ describe('UI Optimization Tests', () => {
       };
 
       domCache.init();
-      
+
       const testData = {
         chlorinator: { salt: { instant: null } },
         filter: { status: false }
       };
-      
+
       // Test pump off logic
       if (testData.filter?.status === false) {
         domCache.saltValue.textContent = 'Pump Off';
         domCache.saltValue.classList.remove('skeleton-value');
         domCache.saltValue.classList.add('pump-off-indicator');
       }
-      
+
       expect(domCache.saltValue.textContent).toBe('Pump Off');
       expect(domCache.saltValue.classList.contains('pump-off-indicator')).toBe(true);
     });
@@ -395,7 +395,7 @@ describe('UI Optimization Tests', () => {
     test('should use hardware acceleration CSS classes', () => {
       const statusCard = document.getElementById('saltCard');
       const computedStyle = window.getComputedStyle(statusCard);
-      
+
       // Check if transform is applied (hardware acceleration)
       expect(computedStyle.transform).toBe('translateZ(0)');
       expect(computedStyle.willChange).toBe('transform, opacity');
@@ -404,7 +404,7 @@ describe('UI Optimization Tests', () => {
     test('should have containment for performance', () => {
       const statusValue = document.getElementById('saltValue');
       const computedStyle = window.getComputedStyle(statusValue);
-      
+
       expect(computedStyle.contain).toBe('layout style paint');
     });
   });
@@ -425,12 +425,12 @@ describe('UI Optimization Tests', () => {
 
       const mockFn = jest.fn();
       const debouncedFn = debounce(mockFn, 100);
-      
+
       // Call many times
       for (let i = 0; i < 100; i++) {
         debouncedFn();
       }
-      
+
       // Should not throw or cause issues
       expect(() => debouncedFn()).not.toThrow();
     });
@@ -450,18 +450,18 @@ describe('UI Optimization Tests', () => {
 
       const mockFn = jest.fn();
       const debouncedFn = debounce(mockFn, 50);
-      
+
       debouncedFn();
-      
+
       // Clear before timeout
       setTimeout(() => {
         debouncedFn(); // This should reset the timeout
       }, 25);
-      
+
       setTimeout(() => {
         expect(mockFn).toHaveBeenCalledTimes(1);
         done();
       }, 100);
     });
   });
-}); 
+});

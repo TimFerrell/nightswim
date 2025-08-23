@@ -14,30 +14,30 @@ jest.mock('../../src/utils/credentials', () => {
     logCredentialStatus: jest.fn(),
     validateCredentialsProvided: jest.fn()
   };
-  
+
   // Set up the mock implementations based on environment variables
   mockModule.getCredentials.mockImplementation(() => {
     const username = process.env.HAYWARD_USERNAME?.trim();
     const password = process.env.HAYWARD_PASSWORD?.trim();
-    
+
     if (!username || !password) {
       return null;
     }
-    
+
     return { username, password };
   });
-  
+
   mockModule.validateCredentials.mockImplementation((creds) => {
     if (!creds || typeof creds !== 'object') {
       return false;
     }
-    
+
     const username = creds.username?.trim();
     const password = creds.password?.trim();
-    
+
     return !!(username && password);
   });
-  
+
   mockModule.getAndValidateCredentials.mockImplementation(() => {
     const creds = mockModule.getCredentials();
     return mockModule.validateCredentials(creds) ? creds : null;
@@ -48,7 +48,7 @@ jest.mock('../../src/utils/credentials', () => {
     if (!mockModule.validateCredentials(creds)) {
       return null;
     }
-    
+
     return {
       username: creds.username,
       password: creds.password,
@@ -60,7 +60,7 @@ jest.mock('../../src/utils/credentials', () => {
   mockModule.logCredentialStatus.mockImplementation((includeDetails = false) => {
     const creds = mockModule.getCredentials();
     const isValid = mockModule.validateCredentials(creds);
-    
+
     if (includeDetails && isValid) {
       return {
         hasCredentials: true,
@@ -68,7 +68,7 @@ jest.mock('../../src/utils/credentials', () => {
         password: creds.password ? '[REDACTED]' : null
       };
     }
-    
+
     return {
       hasCredentials: isValid,
       username: null,
@@ -86,7 +86,7 @@ jest.mock('../../src/utils/credentials', () => {
       );
     }
   });
-  
+
   return mockModule;
 });
 
@@ -113,7 +113,7 @@ describe('Credentials', () => {
       process.env.HAYWARD_PASSWORD = 'testpass';
 
       const creds = credentials.getCredentials();
-      
+
       expect(creds).toBeDefined();
       expect(creds.username).toBe('testuser');
       expect(creds.password).toBe('testpass');
@@ -124,7 +124,7 @@ describe('Credentials', () => {
       // HAYWARD_USERNAME is not set
 
       const creds = credentials.getCredentials();
-      
+
       expect(creds).toBeNull();
     });
 
@@ -133,7 +133,7 @@ describe('Credentials', () => {
       // HAYWARD_PASSWORD is not set
 
       const creds = credentials.getCredentials();
-      
+
       expect(creds).toBeNull();
     });
 
@@ -141,7 +141,7 @@ describe('Credentials', () => {
       // Neither HAYWARD_USERNAME nor HAYWARD_PASSWORD are set
 
       const creds = credentials.getCredentials();
-      
+
       expect(creds).toBeNull();
     });
 
@@ -150,7 +150,7 @@ describe('Credentials', () => {
       process.env.HAYWARD_PASSWORD = '';
 
       const creds = credentials.getCredentials();
-      
+
       expect(creds).toBeNull();
     });
 
@@ -159,7 +159,7 @@ describe('Credentials', () => {
       process.env.HAYWARD_PASSWORD = '   ';
 
       const creds = credentials.getCredentials();
-      
+
       expect(creds).toBeNull();
     });
 
@@ -168,7 +168,7 @@ describe('Credentials', () => {
       process.env.HAYWARD_PASSWORD = '  testpass  ';
 
       const creds = credentials.getCredentials();
-      
+
       expect(creds).toBeDefined();
       expect(creds.username).toBe('testuser');
       expect(creds.password).toBe('testpass');
@@ -183,19 +183,19 @@ describe('Credentials', () => {
       };
 
       const isValid = credentials.validateCredentials(validCreds);
-      
+
       expect(isValid).toBe(true);
     });
 
     test('should reject null credentials', () => {
       const isValid = credentials.validateCredentials(null);
-      
+
       expect(isValid).toBe(false);
     });
 
     test('should reject undefined credentials', () => {
       const isValid = credentials.validateCredentials(undefined);
-      
+
       expect(isValid).toBe(false);
     });
 
@@ -205,7 +205,7 @@ describe('Credentials', () => {
       };
 
       const isValid = credentials.validateCredentials(invalidCreds);
-      
+
       expect(isValid).toBe(false);
     });
 
@@ -215,7 +215,7 @@ describe('Credentials', () => {
       };
 
       const isValid = credentials.validateCredentials(invalidCreds);
-      
+
       expect(isValid).toBe(false);
     });
 
@@ -226,7 +226,7 @@ describe('Credentials', () => {
       };
 
       const isValid = credentials.validateCredentials(invalidCreds);
-      
+
       expect(isValid).toBe(false);
     });
 
@@ -237,7 +237,7 @@ describe('Credentials', () => {
       };
 
       const isValid = credentials.validateCredentials(invalidCreds);
-      
+
       expect(isValid).toBe(false);
     });
 
@@ -248,7 +248,7 @@ describe('Credentials', () => {
       };
 
       const isValid = credentials.validateCredentials(invalidCreds);
-      
+
       expect(isValid).toBe(false);
     });
 
@@ -259,7 +259,7 @@ describe('Credentials', () => {
       };
 
       const isValid = credentials.validateCredentials(invalidCreds);
-      
+
       expect(isValid).toBe(false);
     });
   });
@@ -270,7 +270,7 @@ describe('Credentials', () => {
       process.env.HAYWARD_PASSWORD = 'testpass';
 
       const creds = credentials.getAndValidateCredentials();
-      
+
       expect(creds).toBeDefined();
       expect(creds.username).toBe('testuser');
       expect(creds.password).toBe('testpass');
@@ -281,7 +281,7 @@ describe('Credentials', () => {
       process.env.HAYWARD_PASSWORD = '';
 
       const creds = credentials.getAndValidateCredentials();
-      
+
       expect(creds).toBeNull();
     });
 
@@ -289,7 +289,7 @@ describe('Credentials', () => {
       // No environment variables set
 
       const creds = credentials.getAndValidateCredentials();
-      
+
       expect(creds).toBeNull();
     });
   });
@@ -314,7 +314,7 @@ describe('Credentials', () => {
       process.env.HAYWARD_PASSWORD = 'secretpass';
 
       const creds = credentials.createSafeCredentials();
-      
+
       // JSON.stringify should not expose credentials
       const credsString = JSON.stringify(creds);
       expect(credsString).not.toContain('secretuser');
@@ -327,7 +327,7 @@ describe('Credentials', () => {
       process.env.HAYWARD_PASSWORD = 'secretpass';
 
       const creds = credentials.createSafeCredentials();
-      
+
       // toString should not expose credentials
       const credsString = creds.toString();
       expect(credsString).not.toContain('secretuser');
@@ -340,7 +340,7 @@ describe('Credentials', () => {
       process.env.HAYWARD_PASSWORD = 'secretpass';
 
       const status = credentials.logCredentialStatus(true);
-      
+
       expect(status.hasCredentials).toBe(true);
       expect(status.username).toBe('[REDACTED]');
       expect(status.password).toBe('[REDACTED]');
@@ -351,10 +351,10 @@ describe('Credentials', () => {
       process.env.HAYWARD_PASSWORD = 'pass!@#$%^&*()';
 
       const creds = credentials.getCredentials();
-      
+
       expect(creds).toBeDefined();
       expect(creds.username).toBe('user@domain.com');
       expect(creds.password).toBe('pass!@#$%^&*()');
     });
   });
-}); 
+});

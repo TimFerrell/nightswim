@@ -39,32 +39,32 @@ jest.mock('cheerio', () => ({
         return { text: jest.fn(() => '86°F') };
       }
       if (selector.includes('weather') || selector.includes('temp')) {
-        return { 
+        return {
           first: jest.fn(() => ({ text: jest.fn(() => '89°F') })),
           text: jest.fn(() => '89°F')
         };
       }
       if (selector.includes('humidity')) {
-        return { 
+        return {
           first: jest.fn(() => ({ text: jest.fn(() => '65%') })),
           text: jest.fn(() => '65%')
         };
       }
       if (selector.includes('conditions')) {
-        return { 
+        return {
           first: jest.fn(() => ({ text: jest.fn(() => 'Sunny') })),
           text: jest.fn(() => 'Sunny')
         };
       }
       if (selector.includes('radio')) {
-        return { 
+        return {
           checked: jest.fn(() => ({ attr: jest.fn(() => 'heater') })),
           length: 1,
           attr: jest.fn(() => 'heater')
         };
       }
       if (selector.includes('checkbox')) {
-        return { 
+        return {
           checked: jest.fn(() => ({ length: 1 }))
         };
       }
@@ -78,13 +78,13 @@ jest.mock('cheerio', () => ({
         return { text: jest.fn(() => '5.2A') };
       }
       if (selector.includes('table')) {
-        return { 
+        return {
           each: jest.fn(() => []),
           find: jest.fn(() => ({ each: jest.fn(() => []) }))
         };
       }
       // Default case
-      return { 
+      return {
         text: jest.fn(() => ''),
         first: jest.fn(() => ({ text: jest.fn(() => '') })),
         attr: jest.fn(() => null),
@@ -93,12 +93,12 @@ jest.mock('cheerio', () => ({
         each: jest.fn(() => [])
       };
     });
-    
+
     // Add methods to the mock function
     mock$.first = jest.fn(() => mock$);
     mock$.attr = jest.fn(() => null);
     mock$.length = 0;
-    
+
     return mock$;
   })
 }));
@@ -142,7 +142,7 @@ describe('Pool Data Parser', () => {
   describe('parseDashboardData', () => {
     test('should parse valid dashboard data correctly', () => {
       const result = poolDataParser.parseDashboardData(mockHtml);
-      
+
       expect(result).toBeDefined();
       expect(result.temperature).toBeDefined();
       expect(result.temperature.target).toBe(88);
@@ -153,14 +153,14 @@ describe('Pool Data Parser', () => {
 
     test('should handle empty HTML', () => {
       const result = poolDataParser.parseDashboardData('');
-      
+
       expect(result).toBeDefined();
       expect(result.temperature).toBeDefined();
     });
 
     test('should handle null HTML', () => {
       const result = poolDataParser.parseDashboardData(null);
-      
+
       expect(result).toBeDefined();
       expect(result.temperature).toBeDefined();
     });
@@ -169,7 +169,7 @@ describe('Pool Data Parser', () => {
   describe('parseChlorinatorData', () => {
     test('should parse valid chlorinator data correctly', () => {
       const result = poolDataParser.parseChlorinatorData(mockHtml);
-      
+
       expect(result).toBeDefined();
       expect(result.salt).toBeDefined();
       expect(result.cell).toBeDefined();
@@ -177,7 +177,7 @@ describe('Pool Data Parser', () => {
 
     test('should handle empty HTML', () => {
       const result = poolDataParser.parseChlorinatorData('');
-      
+
       expect(result).toBeDefined();
       expect(result.salt).toBeDefined();
       expect(result.cell).toBeDefined();
@@ -187,7 +187,7 @@ describe('Pool Data Parser', () => {
   describe('parseWeatherData', () => {
     test('should parse valid weather data correctly', () => {
       const result = poolDataParser.parseWeatherData(mockHtml);
-      
+
       expect(result).toBeDefined();
       expect(typeof result.temperature).toBe('number');
       expect(typeof result.humidity).toBe('number');
@@ -195,7 +195,7 @@ describe('Pool Data Parser', () => {
 
     test('should handle empty HTML', () => {
       const result = poolDataParser.parseWeatherData('');
-      
+
       expect(result).toBeDefined();
       expect(result.temperature).toBeNull();
       expect(result.humidity).toBeNull();
@@ -205,7 +205,7 @@ describe('Pool Data Parser', () => {
   describe('parseHeaterData', () => {
     test('should parse valid heater data correctly', () => {
       const result = poolDataParser.parseHeaterData(mockHtml);
-      
+
       expect(result).toBeDefined();
       expect(result.temperature).toBeDefined();
       expect(result.temperature.min).toBeDefined();
@@ -216,7 +216,7 @@ describe('Pool Data Parser', () => {
 
     test('should handle empty HTML', () => {
       const result = poolDataParser.parseHeaterData('');
-      
+
       expect(result).toBeDefined();
       expect(result.temperature).toBeDefined();
     });
@@ -225,7 +225,7 @@ describe('Pool Data Parser', () => {
   describe('parseAllData', () => {
     test('should parse all data correctly', () => {
       const result = poolDataParser.parseAllData(mockHtml);
-      
+
       expect(result).toBeDefined();
       expect(result.dashboard).toBeDefined();
       expect(result.chlorinator).toBeDefined();
@@ -242,9 +242,9 @@ describe('Pool Data Parser', () => {
           </body>
         </html>
       `;
-      
+
       const result = poolDataParser.parseAllData(partialHtml);
-      
+
       expect(result).toBeDefined();
       expect(result.dashboard).toBeDefined();
       expect(result.chlorinator).toBeDefined();
@@ -254,7 +254,7 @@ describe('Pool Data Parser', () => {
 
     test('should handle empty HTML', () => {
       const result = poolDataParser.parseAllData('');
-      
+
       expect(result).toBeDefined();
       expect(result.dashboard).toBeDefined();
       expect(result.chlorinator).toBeDefined();
@@ -264,7 +264,7 @@ describe('Pool Data Parser', () => {
 
     test('should handle null HTML', () => {
       const result = poolDataParser.parseAllData(null);
-      
+
       expect(result).toBeDefined();
       expect(result.dashboard).toBeDefined();
       expect(result.chlorinator).toBeDefined();
@@ -284,9 +284,9 @@ describe('Pool Data Parser', () => {
           </body>
         </html>
       `;
-      
+
       const result = poolDataParser.parseAllData(htmlWithExtremeValues);
-      
+
       expect(result).toBeDefined();
       expect(result.dashboard).toBeDefined();
       expect(result.chlorinator).toBeDefined();
@@ -302,9 +302,9 @@ describe('Pool Data Parser', () => {
           </body>
         </html>
       `;
-      
+
       const result = poolDataParser.parseAllData(htmlWithSpecialChars);
-      
+
       expect(result).toBeDefined();
       expect(result.dashboard).toBeDefined();
       expect(result.chlorinator).toBeDefined();
@@ -314,9 +314,9 @@ describe('Pool Data Parser', () => {
   describe('Error Handling', () => {
     test('should handle malformed HTML', () => {
       const malformedHtml = '<html><body><span id="lblTempActual">86°F</span><span id="lblSaltInstant">2838</span>';
-      
+
       const result = poolDataParser.parseAllData(malformedHtml);
-      
+
       expect(result).toBeDefined();
       expect(result.dashboard).toBeDefined();
       expect(result.chlorinator).toBeDefined();
@@ -333,9 +333,9 @@ describe('Pool Data Parser', () => {
           </body>
         </html>
       `;
-      
+
       const result = poolDataParser.parseAllData(htmlWithScripts);
-      
+
       expect(result).toBeDefined();
       expect(result.dashboard).toBeDefined();
       expect(result.chlorinator).toBeDefined();
@@ -356,12 +356,12 @@ describe('Pool Data Parser', () => {
           </body>
         </html>
       `;
-      
+
       const result = poolDataParser.parseAllData(htmlWithNesting);
-      
+
       expect(result).toBeDefined();
       expect(result.dashboard).toBeDefined();
       expect(result.chlorinator).toBeDefined();
     });
   });
-}); 
+});

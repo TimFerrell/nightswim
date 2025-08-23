@@ -18,13 +18,13 @@ const domCache = {
   filterPumpCard: null,
   weatherTempValue: null,
   weatherCard: null,
-  
+
   // Weather time series elements
   rainValue: null,
   heatIndexValue: null,
   weatherTimeSeriesAlertsValue: null,
   weatherTimeSeriesCard: null,
-  
+
   // Initialize cache
   init() {
     this.saltValue = document.getElementById('saltValue');
@@ -40,7 +40,7 @@ const domCache = {
     this.filterPumpCard = document.getElementById('filterPumpCard');
     this.weatherTempValue = document.getElementById('weatherTempValue');
     this.weatherCard = document.getElementById('weatherCard');
-    
+
     // Weather time series elements
     this.rainValue = document.getElementById('rainValue');
     this.heatIndexValue = document.getElementById('heatIndexValue');
@@ -67,20 +67,20 @@ const requestCache = {
   data: null,
   timestamp: 0,
   ttl: 5000, // 5 seconds cache
-  
+
   isValid() {
     return this.data && (Date.now() - this.timestamp) < this.ttl;
   },
-  
+
   set(data) {
     this.data = data;
     this.timestamp = Date.now();
   },
-  
+
   get() {
     return this.isValid() ? this.data : null;
   },
-  
+
   clear() {
     this.data = null;
     this.timestamp = 0;
@@ -102,14 +102,14 @@ let statsRefreshInterval = null;
  */
 const updateSaltAnnotations = (currentSalt) => {
   if (!saltSparkline) return;
-  
+
   const annotations = saltSparkline.options.plugins.annotation.annotations;
-  
+
   // Reset all annotations to low saturation
   annotations.tooLowRegion.backgroundColor = 'rgba(255, 255, 0, 0.05)';
   annotations.safeRegion.backgroundColor = 'rgba(0, 255, 0, 0.05)';
   annotations.tooHighRegion.backgroundColor = 'rgba(255, 0, 0, 0.05)';
-  
+
   // Increase saturation for the region containing current value
   if (currentSalt >= 2000 && currentSalt < 2700) {
     annotations.tooLowRegion.backgroundColor = 'rgba(255, 255, 0, 0.15)';
@@ -118,7 +118,7 @@ const updateSaltAnnotations = (currentSalt) => {
   } else if (currentSalt >= 3400 && currentSalt <= 4000) {
     annotations.tooHighRegion.backgroundColor = 'rgba(255, 0, 0, 0.15)';
   }
-  
+
   saltSparkline.update('none');
 };
 
@@ -144,7 +144,7 @@ const getWaterComfortLevel = (temperature) => {
 const getChartConfig = (type) => {
   // Detect dark mode
   const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-  
+
   const baseConfig = {
     responsive: true,
     maintainAspectRatio: false,
@@ -316,9 +316,9 @@ const initializeTempChart = () => {
   if (tempChart) {
     tempChart.destroy();
   }
-  
+
   const ctx = document.getElementById('tempChart').getContext('2d');
-  
+
   tempChart = new Chart(ctx, {
     type: 'line',
     data: {
@@ -370,9 +370,9 @@ const initializeElectricalChart = () => {
   if (electricalChart) {
     electricalChart.destroy();
   }
-  
+
   const ctx = document.getElementById('electricalChart').getContext('2d');
-  
+
   electricalChart = new Chart(ctx, {
     type: 'line',
     data: {
@@ -402,9 +402,9 @@ const initializeChemistryChart = () => {
   if (chemistryChart) {
     chemistryChart.destroy();
   }
-  
+
   const ctx = document.getElementById('chemistryChart').getContext('2d');
-  
+
   chemistryChart = new Chart(ctx, {
     type: 'line',
     data: {
@@ -433,25 +433,25 @@ const initializeChemistryChart = () => {
 // Debounced chart update function
 const debouncedUpdateCharts = debounce(async () => {
   const timeRange = document.getElementById('timeRange').value;
-  
+
   try {
     const response = await fetch(`/api/pool/timeseries?hours=${timeRange}`, {
       credentials: 'include'
     });
-    
+
     if (!response.ok) {
       throw new Error('Failed to fetch time series data');
     }
-    
+
     const result = await response.json();
-    
+
     if (!result.success || !result.data || result.data.length === 0) {
       document.getElementById('tempChartStatus').textContent = 'No data available';
       document.getElementById('electricalChartStatus').textContent = 'No data available';
       document.getElementById('chemistryChartStatus').textContent = 'No data available';
       return;
     }
-    
+
     // Process data for all charts
     const labels = result.data.map(point => new Date(point.timestamp));
     const waterTempData = result.data.map(point => point.waterTemp);
@@ -459,7 +459,7 @@ const debouncedUpdateCharts = debounce(async () => {
     const cellTempData = result.data.map(point => point.cellTemp);
     const cellVoltageData = result.data.map(point => point.cellVoltage);
     const saltData = result.data.map(point => point.saltInstant);
-    
+
     // Debug logging
     console.log('Chart data debug:', {
       dataPoints: result.data.length,
@@ -470,7 +470,7 @@ const debouncedUpdateCharts = debounce(async () => {
       sampleAirTemp: airTempData.slice(0, 3),
       sampleCellTemp: cellTempData.slice(0, 3)
     });
-    
+
     // Update temperature chart
     if (tempChart) {
       tempChart.data.labels = labels;
@@ -479,31 +479,31 @@ const debouncedUpdateCharts = debounce(async () => {
       tempChart.data.datasets[2].data = cellTempData;
       tempChart.update('none');
     }
-    
+
     // Update electrical chart
     if (electricalChart) {
       electricalChart.data.labels = labels;
       electricalChart.data.datasets[0].data = cellVoltageData;
       electricalChart.update('none');
     }
-    
+
     // Update chemistry chart
     if (chemistryChart) {
       chemistryChart.data.labels = labels;
       chemistryChart.data.datasets[0].data = saltData;
       chemistryChart.update('none');
     }
-    
+
     // Update status with data info
     const dataCount = result.data.length;
     const oldestTime = result.stats?.oldestTimestamp ? new Date(result.stats.oldestTimestamp).toLocaleTimeString() : 'N/A';
     const newestTime = result.stats?.newestTimestamp ? new Date(result.stats.newestTimestamp).toLocaleTimeString() : 'N/A';
     const statusText = `${dataCount} data points | ${oldestTime} - ${newestTime} | Updated: ${new Date().toLocaleTimeString()}`;
-    
+
     document.getElementById('tempChartStatus').textContent = statusText;
     document.getElementById('electricalChartStatus').textContent = statusText;
     document.getElementById('chemistryChartStatus').textContent = statusText;
-    
+
   } catch (error) {
     console.error('Chart update error:', error);
     document.getElementById('tempChartStatus').textContent = 'Error loading data';
@@ -521,14 +521,14 @@ const appendDataPoint = (dataPoint) => {
   const timestamp = new Date(dataPoint.timestamp);
   const timeRange = parseInt(document.getElementById('timeRange').value);
   const cutoffTime = new Date(Date.now() - (timeRange * 60 * 60 * 1000));
-  
+
   // Update temperature chart
   if (tempChart) {
     tempChart.data.labels.push(timestamp);
     tempChart.data.datasets[0].data.push(dataPoint.waterTemp);
     tempChart.data.datasets[1].data.push(dataPoint.airTemp);
     tempChart.data.datasets[2].data.push(dataPoint.cellTemp);
-    
+
     // Remove old data points
     while (tempChart.data.labels.length > 0 && tempChart.data.labels[0] < cutoffTime) {
       tempChart.data.labels.shift();
@@ -536,35 +536,35 @@ const appendDataPoint = (dataPoint) => {
       tempChart.data.datasets[1].data.shift();
       tempChart.data.datasets[2].data.shift();
     }
-    
+
     tempChart.update('active');
   }
-  
+
   // Update electrical chart
   if (electricalChart) {
     electricalChart.data.labels.push(timestamp);
     electricalChart.data.datasets[0].data.push(dataPoint.cellVoltage);
-    
+
     // Remove old data points
     while (electricalChart.data.labels.length > 0 && electricalChart.data.labels[0] < cutoffTime) {
       electricalChart.data.labels.shift();
       electricalChart.data.datasets[0].data.shift();
     }
-    
+
     electricalChart.update('active');
   }
-  
+
   // Update chemistry chart
   if (chemistryChart) {
     chemistryChart.data.labels.push(timestamp);
     chemistryChart.data.datasets[0].data.push(dataPoint.saltInstant);
-    
+
     // Remove old data points
     while (chemistryChart.data.labels.length > 0 && chemistryChart.data.labels[0] < cutoffTime) {
       chemistryChart.data.labels.shift();
       chemistryChart.data.datasets[0].data.shift();
     }
-    
+
     chemistryChart.update('active');
   }
 };
@@ -576,7 +576,7 @@ const startChartAutoRefresh = () => {
   if (chartRefreshInterval) {
     clearInterval(chartRefreshInterval);
   }
-  
+
   chartRefreshInterval = setInterval(() => {
     updateAllCharts();
     updateSparklines();
@@ -612,7 +612,7 @@ const startStatsAutoRefresh = () => {
   if (statsRefreshInterval) {
     clearInterval(statsRefreshInterval);
   }
-  
+
   statsRefreshInterval = setInterval(() => {
     loadPoolData();
     loadWeatherAlerts(); // Refresh weather alerts every 30 seconds
@@ -635,29 +635,29 @@ const stopStatsAutoRefresh = () => {
  */
 const updateStatusCards = (data) => {
   console.log('🔄 Updating status cards with data:', data);
-  
+
   // Initialize DOM cache if not done
   if (!domCache.saltValue) {
     domCache.init();
   }
-  
+
   // Update salt level card
   console.log('🧂 Salt data:', data.chlorinator?.salt);
-  
+
   if (data.chlorinator?.salt?.instant && data.chlorinator.salt.instant !== null && data.chlorinator.salt.instant !== '--') {
     console.log('🧂 Found salt element:', domCache.saltValue);
     if (domCache.saltValue) {
       domCache.saltValue.textContent = data.chlorinator.salt.instant;
       domCache.saltValue.classList.remove('skeleton-value');
       console.log('🧂 Updated salt value to:', data.chlorinator.salt.instant);
-      
+
       // Update annotation colors based on current salt value
       updateSaltAnnotations(data.chlorinator.salt.instant);
     }
-    
+
     // Fetch updated rolling average
     fetchSaltRollingAverage();
-    
+
     // Mark as loaded
     if (domCache.saltCard) {
       domCache.saltCard.classList.add('loaded');
@@ -681,7 +681,7 @@ const updateStatusCards = (data) => {
   const waterTempValue = document.getElementById('waterTempValue');
   const waterTempComfort = document.getElementById('waterTempComfort');
   const waterTempCard = document.getElementById('waterTempCard');
-  
+
   if (data.dashboard?.temperature?.actual && data.dashboard.temperature.actual !== null && data.dashboard.temperature.actual !== '--') {
     console.log('🌊 Found water temp element:', waterTempValue);
     if (waterTempValue) {
@@ -690,7 +690,7 @@ const updateStatusCards = (data) => {
       waterTempValue.classList.remove('pump-off-indicator');
       console.log('🌊 Updated water temp value to:', Math.round(data.dashboard.temperature.actual));
     }
-    
+
     if (waterTempComfort) {
       const temp = parseFloat(data.dashboard.temperature.actual);
       if (!isNaN(temp)) {
@@ -699,7 +699,7 @@ const updateStatusCards = (data) => {
         console.log('🌊 Updated comfort level to:', getWaterComfortLevel(temp));
       }
     }
-    
+
     // Mark as loaded
     if (waterTempCard) {
       waterTempCard.classList.add('loaded');
@@ -733,13 +733,13 @@ const updateStatusCards = (data) => {
   const cellVoltageValue = document.getElementById('cellVoltageValue');
   const cellVoltageStatus = document.getElementById('cellVoltageStatus');
   const cellVoltageCard = document.getElementById('cellVoltageCard');
-  
+
   if (data.chlorinator?.cell?.voltage && data.chlorinator.cell.voltage !== null && data.chlorinator.cell.voltage !== '--') {
     if (cellVoltageValue) {
       cellVoltageValue.textContent = data.chlorinator.cell.voltage;
       cellVoltageValue.classList.remove('skeleton-value');
     }
-    
+
     if (cellVoltageStatus) {
       const voltage = parseFloat(data.chlorinator.cell.voltage);
       if (!isNaN(voltage)) {
@@ -747,7 +747,7 @@ const updateStatusCards = (data) => {
         cellVoltageStatus.classList.remove('skeleton-text');
       }
     }
-    
+
     // Mark as loaded
     if (cellVoltageCard) {
       cellVoltageCard.classList.add('loaded');
@@ -764,17 +764,17 @@ const updateStatusCards = (data) => {
   if (data.filter?.status !== null && data.filter?.status !== undefined) {
     const filterPumpValue = document.getElementById('filterPumpValue');
     const filterPumpState = document.getElementById('filterPumpState');
-    
+
     if (filterPumpValue) {
       filterPumpValue.textContent = data.filter.status ? 'ON' : 'OFF';
       filterPumpValue.classList.remove('skeleton-value');
     }
-    
+
     if (filterPumpState) {
       filterPumpState.textContent = data.filter.status ? 'Running' : 'Stopped';
       filterPumpState.classList.remove('skeleton-text');
     }
-    
+
     // Mark as loaded
     const filterPumpCard = document.getElementById('filterPumpCard');
     if (filterPumpCard) {
@@ -789,7 +789,7 @@ const updateStatusCards = (data) => {
       weatherTempValue.textContent = Math.round(data.weather.temperature);
       weatherTempValue.classList.remove('skeleton-value');
     }
-    
+
     // Mark as loaded
     const weatherCard = document.getElementById('weatherCard');
     if (weatherCard) {
@@ -828,7 +828,7 @@ const loadWeatherAlerts = async () => {
 
     const alertsResult = await alertsResponse.json();
     const historyResult = await historyResponse.json();
-    
+
     if (!alertsResult.success) {
       throw new Error(alertsResult.error || 'Invalid weather alerts response format');
     }
@@ -843,18 +843,18 @@ const loadWeatherAlerts = async () => {
     console.log(`✅ Weather alerts loaded in ${loadTime}ms`);
     console.log('📊 Weather alerts data:', alertsData);
     console.log('📊 Weather alerts history:', historyData);
-    
+
     // Update weather alerts card with both active alerts and 24-hour count
     updateWeatherAlertsCard(alertsData, historyData);
 
   } catch (error) {
     console.error('Error loading weather alerts:', error);
     // Show error state in the card
-    updateWeatherAlertsCard({ 
-      hasActiveAlerts: false, 
-      alertCount: 0, 
+    updateWeatherAlertsCard({
+      hasActiveAlerts: false,
+      alertCount: 0,
       alerts: [],
-      error: error.message 
+      error: error.message
     }, { alerts: [] });
   }
 };
@@ -864,12 +864,12 @@ const loadWeatherAlerts = async () => {
  */
 const updateWeatherAlertsCard = (alertsData, historyData) => {
   console.log('🔄 Updating weather alerts card with data:', alertsData);
-  
+
   const weatherAlertsValue = document.getElementById('weatherAlertsValue');
   const weatherAlertsContainer = document.getElementById('weatherAlertsContainer');
   const weatherAlertsPast24H = document.getElementById('weatherAlertsPast24H');
   const weatherAlertsCard = document.getElementById('weatherAlertsCard');
-  
+
   if (!weatherAlertsValue || !weatherAlertsContainer || !weatherAlertsPast24H) {
     console.warn('Weather alerts DOM elements not found');
     return;
@@ -880,16 +880,16 @@ const updateWeatherAlertsCard = (alertsData, historyData) => {
     weatherAlertsValue.textContent = '!';
     weatherAlertsValue.classList.remove('skeleton-value', 'has-alerts', 'no-alerts');
     weatherAlertsValue.classList.add('error');
-    
+
     // Show error message in container
     weatherAlertsContainer.innerHTML = `<div class="no-alerts-message" style="color: var(--color-error);">Error: ${alertsData.error}</div>`;
-    
+
     // Update 24-hour count
     if (weatherAlertsPast24H) {
       weatherAlertsPast24H.textContent = 'Error';
       weatherAlertsPast24H.classList.remove('skeleton-text');
     }
-    
+
     // Mark as loaded
     if (weatherAlertsCard) {
       weatherAlertsCard.classList.add('loaded');
@@ -902,7 +902,7 @@ const updateWeatherAlertsCard = (alertsData, historyData) => {
     weatherAlertsValue.textContent = alertsData.alertCount;
     weatherAlertsValue.classList.remove('skeleton-value', 'no-alerts', 'error');
     weatherAlertsValue.classList.add('has-alerts');
-    
+
     // Log active alerts to console
     console.log('⚠️ Currently active weather alerts:');
     alertsData.alerts.forEach((alert, index) => {
@@ -913,34 +913,34 @@ const updateWeatherAlertsCard = (alertsData, historyData) => {
       console.log('');
     });
     console.log(`📊 Total active alerts: ${alertsData.alertCount}`);
-    
+
     // Clear container and add alert items
     weatherAlertsContainer.innerHTML = '';
-    
+
     alertsData.alerts.forEach(alert => {
       const alertItem = createWeatherAlertItem(alert);
       weatherAlertsContainer.appendChild(alertItem);
     });
-    
+
   } else {
     // No active alerts
     weatherAlertsValue.textContent = '0';
     weatherAlertsValue.classList.remove('skeleton-value', 'has-alerts', 'error');
     weatherAlertsValue.classList.add('no-alerts');
-    
+
     // Log no active alerts to console
     console.log('✅ No currently active weather alerts');
-    
+
     // Clear container - no message needed
     weatherAlertsContainer.innerHTML = '';
   }
-  
+
   // Update 24-hour count
   if (weatherAlertsPast24H) {
     const past24HCount = historyData?.alerts?.length || 0;
     weatherAlertsPast24H.textContent = `${past24HCount} Warnings`;
     weatherAlertsPast24H.classList.remove('skeleton-text');
-    
+
     // Log alerts in the past 24 hours to console
     if (historyData?.alerts && historyData.alerts.length > 0) {
       console.log('📅 Alerts in the past 24 hours:');
@@ -956,7 +956,7 @@ const updateWeatherAlertsCard = (alertsData, historyData) => {
       console.log('📅 No alerts in the past 24 hours');
     }
   }
-  
+
   // Mark as loaded
   if (weatherAlertsCard) {
     weatherAlertsCard.classList.add('loaded');
@@ -969,10 +969,10 @@ const updateWeatherAlertsCard = (alertsData, historyData) => {
 const createWeatherAlertItem = (alert) => {
   const alertItem = document.createElement('div');
   alertItem.className = `weather-alert-item ${getSeverityClass(alert.severity)}`;
-  
+
   const severityClass = getSeverityClass(alert.severity);
   const severityText = getSeverityText(alert.severity);
-  
+
   alertItem.innerHTML = `
     <div class="weather-alert-header">
       <h4 class="weather-alert-title">${alert.event}</h4>
@@ -983,7 +983,7 @@ const createWeatherAlertItem = (alert) => {
       Until ${formatTime(alert.endTime)}
     </div>
   `;
-  
+
   return alertItem;
 };
 
@@ -992,15 +992,15 @@ const createWeatherAlertItem = (alert) => {
  */
 const getSeverityClass = (severity) => {
   switch (severity?.toLowerCase()) {
-    case 'extreme':
-    case 'severe':
-      return 'severe';
-    case 'moderate':
-      return 'moderate';
-    case 'minor':
-    case 'unknown':
-    default:
-      return 'minor';
+  case 'extreme':
+  case 'severe':
+    return 'severe';
+  case 'moderate':
+    return 'moderate';
+  case 'minor':
+  case 'unknown':
+  default:
+    return 'minor';
   }
 };
 
@@ -1009,17 +1009,17 @@ const getSeverityClass = (severity) => {
  */
 const getSeverityText = (severity) => {
   switch (severity?.toLowerCase()) {
-    case 'extreme':
-      return 'Extreme';
-    case 'severe':
-      return 'Severe';
-    case 'moderate':
-      return 'Moderate';
-    case 'minor':
-      return 'Minor';
-    case 'unknown':
-    default:
-      return 'Unknown';
+  case 'extreme':
+    return 'Extreme';
+  case 'severe':
+    return 'Severe';
+  case 'moderate':
+    return 'Moderate';
+  case 'minor':
+    return 'Minor';
+  case 'unknown':
+  default:
+    return 'Unknown';
   }
 };
 
@@ -1029,7 +1029,7 @@ const getSeverityText = (severity) => {
 const truncateText = (text, maxLength) => {
   if (!text) return '';
   if (text.length <= maxLength) return text;
-  return text.substring(0, maxLength) + '...';
+  return `${text.substring(0, maxLength)  }...`;
 };
 
 /**
@@ -1119,15 +1119,15 @@ const updateWeatherTimeSeriesCard = (data) => {
 
   // Update metric values
   const metrics = data.metrics || {};
-  
+
   // Rain value
   rainValue.textContent = metrics.totalRain24h || '0.00';
   rainValue.classList.remove('skeleton-value', 'error');
-  
+
   // Heat index value
   heatIndexValue.textContent = metrics.maxHeatIndex7d || '--';
   heatIndexValue.classList.remove('skeleton-value', 'error');
-  
+
   // Alerts count
   weatherTimeSeriesAlertsValue.textContent = data.alertCount7d || '0';
   weatherTimeSeriesAlertsValue.classList.remove('skeleton-value', 'error');
@@ -1156,7 +1156,7 @@ const updateWeatherTimeSeriesChart = (data) => {
   const labels = dailyData.map(day => day.date);
   const temperatures = dailyData.map(day => (day.maxTemp + day.minTemp) / 2); // Average temp
   const precipitation = dailyData.map(day => day.totalPrecipitation || 0);
-  
+
   // Create alerts data (1 for days with alerts, 0 for days without)
   const alertsData = labels.map(date => {
     const hasAlert = extremeEvents.some(event => event.date === date);
@@ -1199,7 +1199,7 @@ const loadPoolData = async (retryCount = 0) => {
     const data = result.data;
     const loadTime = Date.now() - startTime;
     console.log(`✅ Pool data loaded in ${loadTime}ms from ${result.source}`);
-    
+
     // Debug: Log the exact data structure
     console.log('🔍 Raw data structure:', JSON.stringify(data, null, 2));
     console.log('🔍 Salt instant value:', data.chlorinator?.salt?.instant, 'Type:', typeof data.chlorinator?.salt?.instant);
@@ -1207,7 +1207,7 @@ const loadPoolData = async (retryCount = 0) => {
     console.log('🔍 Cell voltage value:', data.chlorinator?.cell?.voltage, 'Type:', typeof data.chlorinator?.cell?.voltage);
 
     // Check if we have valid data
-    const hasValidData = data.chlorinator?.salt?.instant !== null || 
+    const hasValidData = data.chlorinator?.salt?.instant !== null ||
                         data.dashboard?.temperature?.actual !== null ||
                         data.chlorinator?.cell?.voltage !== null;
 
@@ -1227,15 +1227,15 @@ const loadPoolData = async (retryCount = 0) => {
       initializeTempChart();
       initializeElectricalChart();
       initializeChemistryChart();
-      
+
       // Initialize spark lines
       setTimeout(() => {
         initializeSparklines();
         updateSparklines();
       }, 100);
-      
+
       updateAllCharts();
-      
+
       // Start auto-refresh
       startChartAutoRefresh();
       startStatsAutoRefresh();
@@ -1251,14 +1251,14 @@ const loadPoolData = async (retryCount = 0) => {
 
   } catch (error) {
     console.error('Error loading pool data:', error);
-    
+
     // Retry on error if we haven't exceeded retry limit
     if (retryCount < 3) {
       console.log(`⚠️ Error occurred, retrying in 2 seconds... (attempt ${retryCount + 1}/3)`);
       setTimeout(() => loadPoolData(retryCount + 1), 2000);
       return;
     }
-    
+
     // Show error state after all retries failed
     const statusGrid = document.getElementById('statusGrid');
     if (statusGrid) {
@@ -1304,7 +1304,7 @@ const initializeSparklines = () => {
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: { 
+          plugins: {
             legend: { display: false },
             annotation: {
               annotations: {
@@ -1343,7 +1343,7 @@ const initializeSparklines = () => {
           },
           scales: {
             x: { display: false },
-            y: { 
+            y: {
               display: false,
               min: 2000,
               max: 4000,
@@ -1526,16 +1526,16 @@ const initializeSparklines = () => {
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: { 
+          plugins: {
             legend: { display: false },
             tooltip: {
               mode: 'index',
               intersect: false,
               callbacks: {
-                title: function(tooltipItems) {
+                title(tooltipItems) {
                   return new Date(tooltipItems[0].parsed.x).toLocaleDateString();
                 },
-                label: function(context) {
+                label(context) {
                   const label = context.dataset.label;
                   const value = context.parsed.y;
                   if (label === 'Temperature') return `${label}: ${value}°F`;
@@ -1547,7 +1547,7 @@ const initializeSparklines = () => {
             }
           },
           scales: {
-            x: { 
+            x: {
               display: true,
               type: 'time',
               time: {
@@ -1557,7 +1557,7 @@ const initializeSparklines = () => {
                 }
               },
               grid: { display: false },
-              ticks: { 
+              ticks: {
                 maxTicksLimit: 7,
                 color: 'var(--color-text-muted)'
               }
@@ -1699,7 +1699,7 @@ const fetchSaltRollingAverage = async () => {
     const currentSalt = result.currentSalt;
     const trend = result.trend;
     const element = document.getElementById('saltAverage24H');
-    
+
     if (element) {
       if (average24H === null || average24H === undefined) {
         element.textContent = 'N/A';
@@ -1711,7 +1711,7 @@ const fetchSaltRollingAverage = async () => {
           const absTrend = Math.abs(trend);
           trendText = ` (${trendArrow} ${absTrend} PPM)`;
         }
-        
+
         element.textContent = `${average24H} PPM${trendText}`;
       }
     }
@@ -1727,7 +1727,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadPoolData();
   loadWeatherAlerts(); // Load weather alerts on page load
   loadWeatherTimeSeries(); // Load weather time series on page load
-  
+
   // Listen for dark mode changes
   const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
   darkModeMediaQuery.addEventListener('change', handleDarkModeChange);
@@ -1770,10 +1770,10 @@ const handleDarkModeChange = (e) => {
     weatherTimeSeriesChart.destroy();
     weatherTimeSeriesChart = null;
   }
-  
+
   // Reinitialize spark lines
   initializeSparklines();
-  
+
   // Update charts with current data
   updateAllCharts();
   updateSparklines();

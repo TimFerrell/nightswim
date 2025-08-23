@@ -37,7 +37,7 @@ describe('TimeSeriesService', () => {
 
       service.addDataPoint(dataPoint);
       const dataPoints = service.getDataPoints();
-      
+
       expect(dataPoints).toHaveLength(1);
       expect(dataPoints[0]).toEqual(dataPoint);
     });
@@ -45,7 +45,7 @@ describe('TimeSeriesService', () => {
     test('should limit data points to maxPoints', () => {
       // Clear existing data
       service.clearData();
-      
+
       // Add more than the default maxPoints (1440)
       for (let i = 0; i < 1450; i++) {
         const dataPoint = {
@@ -59,7 +59,7 @@ describe('TimeSeriesService', () => {
         };
         service.addDataPoint(dataPoint);
       }
-      
+
       const dataPoints = service.getDataPoints();
       expect(dataPoints).toHaveLength(1440); // Default maxPoints
       expect(dataPoints[0].saltInstant).toBe(2810); // Should be the 10th point
@@ -80,7 +80,7 @@ describe('TimeSeriesService', () => {
 
       service.addDataPoint(dataPoint1);
       service.addDataPoint(dataPoint2);
-      
+
       const dataPoints = service.getDataPoints();
       expect(dataPoints).toHaveLength(1);
       expect(dataPoints[0].saltInstant).toBe(2838); // Should use the first occurrence
@@ -99,7 +99,7 @@ describe('TimeSeriesService', () => {
 
       service.addDataPoint(dataPoint1);
       service.addDataPoint(dataPoint2);
-      
+
       const dataPoints = service.getDataPoints();
       expect(dataPoints).toHaveLength(2);
       expect(new Date(dataPoints[0].timestamp).getTime()).toBeLessThan(
@@ -126,7 +126,7 @@ describe('TimeSeriesService', () => {
 
       service.addDataPoint(dataPoint1);
       service.addDataPoint(dataPoint2);
-      
+
       const dataPoints = service.getDataPoints();
       expect(dataPoints).toHaveLength(2);
     });
@@ -173,7 +173,7 @@ describe('TimeSeriesService', () => {
 
       service.addDataPoint(dataPoint1);
       service.addDataPoint(dataPoint2);
-      
+
       const latestData = service.getLatestData();
       expect(latestData.saltInstant).toBe(2840);
     });
@@ -201,7 +201,7 @@ describe('TimeSeriesService', () => {
       service.addDataPoint(dataPoint1);
       service.addDataPoint(dataPoint2);
       service.addDataPoint(dataPoint3);
-      
+
       const stats = service.getStats();
       expect(stats.totalPoints).toBe(3);
       expect(stats.oldestTimestamp.toISOString()).toBe(dataPoint1.timestamp);
@@ -225,7 +225,7 @@ describe('TimeSeriesService', () => {
 
       service.addDataPoint(dataPoint);
       expect(service.getDataPoints()).toHaveLength(1);
-      
+
       service.clearData();
       expect(service.getDataPoints()).toHaveLength(0);
     });
@@ -245,7 +245,7 @@ describe('TimeSeriesService', () => {
 
       service.addDataPoint(dataPoint);
       const dataPoints = service.getDataPoints();
-      
+
       expect(dataPoints).toHaveLength(1);
       expect(dataPoints[0].saltInstant).toBeNull();
       expect(dataPoints[0].waterTemp).toBeNull();
@@ -261,7 +261,7 @@ describe('TimeSeriesService', () => {
 
       service.addDataPoint(dataPoint);
       const dataPoints = service.getDataPoints();
-      
+
       expect(dataPoints).toHaveLength(1);
       expect(dataPoints[0].saltInstant).toBe(2838);
       expect(dataPoints[0].waterTemp).toBeUndefined();
@@ -271,7 +271,7 @@ describe('TimeSeriesService', () => {
   describe('Performance', () => {
     test('should handle large datasets efficiently', () => {
       const startTime = Date.now();
-      
+
       // Add 1000 data points
       for (let i = 0; i < 1000; i++) {
         const dataPoint = {
@@ -285,17 +285,17 @@ describe('TimeSeriesService', () => {
         };
         service.addDataPoint(dataPoint);
       }
-      
+
       const endTime = Date.now();
       const dataPoints = service.getDataPoints();
-      
+
       expect(dataPoints).toHaveLength(1000);
       expect(endTime - startTime).toBeLessThan(5000); // Should complete within 5 seconds
     });
 
     test('should maintain performance with frequent updates', () => {
       const startTime = Date.now();
-      
+
       // Simulate frequent updates
       for (let i = 0; i < 100; i++) {
         const dataPoint = {
@@ -304,15 +304,15 @@ describe('TimeSeriesService', () => {
           waterTemp: 85 + (i % 5)
         };
         service.addDataPoint(dataPoint);
-        
+
         // Get data points frequently
         service.getDataPoints();
         service.getLatestData();
         service.getStats();
       }
-      
+
       const endTime = Date.now();
       expect(endTime - startTime).toBeLessThan(1000); // Should complete within 1 second
     });
   });
-}); 
+});

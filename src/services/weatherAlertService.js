@@ -7,11 +7,14 @@ const { influxDBService } = require('./influxDBService');
  * as range annotations in InfluxDB
  */
 class WeatherAlertService {
+  /**
+   *
+   */
   constructor() {
     this.baseUrl = 'https://api.weather.gov';
     this.userAgent = 'NightSwim Pool Monitor (https://github.com/timothyferrell/nightswim, contact@example.com)';
     this.influxDB = influxDBService;
-    
+
     // Configuration
     this.zipCode = process.env.POOL_ZIP_CODE || '90210';
     this.state = this.getStateFromZip(this.zipCode);
@@ -24,7 +27,7 @@ class WeatherAlertService {
    */
   async initialize() {
     if (this.initialized) return;
-    
+
     try {
       console.log(`🌍 Initializing weather alert service for ZIP code: ${this.zipCode}`);
       this.coordinates = await this.getCoordinatesFromZip(this.zipCode);
@@ -50,7 +53,7 @@ class WeatherAlertService {
 
     try {
       console.log(`🌤️ Fetching weather alerts for ${this.state}...`);
-      
+
       // Get active alerts for the state
       const alertsResponse = await axios.get(
         `${this.baseUrl}/alerts/active?area=${this.state}`,
@@ -102,7 +105,7 @@ class WeatherAlertService {
         // point-in-polygon algorithm for complex geometries
         return true; // For now, assume all alerts in the state affect us
       }
-      
+
       // If no geometry, check if it's a state-wide alert
       return true;
     } catch (error) {
@@ -118,21 +121,21 @@ class WeatherAlertService {
    */
   async storeWeatherAlerts(alerts) {
     let storedCount = 0;
-    
+
     for (const alert of alerts) {
       try {
         const alertData = this.parseAlertData(alert);
-        
+
         // Check if we already have this alert stored
         const existingAlerts = await this.influxDB.queryWeatherAlerts(
           new Date(alertData.startTime),
           new Date(alertData.endTime)
         );
-        
-        const alreadyStored = existingAlerts.some(existing => 
+
+        const alreadyStored = existingAlerts.some(existing =>
           existing.id === alertData.id
         );
-        
+
         if (!alreadyStored) {
           const success = await this.influxDB.storeWeatherAlert(alertData);
           if (success) {
@@ -146,7 +149,7 @@ class WeatherAlertService {
         console.error(`❌ Error storing alert ${alert.id}:`, error);
       }
     }
-    
+
     return storedCount;
   }
 
@@ -157,7 +160,7 @@ class WeatherAlertService {
    */
   parseAlertData(alert) {
     const properties = alert.properties;
-    
+
     return {
       id: alert.id,
       event: properties.event || 'Unknown Event',
@@ -179,17 +182,17 @@ class WeatherAlertService {
   async checkAndStoreAlerts() {
     try {
       console.log('🌤️ Checking for new weather alerts...');
-      
+
       const alerts = await this.getWeatherAlerts();
       const storedCount = await this.storeWeatherAlerts(alerts);
-      
+
       const result = {
         checked: true,
         totalAlerts: alerts.length,
         newAlertsStored: storedCount,
         timestamp: new Date().toISOString()
       };
-      
+
       console.log(`📊 Weather alert check complete: ${storedCount} new alerts stored`);
       return result;
     } catch (error) {
@@ -226,7 +229,7 @@ class WeatherAlertService {
   async getAlertStats(hours = 24) {
     const endTime = new Date();
     const startTime = new Date(endTime.getTime() - (hours * 60 * 60 * 1000));
-    
+
     return await this.influxDB.getWeatherAlertStats(startTime, endTime);
   }
 
@@ -251,7 +254,7 @@ class WeatherAlertService {
       '60601': 'IL',
       '60602': 'IL'
     };
-    
+
     return zipToState[zipCode] || 'CA'; // Default to CA
   }
 
@@ -281,10 +284,10 @@ class WeatherAlertService {
           lng: parseFloat(location.lon),
           displayName: location.display_name
         };
-      } else {
-        console.warn(`⚠️ Could not geocode ZIP code ${zipCode}, using fallback`);
-        return this.getFallbackCoordinates(zipCode);
       }
+      console.warn(`⚠️ Could not geocode ZIP code ${zipCode}, using fallback`);
+      return this.getFallbackCoordinates(zipCode);
+
     } catch (error) {
       console.error(`❌ Geocoding failed for ${zipCode}:`, error.message);
       return this.getFallbackCoordinates(zipCode);
@@ -403,11 +406,11 @@ class WeatherAlertService {
       '60601': { lat: 41.8781, lng: -87.6298, displayName: 'Chicago, IL' },
       '60602': { lat: 41.8781, lng: -87.6298, displayName: 'Chicago, IL' }
     };
-    
-    return zipToCoords[zipCode] || { 
-      lat: 34.1030, 
-      lng: -118.4105, 
-      displayName: 'Beverly Hills, CA (fallback)' 
+
+    return zipToCoords[zipCode] || {
+      lat: 34.1030,
+      lng: -118.4105,
+      displayName: 'Beverly Hills, CA (fallback)'
     };
   }
 
@@ -419,10 +422,10 @@ class WeatherAlertService {
     try {
       const activeAlerts = await this.getActiveAlerts();
       const hasAlerts = activeAlerts.length > 0;
-      
+
       return {
         hasActiveAlerts: hasAlerts,
-        activeAlerts: activeAlerts,
+        activeAlerts,
         alertCount: activeAlerts.length,
         mostSevereAlert: hasAlerts ? this.getMostSevereAlert(activeAlerts) : null,
         timestamp: new Date().toISOString()
@@ -446,14 +449,14 @@ class WeatherAlertService {
    */
   getMostSevereAlert(alerts) {
     const severityOrder = ['Extreme', 'Severe', 'Moderate', 'Minor', 'Unknown'];
-    
+
     return alerts.reduce((mostSevere, current) => {
       const currentIndex = severityOrder.indexOf(current.severity);
       const mostSevereIndex = severityOrder.indexOf(mostSevere.severity);
-      
+
       return currentIndex < mostSevereIndex ? current : mostSevere;
     });
   }
 }
 
-module.exports = WeatherAlertService; 
+module.exports = WeatherAlertService;

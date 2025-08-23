@@ -50,7 +50,7 @@ const getAndValidateCredentials = () => {
 const logCredentialStatus = (includeDetails = false) => {
   const creds = getCredentials();
   const isValid = validateCredentials(creds);
-  
+
   if (includeDetails && isValid) {
     return {
       hasCredentials: true,
@@ -58,7 +58,7 @@ const logCredentialStatus = (includeDetails = false) => {
       password: creds.password ? '[REDACTED]' : null
     };
   }
-  
+
   return {
     hasCredentials: isValid,
     username: null,
@@ -72,7 +72,7 @@ const createSafeCredentials = () => {
   if (!validateCredentials(creds)) {
     return null;
   }
-  
+
   return {
     username: creds.username,
     password: creds.password,

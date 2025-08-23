@@ -34,9 +34,9 @@ class PumpStateTracker {
       const changeType = newPumpStatus ? 'on' : 'off';
       const previousState = this.currentState ? 'ON' : 'OFF';
       const newState = newPumpStatus ? 'ON' : 'OFF';
-      
+
       console.log(`🔄 Pump state change detected: ${previousState} → ${newState}`);
-      
+
       // Update tracking state
       this.currentState = newPumpStatus;
       this.lastChangeTime = timestamp;
@@ -44,7 +44,7 @@ class PumpStateTracker {
 
       // Generate annotation
       await this.createPumpStateAnnotation(changeType, timestamp);
-      
+
       return true;
     }
 
@@ -59,12 +59,12 @@ class PumpStateTracker {
    */
   async createPumpStateAnnotation(changeType, timestamp) {
     const annotation = {
-      timestamp: timestamp,
+      timestamp,
       title: `Filter Pump ${changeType.toUpperCase()}`,
       description: `Filter pump automatically turned ${changeType}`,
       category: 'pump_state_change',
       metadata: {
-        changeType: changeType,
+        changeType,
         source: 'automatic_detection',
         component: 'filter_pump'
       }
@@ -73,16 +73,16 @@ class PumpStateTracker {
     try {
       console.log(`📝 Creating pump state annotation: ${annotation.title}`);
       const success = await influxDBService.storeAnnotation(annotation);
-      
+
       if (success) {
-        console.log(`✅ Pump state annotation created successfully`);
+        console.log('✅ Pump state annotation created successfully');
       } else {
-        console.error(`❌ Failed to create pump state annotation`);
+        console.error('❌ Failed to create pump state annotation');
       }
-      
+
       return success;
     } catch (error) {
-      console.error(`❌ Error creating pump state annotation:`, error);
+      console.error('❌ Error creating pump state annotation:', error);
       return false;
     }
   }
@@ -113,4 +113,4 @@ class PumpStateTracker {
 // Create singleton instance
 const pumpStateTracker = new PumpStateTracker();
 
-module.exports = pumpStateTracker; 
+module.exports = pumpStateTracker;

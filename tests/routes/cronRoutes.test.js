@@ -303,4 +303,4 @@ describe('Cron Routes', () => {
       expect(response.body.success).toBe(true);
     });
   });
-}); 
+});

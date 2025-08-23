@@ -46,12 +46,12 @@ jest.mock('cheerio', () => ({
       };
       return mockElement;
     };
-    
+
     // Add methods that cheerio provides
     mockCheerio.each = jest.fn((callback) => callback(0, mockCheerio('table')));
     mockCheerio.length = 1;
     mockCheerio.find = jest.fn(() => mockCheerio('th'));
-    
+
     return mockCheerio;
   })
 }));
@@ -165,7 +165,7 @@ describe('Pool Data Service - InfluxDB Integration', () => {
 
       // Verify InfluxDB storage was called
       expect(influxDBService.storeDataPoint).toHaveBeenCalledTimes(1);
-      
+
       const storedDataPoint = influxDBService.storeDataPoint.mock.calls[0][0];
       expect(storedDataPoint).toMatchObject({
         saltInstant: 3000,
@@ -196,7 +196,7 @@ describe('Pool Data Service - InfluxDB Integration', () => {
 
       // Verify InfluxDB storage was attempted
       expect(influxDBService.storeDataPoint).toHaveBeenCalledTimes(1);
-      
+
       // Verify the service still returns data even if storage fails
       expect(result).toBeDefined();
       expect(result.chlorinator).toBeDefined();
@@ -228,7 +228,7 @@ describe('Pool Data Service - InfluxDB Integration', () => {
 
       // Verify InfluxDB storage was called with null values
       expect(influxDBService.storeDataPoint).toHaveBeenCalledTimes(1);
-      
+
       const storedDataPoint = influxDBService.storeDataPoint.mock.calls[0][0];
       expect(storedDataPoint).toMatchObject({
         saltInstant: null,
@@ -269,4 +269,4 @@ describe('Pool Data Service - InfluxDB Integration', () => {
       consoleSpy.mockRestore();
     });
   });
-}); 
+});

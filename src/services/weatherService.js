@@ -20,16 +20,16 @@ class WeatherService {
     try {
       // OpenMeteo API for current conditions (free, no API key required)
       const url = `https://api.open-meteo.com/v1/forecast?latitude=${this.latitude}&longitude=${this.longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature&temperature_unit=fahrenheit&timezone=auto`;
-      
+
       console.log(`🌤️ Fetching real-time weather data for coordinates ${this.latitude},${this.longitude}...`);
-      
+
       const response = await axios.get(url, {
         timeout: 10000 // 10 second timeout
       });
-      
+
       if (response.data && response.data.current) {
         const current = response.data.current;
-        
+
         const weatherData = {
           temperature: Math.round(current.temperature_2m),
           unit: '°F',
@@ -39,16 +39,16 @@ class WeatherService {
           timestamp: new Date().toISOString(),
           source: 'OpenMeteo'
         };
-        
+
         console.log(`✅ Real-time weather data fetched: ${weatherData.temperature}°F (feels like ${weatherData.apparentTemperature}°F, ${weatherData.humidity}% humidity)`);
         return weatherData;
-      } else {
-        console.error('❌ Invalid weather data response:', response.data);
-        return null;
       }
+      console.error('❌ Invalid weather data response:', response.data);
+      return null;
+
     } catch (error) {
       console.error('❌ Weather API error:', error.message);
-      
+
       // Fallback to NWS if OpenMeteo fails
       console.log('🔄 Falling back to NWS API...');
       return await this.getNWSWeather();
@@ -71,14 +71,14 @@ class WeatherService {
       // Get current weather forecast
       const forecastUrl = `https://api.weather.gov/gridpoints/${gridInfo.office}/${gridInfo.gridX},${gridInfo.gridY}/forecast`;
       console.log(`🌤️ Fetching NWS weather data for ${gridInfo.office} grid ${gridInfo.gridX},${gridInfo.gridY}...`);
-      
+
       const response = await axios.get(forecastUrl, {
         timeout: 10000
       });
-      
+
       if (response.data && response.data.properties && response.data.properties.periods) {
         const currentPeriod = response.data.properties.periods[0];
-        
+
         const weatherData = {
           temperature: currentPeriod.temperature,
           unit: currentPeriod.temperatureUnit,
@@ -87,13 +87,13 @@ class WeatherService {
           timestamp: new Date().toISOString(),
           source: 'NWS'
         };
-        
+
         console.log(`✅ NWS weather data fetched: ${weatherData.temperature}°${weatherData.unit} (${weatherData.description})`);
         return weatherData;
-      } else {
-        console.error('❌ Invalid NWS weather data response:', response.data);
-        return null;
       }
+      console.error('❌ Invalid NWS weather data response:', response.data);
+      return null;
+
     } catch (error) {
       console.error('❌ NWS API error:', error.message);
       return null;
@@ -112,7 +112,7 @@ class WeatherService {
       const response = await axios.get(url, {
         timeout: 10000
       });
-      
+
       if (response.data && response.data.properties) {
         return {
           office: response.data.properties.cwa,
@@ -120,7 +120,7 @@ class WeatherService {
           gridY: response.data.properties.gridY
         };
       }
-      
+
       return null;
     } catch (error) {
       console.error('❌ Error getting office and grid:', error.message);
@@ -166,39 +166,39 @@ class WeatherService {
 
       // OpenMeteo Historical Weather API
       const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${this.latitude}&longitude=${this.longitude}&start_date=${startDate.toISOString().split('T')[0]}&end_date=${endDate.toISOString().split('T')[0]}&hourly=temperature_2m,relative_humidity_2m,precipitation&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&temperature_unit=fahrenheit&precipitation_unit=inch&timezone=auto`;
-      
+
       console.log(`📊 Fetching ${days} days of historical weather data...`);
-      
+
       const response = await axios.get(url, {
         timeout: 15000 // 15 second timeout for historical data
       });
-      
+
       if (response.data && response.data.hourly && response.data.daily) {
         const hourly = response.data.hourly;
         const daily = response.data.daily;
-        
+
         // Process hourly data for time series
         const timeSeriesData = [];
         for (let i = 0; i < hourly.time.length; i++) {
           const temp = hourly.temperature_2m[i];
           const humidity = hourly.relative_humidity_2m[i];
           const precipitation = hourly.precipitation[i] || 0;
-          
+
           // Calculate heat index if temperature and humidity are available
           let heatIndex = null;
           if (temp !== null && humidity !== null && temp >= 80) {
             heatIndex = this.calculateHeatIndex(temp, humidity);
           }
-          
+
           timeSeriesData.push({
             timestamp: hourly.time[i],
             temperature: temp,
-            humidity: humidity,
-            precipitation: precipitation,
-            heatIndex: heatIndex
+            humidity,
+            precipitation,
+            heatIndex
           });
         }
-        
+
         // Calculate daily summaries
         const dailySummaries = [];
         for (let i = 0; i < daily.time.length; i++) {
@@ -209,12 +209,12 @@ class WeatherService {
             totalPrecipitation: daily.precipitation_sum[i] || 0
           });
         }
-        
+
         // Calculate aggregated metrics
         const totalRain24h = this.calculateRain24h(timeSeriesData);
         const maxHeatIndex7d = this.calculateMaxHeatIndex(timeSeriesData);
         const extremeWeatherEvents = this.identifyExtremeWeatherEvents(dailySummaries);
-        
+
         const historicalData = {
           timeSeriesData,
           dailySummaries,
@@ -227,13 +227,13 @@ class WeatherService {
           },
           source: 'OpenMeteo Historical'
         };
-        
+
         console.log(`✅ Historical weather data fetched: ${totalRain24h}" rain (24h), ${maxHeatIndex7d}°F max heat index`);
         return historicalData;
-      } else {
-        console.error('❌ Invalid historical weather data response:', response.data);
-        return null;
       }
+      console.error('❌ Invalid historical weather data response:', response.data);
+      return null;
+
     } catch (error) {
       console.error('❌ Historical weather API error:', error.message);
       return null;
@@ -249,17 +249,17 @@ class WeatherService {
   calculateHeatIndex(temperature, humidity) {
     const T = temperature;
     const H = humidity;
-    
+
     // Only calculate heat index for temps 80°F and above with humidity > 40%
     if (T < 80 || H < 40) {
       return Math.round(T);
     }
-    
+
     // National Weather Service Heat Index Regression Formula
     // This is a 9-term polynomial that models how temperature and humidity combine
     // to create the perceived temperature (what it "feels like" to humans)
-    
-    const heatIndex = 
+
+    const heatIndex =
       -42.379 +                           // Base constant
       (2.04901523 * T) +                  // Linear temperature term
       (10.14333127 * H) +                 // Linear humidity term
@@ -269,7 +269,7 @@ class WeatherService {
       (0.00122874 * T * T * H) +          // High temp amplifies humidity effect
       (0.00085282 * T * H * H) +          // High humidity amplifies temperature effect
       (-0.00000199 * T * T * H * H);      // Correction for extreme conditions
-    
+
     // The formula can sometimes give values lower than actual temperature at low humidity
     // Heat index should never be less than the actual temperature
     return Math.round(Math.max(heatIndex, T));
@@ -302,7 +302,7 @@ class WeatherService {
    */
   identifyExtremeWeatherEvents(dailySummaries) {
     const events = [];
-    
+
     dailySummaries.forEach(day => {
       // Extreme heat (>95°F)
       if (day.maxTemp > 95) {
@@ -314,7 +314,7 @@ class WeatherService {
           description: `Extreme heat: ${day.maxTemp}°F`
         });
       }
-      
+
       // Heavy rain (>1 inch)
       if (day.totalPrecipitation > 1) {
         events.push({
@@ -325,7 +325,7 @@ class WeatherService {
           description: `Heavy rain: ${day.totalPrecipitation}" precipitation`
         });
       }
-      
+
       // Extreme cold (<32°F)
       if (day.minTemp < 32) {
         events.push({
@@ -337,7 +337,7 @@ class WeatherService {
         });
       }
     });
-    
+
     return events;
   }
 }
@@ -345,4 +345,4 @@ class WeatherService {
 // Create singleton instance
 const weatherService = new WeatherService();
 
-module.exports = weatherService; 
+module.exports = weatherService;

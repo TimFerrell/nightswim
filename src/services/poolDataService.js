@@ -157,7 +157,7 @@ const poolDataService = {
       // Weather data (non-blocking)
       weatherService.getCurrentWeather().then(data => ({
         type: 'weather',
-        data: data
+        data
       })).catch(error => ({
         type: 'weather',
         error: error.message
@@ -166,7 +166,7 @@ const poolDataService = {
 
     // Execute all requests in parallel
     const results = await Promise.allSettled(requests);
-    
+
     // Process results
     results.forEach(result => {
       if (result.status === 'fulfilled') {
@@ -200,7 +200,7 @@ const poolDataService = {
     // Store in InfluxDB for persistent storage (primary storage)
     const storageResult = await influxDBService.storeDataPoint(timeSeriesPoint);
     console.log('💾 InfluxDB storage result:', storageResult);
-    
+
     // Also store in local memory for immediate chart access
     timeSeriesService.addDataPoint(timeSeriesPoint);
 

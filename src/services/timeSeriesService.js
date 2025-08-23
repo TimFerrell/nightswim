@@ -20,17 +20,17 @@ class TimeSeriesService {
     this.dataPoints = [];
     this.retentionHours = 24; // Keep 24 hours of data
     this.maxPoints = 1440; // Maximum points (24 hours * 60 minutes)
-    
+
     // Clean up old data every hour
     setInterval(() => {
       this.cleanupOldData();
     }, 60 * 60 * 1000); // 1 hour
-    
+
     // Initial cleanup
     this.cleanupOldData();
   }
 
-    /**
+  /**
    * Add a new data point
    * @param {TimeSeriesPoint} dataPoint - The data point to add
    */
@@ -39,18 +39,18 @@ class TimeSeriesService {
     if (!dataPoint.timestamp) {
       dataPoint.timestamp = new Date().toISOString();
     }
-    
+
     this.dataPoints.push(dataPoint);
-    
+
     // Sort by timestamp to maintain chronological order
     this.dataPoints.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-    
+
     // Remove duplicates (same timestamp)
     this.dataPoints = this.dataPoints.filter((point, index, array) => {
       if (index === 0) return true;
       return point.timestamp !== array[index - 1].timestamp;
     });
-    
+
     // Keep only the last maxPoints
     if (this.dataPoints.length > this.maxPoints) {
       this.dataPoints = this.dataPoints.slice(-this.maxPoints);
@@ -65,7 +65,7 @@ class TimeSeriesService {
   getDataPoints(hours = 24) {
     const cutoffTime = new Date(Date.now() - (hours * 60 * 60 * 1000));
     const filteredPoints = this.dataPoints.filter(point => new Date(point.timestamp) > cutoffTime);
-    
+
     // Return data in chronological order
     return filteredPoints.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
   }
@@ -98,7 +98,7 @@ class TimeSeriesService {
     const beforeCount = this.dataPoints.length;
     this.dataPoints = this.dataPoints.filter(point => new Date(point.timestamp) > cutoffTime);
     const afterCount = this.dataPoints.length;
-    
+
     if (beforeCount !== afterCount) {
       console.log(`TimeSeriesService: Cleaned up ${beforeCount - afterCount} old data points`);
     }
@@ -112,7 +112,7 @@ class TimeSeriesService {
     const now = new Date();
     const oldestPoint = this.dataPoints.length > 0 ? new Date(this.dataPoints[0].timestamp) : null;
     const newestPoint = this.dataPoints.length > 0 ? new Date(this.dataPoints[this.dataPoints.length - 1].timestamp) : null;
-    
+
     return {
       totalPoints: this.dataPoints.length,
       retentionHours: this.retentionHours,

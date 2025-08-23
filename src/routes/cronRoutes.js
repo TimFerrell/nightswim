@@ -28,15 +28,15 @@ const weatherAlerts = new weatherAlertService();
 router.get('/check-alerts', async (req, res) => {
   try {
     console.log('⚠️ Alert cron job: Checking for weather alerts...');
-    
+
     // Check for new weather alerts and store them
     const alertResult = await weatherAlerts.checkAndStoreAlerts();
-    
+
     // Get current active alerts for response
     const activeAlerts = await weatherAlerts.getActiveAlerts();
-    
+
     console.log(`✅ Alert cron job: ${alertResult.newAlertsStored} new alerts stored, ${activeAlerts.length} currently active`);
-    
+
     res.json({
       success: true,
       message: 'Weather alert check completed',
@@ -54,11 +54,11 @@ router.get('/check-alerts', async (req, res) => {
         }))
       }
     });
-    
+
   } catch (error) {
     console.error('❌ Alert cron job: Weather alert check failed:', error);
-    res.status(500).json({ 
-      error: 'Weather alert check failed', 
+    res.status(500).json({
+      error: 'Weather alert check failed',
       message: error.message,
       timestamp: new Date().toISOString()
     });
@@ -72,36 +72,36 @@ router.get('/check-alerts', async (req, res) => {
 router.get('/collect-data', async (req, res) => {
   try {
     console.log('🕐 Cron job: Starting automated data collection...');
-    
+
     // Create a new session for the cron job
     const sessionId = `cron-${Date.now()}`;
     const session = sessionManager.getSession(sessionId);
-    
+
     // Authenticate using credentials
     const creds = credentials.getAndValidateCredentials();
     if (!creds) {
       console.error('❌ Cron job: No valid credentials available');
-      return res.status(401).json({ 
-        error: 'Authentication failed', 
+      return res.status(401).json({
+        error: 'Authentication failed',
         message: 'No valid credentials available',
         timestamp: new Date().toISOString()
       });
     }
-    
+
     const authResult = await session.authenticate(creds.username, creds.password);
-    
+
     if (!authResult.success) {
       console.error('❌ Cron job: Authentication failed:', authResult.message);
-      return res.status(401).json({ 
-        error: 'Authentication failed', 
+      return res.status(401).json({
+        error: 'Authentication failed',
         message: authResult.message,
         timestamp: new Date().toISOString()
       });
     }
-    
+
     // Fetch all pool data (this will automatically store in InfluxDB)
     const poolData = await poolDataService.fetchAllPoolData(session);
-    
+
     // Debug: Check if data was stored in InfluxDB
     console.log('🔍 Pool data collection completed, checking InfluxDB storage...');
     const endTime = new Date();
@@ -111,7 +111,7 @@ router.get('/collect-data', async (req, res) => {
     if (recentData.length > 0) {
       console.log('📝 Most recent data point:', recentData[recentData.length - 1]);
     }
-    
+
     // Check for weather alerts (non-blocking)
     let alertInfo = null;
     try {
@@ -128,9 +128,9 @@ router.get('/collect-data', async (req, res) => {
     } catch (alertError) {
       console.warn('⚠️ Weather alert check failed during data collection:', alertError.message);
     }
-    
+
     console.log('✅ Cron job: Data collection completed successfully');
-    
+
     res.json({
       success: true,
       message: 'Data collection completed',
@@ -143,11 +143,11 @@ router.get('/collect-data', async (req, res) => {
       },
       weatherAlerts: alertInfo
     });
-    
+
   } catch (error) {
     console.error('❌ Cron job: Data collection failed:', error);
-    res.status(500).json({ 
-      error: 'Data collection failed', 
+    res.status(500).json({
+      error: 'Data collection failed',
       message: error.message,
       timestamp: new Date().toISOString()
     });
@@ -161,18 +161,18 @@ router.get('/collect-data', async (req, res) => {
 router.get('/collect-weather', async (req, res) => {
   try {
     console.log('🌤️ Weather cron job: Starting weather data collection...');
-    
+
     // Fetch current weather data
     const weatherData = await weatherService.getCurrentWeather();
-    
+
     if (!weatherData) {
       console.error('❌ Weather cron job: Failed to fetch weather data');
-      return res.status(500).json({ 
+      return res.status(500).json({
         error: 'Weather data fetch failed',
         timestamp: new Date().toISOString()
       });
     }
-    
+
     // Store weather data in InfluxDB
     const timeSeriesPoint = {
       timestamp: new Date().toISOString(),
@@ -180,11 +180,11 @@ router.get('/collect-weather', async (req, res) => {
       weatherHumidity: weatherData.humidity || null,
       weatherSource: weatherData.source || 'unknown'
     };
-    
+
     await influxDBService.storeDataPoint(timeSeriesPoint);
-    
+
     console.log(`✅ Weather cron job: Weather data stored successfully (${weatherData.temperature}°F from ${weatherData.source})`);
-    
+
     res.json({
       success: true,
       message: 'Weather data collection completed',
@@ -195,15 +195,15 @@ router.get('/collect-weather', async (req, res) => {
         source: weatherData.source
       }
     });
-    
+
   } catch (error) {
     console.error('❌ Weather cron job: Weather collection failed:', error);
-    res.status(500).json({ 
-      error: 'Weather collection failed', 
+    res.status(500).json({
+      error: 'Weather collection failed',
       message: error.message,
       timestamp: new Date().toISOString()
     });
   }
 });
 
-module.exports = router; 
+module.exports = router;

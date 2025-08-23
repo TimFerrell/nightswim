@@ -83,13 +83,13 @@ describe('Pool Routes', () => {
     influxDBService.storeDataPoint.mockImplementation(mockInfluxDB.storeDataPoint);
     influxDBService.getCurrentSalt.mockImplementation(mockInfluxDB.getCurrentSalt);
     influxDBService.getSaltRollingAverage.mockImplementation(mockInfluxDB.getSaltRollingAverage);
-    
+
     timeSeriesService.addDataPoint.mockImplementation(mockTimeSeries.addDataPoint);
     timeSeriesService.getDataPoints.mockImplementation(mockTimeSeries.getDataPoints);
     timeSeriesService.getLatestData.mockImplementation(mockTimeSeries.getLatestData);
     timeSeriesService.clearData.mockImplementation(mockTimeSeries.clearData);
     timeSeriesService.getStats.mockImplementation(mockTimeSeries.getStats);
-    
+
     pumpStateTracker.checkStateChange.mockImplementation(mockPumpStateTracker.checkStateChange);
 
     // Import and register routes
@@ -388,4 +388,4 @@ describe('Pool Routes', () => {
       expect(endTime - startTime).toBeLessThan(5000); // Should complete within 5 seconds
     });
   });
-}); 
+});

@@ -11,7 +11,7 @@ describe('Constants', () => {
       expect(POOL_CONSTANTS.MSP_ID).toBeDefined();
       expect(POOL_CONSTANTS.BOW_ID).toBeDefined();
       expect(POOL_CONSTANTS.BOW_SYSTEM_ID).toBeDefined();
-      
+
       expect(typeof POOL_CONSTANTS.MSP_ID).toBe('string');
       expect(typeof POOL_CONSTANTS.BOW_ID).toBe('string');
       expect(typeof POOL_CONSTANTS.BOW_SYSTEM_ID).toBe('string');
@@ -32,7 +32,7 @@ describe('Constants', () => {
       expect(POOL_CONSTANTS.ENDPOINTS.CHLORINATOR_SETTINGS).toBeDefined();
       expect(POOL_CONSTANTS.ENDPOINTS.LIGHTS_SETTINGS).toBeDefined();
       expect(POOL_CONSTANTS.ENDPOINTS.SCHEDULES).toBeDefined();
-      
+
       expect(typeof POOL_CONSTANTS.ENDPOINTS.LOGIN).toBe('string');
       expect(typeof POOL_CONSTANTS.ENDPOINTS.DASHBOARD).toBe('string');
     });
@@ -41,7 +41,7 @@ describe('Constants', () => {
       expect(POOL_CONSTANTS.UNITS).toBeDefined();
       expect(POOL_CONSTANTS.UNITS.TEMPERATURE).toBeDefined();
       expect(POOL_CONSTANTS.UNITS.SALT).toBeDefined();
-      
+
       expect(typeof POOL_CONSTANTS.UNITS.TEMPERATURE).toBe('string');
       expect(typeof POOL_CONSTANTS.UNITS.SALT).toBe('string');
     });
@@ -49,7 +49,7 @@ describe('Constants', () => {
     test('should have required defaults', () => {
       expect(POOL_CONSTANTS.DEFAULTS).toBeDefined();
       expect(POOL_CONSTANTS.DEFAULTS.SYSTEM_STATUS).toBeDefined();
-      
+
       expect(typeof POOL_CONSTANTS.DEFAULTS.SYSTEM_STATUS).toBe('string');
     });
 
@@ -78,10 +78,10 @@ describe('Constants', () => {
   describe('Constants Structure', () => {
     test('should be immutable', () => {
       const originalMspId = POOL_CONSTANTS.MSP_ID;
-      
+
       // Attempt to modify (should not affect the original)
       POOL_CONSTANTS.MSP_ID = 'MODIFIED_ID';
-      
+
       expect(POOL_CONSTANTS.MSP_ID).toBe(originalMspId);
     });
 
@@ -117,7 +117,7 @@ describe('Constants', () => {
     test('should build system URL correctly', () => {
       const endpoint = '/test/endpoint.aspx';
       const url = buildSystemUrl(endpoint);
-      
+
       expect(url).toContain(endpoint);
       expect(url).toContain(`mspID=${POOL_CONSTANTS.MSP_ID}`);
       expect(url).toContain(`bowID=${POOL_CONSTANTS.BOW_ID}`);
@@ -126,7 +126,7 @@ describe('Constants', () => {
 
     test('should build dashboard URL correctly', () => {
       const url = buildDashboardUrl();
-      
+
       expect(url).toContain(POOL_CONSTANTS.ENDPOINTS.DASHBOARD);
       expect(url).toContain(`mspID=${POOL_CONSTANTS.MSP_ID}`);
       expect(url).not.toContain('bowID=');
@@ -135,10 +135,10 @@ describe('Constants', () => {
 
     test('should handle empty endpoint in buildSystemUrl', () => {
       const url = buildSystemUrl('');
-      
+
       expect(url).toContain('mspID=');
       expect(url).toContain('bowID=');
       expect(url).toContain('bowSystemID=');
     });
   });
-}); 
+});

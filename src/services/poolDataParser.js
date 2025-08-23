@@ -90,7 +90,7 @@ const parseDashboardData = (html) => {
         return parseFloat(match[1]);
       }
     }
-    
+
     // Fallback selectors if lblCurrentTemp is not found
     const fallbackSelectors = [
       '[id*="lblAirTemp"]',
@@ -106,7 +106,7 @@ const parseDashboardData = (html) => {
       '[id*="WeatherTemp"]',
       '[id*="weatherTemp"]'
     ];
-    
+
     for (const selector of fallbackSelectors) {
       const temp = $(selector).text().trim();
       if (temp) {
@@ -116,7 +116,7 @@ const parseDashboardData = (html) => {
         }
       }
     }
-    
+
     return null;
   };
 
@@ -153,32 +153,32 @@ const parseFilterData = (html) => {
         '[id*="filter"]',
         '[id*="pump"]'
       ];
-      
+
       let status = null;
-      
+
       for (const selector of statusSelectors) {
         const element = $(selector);
         if (element.length > 0) {
           const text = element.text().trim();
           console.log(`🔍 Filter status selector "${selector}": "${text}"`);
-          
+
           if (text) {
             // Check for various "on" indicators
-            const isOn = text.toLowerCase().includes('on') || 
+            const isOn = text.toLowerCase().includes('on') ||
                         text.toLowerCase().includes('running') ||
                         text.toLowerCase().includes('active') ||
                         text.toLowerCase().includes('enabled') ||
                         text.toLowerCase().includes('1') ||
                         text.toLowerCase().includes('true');
-            
+
             // Check for various "off" indicators
-            const isOff = text.toLowerCase().includes('off') || 
+            const isOff = text.toLowerCase().includes('off') ||
                          text.toLowerCase().includes('stopped') ||
                          text.toLowerCase().includes('inactive') ||
                          text.toLowerCase().includes('disabled') ||
                          text.toLowerCase().includes('0') ||
                          text.toLowerCase().includes('false');
-            
+
             if (isOn) {
               status = true;
               console.log(`✅ Filter pump detected as ON via selector "${selector}"`);
@@ -191,30 +191,30 @@ const parseFilterData = (html) => {
           }
         }
       }
-      
+
       // If no clear status found, try to infer from diagnostic text
       if (status === null) {
-        const diagnostic = $('[id*="divPump"]').text().trim() || 
+        const diagnostic = $('[id*="divPump"]').text().trim() ||
                           $('[id*="pump"]').text().trim() ||
                           $('[id*="filter"]').text().trim();
-        
+
         if (diagnostic) {
           console.log(`🔍 Filter diagnostic text: "${diagnostic}"`);
-          const isOn = diagnostic.toLowerCase().includes('on') || 
+          const isOn = diagnostic.toLowerCase().includes('on') ||
                       diagnostic.toLowerCase().includes('running') ||
                       diagnostic.toLowerCase().includes('active');
-          
+
           if (isOn) {
             status = true;
-            console.log(`✅ Filter pump inferred as ON from diagnostic text`);
+            console.log('✅ Filter pump inferred as ON from diagnostic text');
           }
         }
       }
-      
+
       console.log(`🏊‍♂️ Final filter pump status: ${status}`);
       return status;
     })(),
-    diagnostic: $('[id*="divPump"]').text().trim() || 
+    diagnostic: $('[id*="divPump"]').text().trim() ||
                 $('[id*="pump"]').text().trim() ||
                 $('[id*="filter"]').text().trim() || null
   };
@@ -276,7 +276,7 @@ const parseChlorinatorData = (html) => {
       const match = rawText.match(/(\d+)/);
       return match ? parseInt(match[1]) : null;
     }
-    
+
     // Try fallback selectors
     const fallbackSelectors = [
       '[id*="boxchlppm"]',
@@ -286,7 +286,7 @@ const parseChlorinatorData = (html) => {
       '[id*="InstantSalt"]',
       '[id*="SaltLevel"]'
     ];
-    
+
     for (const selector of fallbackSelectors) {
       const text = $(selector).text().trim();
       if (text) {
@@ -296,7 +296,7 @@ const parseChlorinatorData = (html) => {
         }
       }
     }
-    
+
     return null;
   };
 
@@ -421,7 +421,7 @@ const parseWeatherData = (html) => {
   }
 
   const $ = cheerio.load(html);
-  
+
   // Helper function to extract numeric value
   const extractNumeric = ($, selector) => {
     const text = $(selector).first().text().trim();
@@ -431,7 +431,7 @@ const parseWeatherData = (html) => {
     }
     return null;
   };
-  
+
   return {
     temperature: extractNumeric($, '[id*="weather"], [id*="temp"], [class*="weather"], [class*="temp"]'),
     humidity: extractNumeric($, '[id*="humidity"], [class*="humidity"]'),
