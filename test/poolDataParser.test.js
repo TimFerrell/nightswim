@@ -1,11 +1,56 @@
 // Mock cheerio to avoid ES module issues
 jest.mock('cheerio', () => ({
-  load: jest.fn(() => {
+  load: jest.fn((html) => {
     const mockCheerio = (selector) => {
+      const selectorStr = String(selector);
+      
+      // Helper function to check if element exists in HTML
+      const elementExists = (selector, html) => {
+        if (!html || html === '<html><body></body></html>') return false;
+        
+        // Handle ID selectors
+        if (selector.includes('#')) {
+          const id = selector.replace('#', '');
+          return html.includes(`id="${id}"`);
+        }
+        
+        // Handle class selectors
+        if (selector.includes('.')) {
+          const className = selector.replace('.', '');
+          return html.includes(`class="${className}"`);
+        }
+        
+        // Handle attribute selectors like [id*="lblTempTarget"]
+        if (selector.includes('[id*=')) {
+          const match = selector.match(/\[id\*="([^"]+)"\]/);
+          if (match) {
+            return html.includes(match[1]);
+          }
+        }
+        
+        // Handle input selectors
+        if (selector.includes('input[type')) {
+          return html.includes('<input');
+        }
+        
+        return false;
+      };
+      
+      const hasElement = elementExists(selectorStr, html);
+      
       const mockElement = {
         text: jest.fn(() => {
-          // Handle CSS attribute selectors like [id*="lblTempTarget"]
-          const selectorStr = String(selector);
+          // Return empty string for missing elements
+          if (!hasElement) {
+            return '';
+          }
+          
+          // Handle specific test cases based on the HTML content
+          if (html && html.includes('75.5°F') && selectorStr.includes('lblTempTarget')) return '75.5°F';
+          if (html && html.includes('85.2°F') && selectorStr.includes('lblTempActual')) return '85.2°F';
+          if (html && html.includes('OFF') && selectorStr.includes('divfilterStatus')) return 'OFF';
+          
+          // Default test values
           if (selectorStr.includes('lblTempTarget') || selectorStr === '#lblTempTarget') return '75°F';
           if (selectorStr.includes('lblTempActual') || selectorStr === '#lblTempActual') return '85°F';
           if (selectorStr.includes('divfilterStatus') || selectorStr === '#divfilterStatus') return 'ON';
@@ -21,30 +66,133 @@ jest.mock('cheerio', () => ({
           if (selectorStr.includes('boxchlppm') || selectorStr === '.boxchlppm') return 'salt level 2897 ppm';
           if (selectorStr.includes('status') && !selectorStr.includes('divfilterStatus')) return 'ON';
           if (selectorStr.includes('brightness')) return '75%';
-          if (selectorStr === 'input[type="checkbox"]:checked') return 'checked';
-          if (selectorStr === 'input[type="radio"]:checked') return 'checked';
           return '';
         }),
         attr: jest.fn((attr) => {
+          if (!hasElement) {
+            return null;
+          }
+          
           if (attr === 'name') {
-            // Return different names based on context
-            const selectorStr = String(selector);
-            if (selectorStr.includes('heater') || selectorStr.includes('lblTemp')) return 'heater_on';
-            if (selectorStr.includes('chlorinator') || selectorStr.includes('lbCell')) return 'chlorinator_on';
-            return 'heater_on';
+            // Check if it's a radio button and if checked attribute exists in HTML
+            if (selectorStr.includes('input[type="radio"]:checked')) {
+              if (html && html.includes('name="heater_on"')) return 'heater_on';
+              if (html && html.includes('name="chlorinator_on"')) return 'chlorinator_on';
+              return 'heater_on'; // default
+            }
+            return null;
           }
           return null;
         }),
-        length: 1,
-        each: jest.fn((callback) => callback(0, mockElement)),
-        find: jest.fn(() => mockElement)
+        length: hasElement ? 1 : 0,
+        each: jest.fn((callback) => {
+          if (hasElement) {
+            callback(0, mockElement);
+          }
+        }),
+        find: jest.fn((childSelector) => {
+          if (childSelector === 'th') {
+            const hasHeaders = html && html.includes('<th>');
+            return {
+              each: jest.fn((callback) => {
+                if (hasHeaders) {
+                  // Mock each header that would match schedule detection
+                  ['Equipment', 'Start Time', 'End Time', 'Setting'].forEach((headerText, index) => {
+                    const mockHeader = {
+                      text: jest.fn(() => headerText.toLowerCase())
+                    };
+                    callback(index, mockHeader);
+                  });
+                }
+              })
+            };
+          }
+          if (childSelector === 'tr') {
+            const hasTableData = html && html.includes('<td>');
+            return {
+              each: jest.fn((callback) => {
+                if (hasTableData) {
+                  // Mock header row (index 0) - skip this
+                  // Mock data row (index 1)
+                  const mockDataRow = {
+                    find: jest.fn((cellSelector) => {
+                      if (cellSelector === 'td') {
+                        // Return mock cells with proper indexing
+                        const mockCells = Array.from({length: 6}, (_, index) => {
+                          const texts = ['Filter Pump', '8:00 AM', '6:00 PM', 'High', 'Daily', 'Enabled'];
+                          return {
+                            text: jest.fn(() => texts[index] || '')
+                          };
+                        });
+                        mockCells.length = 6;
+                        return mockCells;
+                      }
+                      return [];
+                    })
+                  };
+                  callback(1, mockDataRow); // Only call for the data row, skip header row
+                }
+              })
+            };
+          }
+          return mockElement;
+        })
       };
       return mockElement;
     };
     
-    // Add methods that cheerio provides
-    mockCheerio.each = jest.fn((callback) => callback(0, mockCheerio('table')));
-    mockCheerio.length = 1;
+    // Add methods that cheerio provides for table handling
+    mockCheerio.each = jest.fn((callback) => {
+      if (html && html.includes('<table>')) {
+        // Mock the table element with proper find methods
+        const mockTable = {
+          find: jest.fn((selector) => {
+            if (selector === 'th') {
+              return {
+                each: jest.fn((headerCallback) => {
+                  if (html.includes('<th>')) {
+                    // Mock multiple headers that will trigger schedule table detection
+                    ['Equipment', 'Start Time', 'End Time', 'Setting', 'Repeat', 'Status'].forEach((headerText, index) => {
+                      const mockHeader = mockCheerio(`th:eq(${index})`);
+                      mockHeader.text = jest.fn(() => headerText);
+                      headerCallback(index, mockHeader);
+                    });
+                  }
+                })
+              };
+            }
+            if (selector === 'tr') {
+              return {
+                each: jest.fn((rowCallback) => {
+                  if (html.includes('<td>')) {
+                    // Mock the data row (skip header row by using index 1)
+                    const mockRow = {
+                      find: jest.fn((cellSelector) => {
+                        if (cellSelector === 'td') {
+                          const texts = ['Filter Pump', '8:00 AM', '6:00 PM', 'High', 'Daily', 'Enabled'];
+                          const mockCells = texts.map((text, i) => {
+                            const mockCell = mockCheerio(`td:eq(${i})`);
+                            mockCell.text = jest.fn(() => text);
+                            return mockCell;
+                          });
+                          mockCells.length = 6;
+                          return mockCells;
+                        }
+                        return [];
+                      })
+                    };
+                    rowCallback(1, mockRow); // Only call for data row
+                  }
+                })
+              };
+            }
+            return { each: jest.fn() };
+          })
+        };
+        callback(0, mockTable);
+      }
+    });
+    mockCheerio.length = html && html.includes('<table>') ? 1 : 0;
     mockCheerio.find = jest.fn(() => mockCheerio('th'));
     
     return mockCheerio;
