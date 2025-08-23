@@ -622,6 +622,45 @@ router.get('/alerts/stats', async (req, res) => {
   }
 });
 
+// Get current weather data
+router.get('/weather', async (req, res) => {
+  try {
+    console.log('🌤️ Fetching current weather data...');
+
+    const weatherData = await weatherService.getCurrentWeather();
+
+    if (!weatherData) {
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to fetch weather data',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Get weather alert count for the last 24 hours
+    const endTime = new Date();
+    const startTime = new Date(endTime.getTime() - (24 * 60 * 60 * 1000));
+    const alertStats = await influxDBService.getWeatherAlertStats(startTime, endTime);
+
+    res.json({
+      success: true,
+      data: {
+        current: weatherData,
+        alertCount: alertStats ? alertStats.totalAlerts : 0,
+        alertCount24h: alertStats ? alertStats.totalAlerts : 0
+      },
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Weather data fetch error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch weather data',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // Get weather time series data
 router.get('/weather/timeseries', async (req, res) => {
   try {
