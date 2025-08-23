@@ -3,6 +3,7 @@ const { influxDBService } = require('../services/influxDBService');
 const timeSeriesService = require('../services/timeSeriesService');
 const pumpStateTracker = require('../services/pumpStateTracker');
 const weatherAlertService = require('../services/weatherAlertService');
+const weatherService = require('../services/weatherService');
 const credentials = require('../utils/credentials');
 
 /** @type {import('express').Router} */
@@ -610,6 +611,45 @@ router.get('/alerts/stats', async (req, res) => {
     res.status(500).json({ 
       success: false, 
       error: 'Failed to fetch weather alert statistics',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Get weather time series data
+router.get('/weather/timeseries', async (req, res) => {
+  try {
+    const days = parseInt(req.query.days) || 7;
+    console.log(`📊 Fetching weather time series data for last ${days} days...`);
+    
+    const historicalData = await weatherService.getHistoricalWeather(days);
+    
+    if (!historicalData) {
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to fetch weather time series data',
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+    // Combine historical weather data with alert count from the last 7 days
+    const endTime = new Date();
+    const startTime = new Date(endTime.getTime() - (7 * 24 * 60 * 60 * 1000));
+    const alertStats = await influxDBService.getWeatherAlertStats(startTime, endTime);
+    
+    res.json({
+      success: true,
+      data: {
+        ...historicalData,
+        alertCount7d: alertStats ? alertStats.totalAlerts : 0
+      },
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Weather time series fetch error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to fetch weather time series data',
       timestamp: new Date().toISOString()
     });
   }

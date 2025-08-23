@@ -20,10 +20,14 @@
     "lint:fix": "eslint src/ public/ tests/ --fix",
     "validate": "npm run lint && npm run test:ci"
   },
+  "engines": {
+    "node": ">=20.18.1",
+    "npm": ">=10.0.0"
+  },
   "dependencies": {
     "@influxdata/influxdb-client": "^1.33.2",
     "axios": "^1.6.0",
-    "cheerio": "^1.0.0-rc.12",
+    "cheerio": "^1.1.2",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
