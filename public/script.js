@@ -671,23 +671,56 @@ const initializeSparklines = () => {
           cornerRadius: 6,
           displayColors: false,
           callbacks: {
-            title: (tooltipItems) => {
-              const dataIndex = tooltipItems[0].dataIndex;
-              const timestamp = tooltipItems[0].chart.data.labels[dataIndex];
-              return new Date(timestamp).toLocaleString();
-            },
+            title: () => null, // Remove title to put everything on one line
             label: (tooltipItem) => {
               const value = tooltipItem.parsed.y;
+              const dataIndex = tooltipItem.dataIndex;
+              const timestamp = tooltipItem.chart.data.labels[dataIndex];
+
+              // Helper function for concise date formatting
+              const formatConciseDate = (date) => {
+                const now = new Date();
+                const target = new Date(date);
+                const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+                const targetDate = new Date(target.getFullYear(), target.getMonth(), target.getDate());
+
+                const timeStr = target.toLocaleTimeString('en-US', {
+                  hour: 'numeric',
+                  minute: '2-digit',
+                  hour12: true
+                }).toLowerCase();
+
+                if (targetDate.getTime() === today.getTime()) {
+                  return `today, ${timeStr}`;
+                } else if (targetDate.getTime() === yesterday.getTime()) {
+                  return `yesterday, ${timeStr}`;
+                }
+                // For older dates, show month/day
+                const monthDay = target.toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric'
+                });
+                return `${monthDay}, ${timeStr}`;
+
+              };
+
+              const dateStr = formatConciseDate(timestamp);
+
+              let valueStr;
               if (label.includes('Salt')) {
-                return `${Math.round(value)} PPM`;
+                valueStr = `${Math.round(value)} PPM`;
               } else if (label.includes('Temp')) {
-                return `${Math.round(value * 10) / 10}°F`;
+                valueStr = `${Math.round(value * 10) / 10}°F`;
               } else if (label.includes('Voltage')) {
-                return `${Math.round(value * 10) / 10}V`;
+                valueStr = `${Math.round(value * 10) / 10}V`;
               } else if (label.includes('Pump')) {
-                return value === 1 ? 'Pump ON' : 'Pump OFF';
+                valueStr = value === 1 ? 'Pump ON' : 'Pump OFF';
+              } else {
+                valueStr = `${value}`;
               }
-              return `${value}`;
+
+              return `${valueStr} • ${dateStr}`;
             }
           }
         }
