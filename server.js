@@ -27,19 +27,34 @@ const PORT = envConfig.get('PORT') || 3000;
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "https://cdn.jsdelivr.net"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      styleSrcElem: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      objectSrc: ["'none'"],
-      mediaSrc: ["'self'"],
-      frameSrc: ["'none'"]
+      defaultSrc: ['\'self\''],
+      scriptSrc: ['\'self\'', 'https://cdn.jsdelivr.net'],
+      styleSrc: ['\'self\'', '\'unsafe-inline\'', 'https://fonts.googleapis.com'],
+      styleSrcElem: ['\'self\'', '\'unsafe-inline\'', 'https://fonts.googleapis.com'],
+      imgSrc: ['\'self\'', 'data:', 'https:'],
+      connectSrc: ['\'self\''],
+      fontSrc: ['\'self\'', 'https://fonts.gstatic.com'],
+      objectSrc: ['\'none\''],
+      mediaSrc: ['\'self\''],
+      frameSrc: ['\'none\'']
     }
   }
 }));
+
+// Add Permissions-Policy header to disable unused experimental features
+app.use((req, res, next) => {
+  res.setHeader('Permissions-Policy', [
+    'browsing-topics=()',
+    'run-ad-auction=()',
+    'join-ad-interest-group=()',
+    'private-state-token-redemption=()',
+    'private-state-token-issuance=()',
+    'private-aggregation=()',
+    'attribution-reporting=()',
+    'compute-pressure=()'
+  ].join(', '));
+  next();
+});
 app.use(cors({
   origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
   credentials: true
