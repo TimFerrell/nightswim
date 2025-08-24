@@ -1,15 +1,45 @@
 const axios = require('axios');
+const geocodingService = require('./geocodingService');
 
 /**
  * Weather service for fetching real-time air temperature data using OpenMeteo API
  * OpenMeteo provides current conditions updated every 10-15 minutes
+ * Uses centralized geocoding service for dynamic location resolution
  */
 class WeatherService {
   constructor() {
-    this.zipCode = '32708';
-    // Coordinates for zip code 32708 (Winter Springs, FL)
-    this.latitude = 28.6884611;
-    this.longitude = -81.2741674;
+    this.zipCode = process.env.POOL_ZIP_CODE || '32708';
+    this.coordinates = null;
+    this.initialized = false;
+  }
+
+  /**
+   * Initialize the service with coordinates from ZIP code
+   * @returns {Promise<boolean>} True if initialization successful
+   */
+  async initialize() {
+    if (this.initialized && this.coordinates) {
+      return true;
+    }
+
+    try {
+      console.log(`🌤️ Initializing weather service for ZIP code: ${this.zipCode}`);
+      this.coordinates = await geocodingService.getCoordinatesFromZip(this.zipCode);
+      
+      if (!geocodingService.validateCoordinates(this.coordinates)) {
+        throw new Error('Invalid coordinates received from geocoding service');
+      }
+
+      this.initialized = true;
+      console.log(`✅ Weather service initialized for: ${this.coordinates.displayName}`);
+      return true;
+    } catch (error) {
+      console.error('❌ Failed to initialize weather service:', error.message);
+      // Use fallback coordinates
+      this.coordinates = geocodingService.getFallbackCoordinates(this.zipCode);
+      this.initialized = true;
+      return false;
+    }
   }
 
   /**
@@ -17,11 +47,14 @@ class WeatherService {
    * @returns {Promise<object|null>} Weather data or null if failed
    */
   async getCurrentWeather() {
+    // Ensure service is initialized
+    await this.initialize();
+    
     try {
       // OpenMeteo API for current conditions (free, no API key required)
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${this.latitude}&longitude=${this.longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature&temperature_unit=fahrenheit&timezone=auto`;
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${this.coordinates.lat}&longitude=${this.coordinates.lng}&current=temperature_2m,relative_humidity_2m,apparent_temperature&temperature_unit=fahrenheit&timezone=auto`;
 
-      console.log(`🌤️ Fetching real-time weather data for coordinates ${this.latitude},${this.longitude}...`);
+      console.log(`🌤️ Fetching real-time weather data for ${this.coordinates.displayName} (${this.coordinates.lat},${this.coordinates.lng})...`);
 
       const response = await axios.get(url, {
         timeout: 10000 // 10 second timeout
@@ -60,9 +93,12 @@ class WeatherService {
    * @returns {Promise<object|null>} Weather data or null if failed
    */
   async getNWSWeather() {
+    // Ensure service is initialized
+    await this.initialize();
+    
     try {
       // Get office and grid information
-      const gridInfo = await this.getOfficeAndGrid(this.latitude, this.longitude);
+      const gridInfo = await this.getOfficeAndGrid(this.coordinates.lat, this.coordinates.lng);
       if (!gridInfo) {
         console.error('❌ Could not get office and grid information');
         return null;
@@ -154,18 +190,55 @@ class WeatherService {
   }
 
   /**
+   * Get current ZIP code
+   * @returns {string} Current ZIP code
+   */
+  getZipCode() {
+    return this.zipCode;
+  }
+
+  /**
+   * Update ZIP code and reinitialize
+   * @param {string} newZipCode - New ZIP code
+   * @returns {Promise<boolean>} True if update successful
+   */
+  async updateZipCode(newZipCode) {
+    if (newZipCode === this.zipCode) {
+      return true;
+    }
+
+    console.log(`🔄 Updating weather service ZIP code from ${this.zipCode} to ${newZipCode}`);
+    this.zipCode = newZipCode;
+    this.initialized = false;
+    this.coordinates = null;
+    
+    return await this.initialize();
+  }
+
+  /**
+   * Get current coordinates
+   * @returns {object|null} Current coordinates or null if not initialized
+   */
+  getCoordinates() {
+    return this.coordinates;
+  }
+
+  /**
    * Get historical weather data including rain, temperature, and heat index
    * @param {number} days - Number of days of historical data (default: 7)
    * @returns {Promise<object|null>} Historical weather data or null if failed
    */
   async getHistoricalWeather(days = 7) {
+    // Ensure service is initialized
+    await this.initialize();
+    
     try {
       const endDate = new Date();
       const startDate = new Date();
       startDate.setDate(endDate.getDate() - days);
 
       // OpenMeteo Historical Weather API
-      const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${this.latitude}&longitude=${this.longitude}&start_date=${startDate.toISOString().split('T')[0]}&end_date=${endDate.toISOString().split('T')[0]}&hourly=temperature_2m,relative_humidity_2m,precipitation&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&temperature_unit=fahrenheit&precipitation_unit=inch&timezone=auto`;
+      const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${this.coordinates.lat}&longitude=${this.coordinates.lng}&start_date=${startDate.toISOString().split('T')[0]}&end_date=${endDate.toISOString().split('T')[0]}&hourly=temperature_2m,relative_humidity_2m,precipitation&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&temperature_unit=fahrenheit&precipitation_unit=inch&timezone=auto`;
 
       console.log(`📊 Fetching ${days} days of historical weather data...`);
 

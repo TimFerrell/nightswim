@@ -1,6 +1,116 @@
+// Application Configuration
+const CONFIG = {
+  // Weather settings
+  weather: {
+    zipCode: '32708' // Default ZIP code for weather data
+  },
+  
+  // Location settings
+  location: {
+    displayName: null, // Will be set from backend
+    coordinates: null, // Will be set from backend
+    lastUpdated: null
+  },
+  
+  // Threshold values for monitoring
+  thresholds: {
+    salt: {
+      min: 2000,
+      low: 2700,
+      optimal: 3050,
+      high: 3400,
+      max: 4000
+    },
+    waterTemperature: {
+      min: 60,
+      cold: 78,
+      optimal: 82,
+      hot: 88,
+      max: 100
+    },
+    cellVoltage: {
+      min: 0,
+      low: 5,
+      optimal: 10,
+      high: 15,
+      max: 20
+    }
+  },
+  
+  // Refresh intervals (in milliseconds)
+  intervals: {
+    chartRefresh: 30000,
+    statsRefresh: 30000,
+    debounceDelay: 300
+  },
+  
+  // API settings
+  api: {
+    retryAttempts: 3,
+    cacheTimeout: 5000
+  }
+};
+
 // Global chart variables
 let tempChart, electricalChart, chemistryChart;
 let saltSparkline, waterTempSparkline, cellVoltageSparkline, filterPumpSparkline, weatherTimeSeriesChart;
+
+// Configuration initialization
+const initializeConfig = async () => {
+  try {
+    // Try to load location info from backend
+    await loadLocationInfo();
+    
+    // Update ZIP code display
+    const zipCodeElement = document.getElementById('weatherZipCode');
+    if (zipCodeElement) {
+      zipCodeElement.textContent = CONFIG.weather.zipCode;
+    }
+    
+    // Update location header
+    updateLocationHeader();
+    
+    console.log('🔧 Configuration initialized:', CONFIG);
+    return CONFIG;
+  } catch (error) {
+    handleApiError(error, 'Configuration initialization');
+    return CONFIG; // Fallback to default config
+  }
+};
+
+// Load location information from backend
+const loadLocationInfo = async () => {
+  try {
+    const response = await fetch('/api/pool/location', { credentials: 'include' });
+    
+    if (response.ok) {
+      const result = await response.json();
+      if (result.success && result.data) {
+        CONFIG.location.displayName = result.data.displayName;
+        CONFIG.location.coordinates = result.data.coordinates;
+        CONFIG.location.lastUpdated = new Date().toISOString();
+        console.log('📍 Location loaded:', result.data.displayName);
+      }
+    } else {
+      // Use fallback location info
+      CONFIG.location.displayName = 'Winter Springs, FL';
+      console.log('📍 Using fallback location info');
+    }
+  } catch (error) {
+    // Use fallback location info
+    CONFIG.location.displayName = 'Winter Springs, FL';
+    console.log('⚠️ Failed to load location info, using fallback');
+  }
+};
+
+// Update location header display
+const updateLocationHeader = () => {
+  const locationElement = document.getElementById('locationDisplay');
+  if (locationElement && CONFIG.location.displayName) {
+    locationElement.innerHTML = `📍 ${CONFIG.location.displayName}`;
+    locationElement.style.display = 'block';
+  }
+};
 
 // Update architecture status indicator
 function updateArchitectureStatus(version) {
@@ -58,13 +168,16 @@ const domCache = {
   }
 };
 
-// Debounce utility for performance
+// Utility functions for async operations
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Debounce utility for performance with async support
 const debounce = (func, wait) => {
   let timeout;
   return function executedFunction(...args) {
-    const later = () => {
+    const later = async () => {
       clearTimeout(timeout);
-      func(...args);
+      await func(...args);
     };
     clearTimeout(timeout);
     timeout = setTimeout(later, wait);
@@ -75,7 +188,7 @@ const debounce = (func, wait) => {
 const _requestCache = {
   data: null,
   timestamp: 0,
-  ttl: 5000, // 5 seconds cache
+  ttl: CONFIG.api.cacheTimeout
 
   isValid() {
     return this.data && (Date.now() - this.timestamp) < this.ttl;
@@ -154,6 +267,7 @@ const updateSaltAnnotations = (currentSalt) => {
   if (!saltSparkline) return;
 
   const annotations = saltSparkline.options.plugins.annotation.annotations;
+  const { salt } = CONFIG.thresholds;
 
   // Reset all annotations to low saturation
   annotations.tooLowRegion.backgroundColor = 'rgba(255, 255, 0, 0.05)';
@@ -161,11 +275,11 @@ const updateSaltAnnotations = (currentSalt) => {
   annotations.tooHighRegion.backgroundColor = 'rgba(255, 0, 0, 0.05)';
 
   // Increase saturation for the region containing current value
-  if (currentSalt >= 2000 && currentSalt < 2700) {
+  if (currentSalt >= salt.min && currentSalt < salt.low) {
     annotations.tooLowRegion.backgroundColor = 'rgba(255, 255, 0, 0.15)';
-  } else if (currentSalt >= 2700 && currentSalt < 3400) {
+  } else if (currentSalt >= salt.low && currentSalt < salt.high) {
     annotations.safeRegion.backgroundColor = 'rgba(0, 255, 0, 0.15)';
-  } else if (currentSalt >= 3400 && currentSalt <= 4000) {
+  } else if (currentSalt >= salt.high && currentSalt <= salt.max) {
     annotations.tooHighRegion.backgroundColor = 'rgba(255, 0, 0, 0.15)';
   }
 
@@ -292,6 +406,19 @@ const updateWeatherTimeSeriesCard = (data) => {
   updateWeatherTimeSeriesChart(data);
 };
 
+// Centralized error handling
+const handleApiError = (error, context, retryCount = 0) => {
+  console.error(`${context} error (attempt ${retryCount + 1}):`, error);
+  
+  if (error.name === 'TypeError' && error.message.includes('fetch')) {
+    console.error('🌐 Network error - check connection');
+  } else if (error.message.includes('HTTP')) {
+    console.error(`📞 Server error: ${error.message}`);
+  } else {
+    console.error(`⚠️ ${context} error: ${error.message}`);
+  }
+};
+
 // Forward declarations for functions used before definition
 const loadPoolData = async (retryCount = 0) => {
   try {
@@ -330,13 +457,15 @@ const loadPoolData = async (retryCount = 0) => {
     window.currentPoolData = data;
 
   } catch (error) {
-    console.error(`Failed to load pool data (attempt ${retryCount + 1}):`, error);
+    handleApiError(error, 'Pool data loading', retryCount);
 
-    if (retryCount < 2) {
-      console.log(`🔄 Retrying data load in ${2 ** retryCount}s...`);
-      setTimeout(() => loadPoolData(retryCount + 1), (2 ** retryCount) * 1000);
+    if (retryCount < CONFIG.api.retryAttempts - 1) {
+      const delaySeconds = 2 ** retryCount;
+      console.log(`🔄 Retrying data load in ${delaySeconds}s...`);
+      await delay(delaySeconds * 1000);
+      return loadPoolData(retryCount + 1);
     } else {
-      console.error('❌ Failed to load pool data after 3 attempts');
+      console.error(`❌ Failed to load pool data after ${CONFIG.api.retryAttempts} attempts`);
       // showDataLoadError(error.message);
     }
   }
@@ -380,7 +509,7 @@ const loadWeatherAlerts = async () => {
     updateWeatherAlertsCard(alertsData, historyData);
 
   } catch (error) {
-    console.error('Error loading weather alerts:', error);
+    handleApiError(error, 'Weather alerts loading');
     updateWeatherAlertsCard({
       hasActiveAlerts: false,
       alertCount: 0,
@@ -414,7 +543,7 @@ const loadWeatherTimeSeries = async () => {
     updateWeatherTimeSeriesCard(data);
 
   } catch (error) {
-    console.error('Error loading weather time series:', error);
+    handleApiError(error, 'Weather time series loading');
     updateWeatherTimeSeriesCard({
       error: error.message
     });
@@ -471,7 +600,7 @@ const updateSparklines = async () => {
     console.log('✅ Sparklines updated successfully');
 
   } catch (error) {
-    console.error('Error updating sparklines:', error);
+    handleApiError(error, 'Sparklines update');
   }
 };
 
@@ -500,7 +629,7 @@ const fetchSaltRollingAverage = async () => {
       }
     }
   } catch (error) {
-    console.error('Error fetching salt rolling average:', error);
+    handleApiError(error, 'Salt rolling average fetch');
   }
 };
 
@@ -544,32 +673,33 @@ const initializeSparklines = () => {
     const config = chartConfig('Salt', '#3498db');
 
     // Add salt level annotations
+    const { salt } = CONFIG.thresholds;
     config.options.plugins.annotation = {
       annotations: {
         tooLowRegion: {
           type: 'box',
-          yMin: 2000,
-          yMax: 2700,
+          yMin: salt.min,
+          yMax: salt.low,
           backgroundColor: 'rgba(255, 255, 0, 0.05)',
           borderWidth: 0
         },
         safeRegion: {
           type: 'box',
-          yMin: 2700,
-          yMax: 3400,
+          yMin: salt.low,
+          yMax: salt.high,
           backgroundColor: 'rgba(0, 255, 0, 0.05)',
           borderWidth: 0
         },
         tooHighRegion: {
           type: 'box',
-          yMin: 3400,
-          yMax: 4000,
+          yMin: salt.high,
+          yMax: salt.max,
           backgroundColor: 'rgba(255, 0, 0, 0.05)',
           borderWidth: 0
         }
       }
     };
-    config.options.scales.y = { min: 2000, max: 4000, display: false };
+    config.options.scales.y = { min: salt.min, max: salt.max, display: false };
 
     saltSparkline = new Chart(saltCanvas, config);
   }
@@ -577,13 +707,75 @@ const initializeSparklines = () => {
   const waterTempCanvas = document.getElementById('waterTempSparkline');
   if (waterTempCanvas) {
     if (waterTempSparkline) waterTempSparkline.destroy();
-    waterTempSparkline = new Chart(waterTempCanvas, chartConfig('Water Temp', '#e74c3c'));
+    const tempConfig = chartConfig('Water Temp', '#e74c3c');
+    
+    // Add temperature threshold annotations
+    const { waterTemperature } = CONFIG.thresholds;
+    tempConfig.options.plugins.annotation = {
+      annotations: {
+        comfortZone: {
+          type: 'box',
+          yMin: waterTemperature.cold,
+          yMax: waterTemperature.hot,
+          backgroundColor: 'rgba(0, 255, 0, 0.05)',
+          borderWidth: 0
+        },
+        tooHot: {
+          type: 'box',
+          yMin: waterTemperature.hot,
+          yMax: waterTemperature.max,
+          backgroundColor: 'rgba(255, 0, 0, 0.05)',
+          borderWidth: 0
+        },
+        tooCold: {
+          type: 'box',
+          yMin: waterTemperature.min,
+          yMax: waterTemperature.cold,
+          backgroundColor: 'rgba(0, 0, 255, 0.05)',
+          borderWidth: 0
+        }
+      }
+    };
+    tempConfig.options.scales.y = { min: waterTemperature.min, max: waterTemperature.max, display: false };
+    
+    waterTempSparkline = new Chart(waterTempCanvas, tempConfig);
   }
 
   const cellVoltageCanvas = document.getElementById('cellVoltageSparkline');
   if (cellVoltageCanvas) {
     if (cellVoltageSparkline) cellVoltageSparkline.destroy();
-    cellVoltageSparkline = new Chart(cellVoltageCanvas, chartConfig('Cell Voltage', '#f39c12'));
+    const voltageConfig = chartConfig('Cell Voltage', '#f39c12');
+    
+    // Add voltage threshold annotations
+    const { cellVoltage } = CONFIG.thresholds;
+    voltageConfig.options.plugins.annotation = {
+      annotations: {
+        operatingRange: {
+          type: 'box',
+          yMin: cellVoltage.low,
+          yMax: cellVoltage.high,
+          backgroundColor: 'rgba(0, 255, 0, 0.05)',
+          borderWidth: 0
+        },
+        lowVoltage: {
+          type: 'box',
+          yMin: cellVoltage.min,
+          yMax: cellVoltage.low,
+          backgroundColor: 'rgba(255, 255, 0, 0.05)',
+          borderWidth: 0
+        },
+        highVoltage: {
+          type: 'box',
+          yMin: cellVoltage.high,
+          yMax: cellVoltage.max,
+          backgroundColor: 'rgba(255, 0, 0, 0.05)',
+          borderWidth: 0
+        }
+      }
+    };
+    voltageConfig.options.scales.y = { min: cellVoltage.min, max: cellVoltage.max, display: false };
+    
+    cellVoltageSparkline = new Chart(cellVoltageCanvas, voltageConfig);
   }
 
   const filterPumpCanvas = document.getElementById('filterPumpSparkline');
@@ -595,6 +787,76 @@ const initializeSparklines = () => {
   console.log('✅ Sparklines initialized');
 };
 
+const initializeWeatherTimeSeriesChart = () => {
+  const ctx = document.getElementById('weatherTimeSeriesChart');
+  if (!ctx) return;
+
+  if (weatherTimeSeriesChart) {
+    weatherTimeSeriesChart.destroy();
+  }
+
+  weatherTimeSeriesChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [
+        {
+          label: 'Rain',
+          data: [],
+          borderColor: '#3b82f6',
+          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.4,
+          pointRadius: 0,
+          pointHoverRadius: 3,
+          yAxisID: 'y'
+        },
+        {
+          label: 'Heat Index',
+          data: [],
+          borderColor: '#ef4444',
+          backgroundColor: 'rgba(239, 68, 68, 0.1)',
+          borderWidth: 2,
+          fill: false,
+          tension: 0.4,
+          pointRadius: 0,
+          pointHoverRadius: 3,
+          yAxisID: 'y1'
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: { enabled: true }
+      },
+      scales: {
+        x: { display: false },
+        y: {
+          type: 'linear',
+          display: false,
+          position: 'left'
+        },
+        y1: {
+          type: 'linear',
+          display: false,
+          position: 'right',
+          grid: {
+            drawOnChartArea: false
+          }
+        }
+      },
+      animation: { duration: 0 }
+    }
+  });
+
+  console.log('✅ Weather time series chart initialized');
+};
+
 
 /**
  * Get human-readable comfort level for water temperature
@@ -602,13 +864,15 @@ const initializeSparklines = () => {
  * @returns {string} Comfort level description
  */
 const getWaterComfortLevel = (temperature) => {
+  const { waterTemperature } = CONFIG.thresholds;
+  
   if (temperature >= 95) return 'Too Hot';
-  if (temperature >= 88) return 'Hot';
-  if (temperature >= 82) return 'Warm';
-  if (temperature >= 78) return 'Perfect';
+  if (temperature >= waterTemperature.hot) return 'Hot';
+  if (temperature >= waterTemperature.optimal) return 'Warm';
+  if (temperature >= waterTemperature.cold) return 'Perfect';
   if (temperature >= 72) return 'Cool';
   if (temperature >= 68) return 'Chilly';
-  if (temperature >= 60) return 'Cold';
+  if (temperature >= waterTemperature.min) return 'Cold';
   return 'Too Cold';
 };
 
@@ -833,7 +1097,42 @@ const initializeTempChart = () => {
         }
       ]
     },
-    options: getChartConfig('temperature')
+    options: {
+      ...getChartConfig('temperature'),
+      plugins: {
+        ...getChartConfig('temperature').plugins,
+        annotation: {
+          annotations: {
+            comfortZone: {
+              type: 'box',
+              yMin: CONFIG.thresholds.waterTemperature.cold,
+              yMax: CONFIG.thresholds.waterTemperature.hot,
+              backgroundColor: 'rgba(0, 255, 0, 0.1)',
+              borderColor: 'rgba(0, 255, 0, 0.3)',
+              borderWidth: 1,
+              label: {
+                display: true,
+                content: 'Comfort Zone',
+                position: 'start'
+              }
+            },
+            optimalLine: {
+              type: 'line',
+              yMin: CONFIG.thresholds.waterTemperature.optimal,
+              yMax: CONFIG.thresholds.waterTemperature.optimal,
+              borderColor: 'rgba(0, 255, 0, 0.8)',
+              borderWidth: 2,
+              borderDash: [5, 5],
+              label: {
+                display: true,
+                content: `Optimal (${CONFIG.thresholds.waterTemperature.optimal}°F)`,
+                position: 'end'
+              }
+            }
+          }
+        }
+      }
+    }
   });
 };
 
@@ -865,7 +1164,42 @@ const initializeElectricalChart = () => {
         }
       ]
     },
-    options: getChartConfig('electrical')
+    options: {
+      ...getChartConfig('electrical'),
+      plugins: {
+        ...getChartConfig('electrical').plugins,
+        annotation: {
+          annotations: {
+            operatingRange: {
+              type: 'box',
+              yMin: CONFIG.thresholds.cellVoltage.low,
+              yMax: CONFIG.thresholds.cellVoltage.high,
+              backgroundColor: 'rgba(0, 255, 0, 0.1)',
+              borderColor: 'rgba(0, 255, 0, 0.3)',
+              borderWidth: 1,
+              label: {
+                display: true,
+                content: 'Operating Range',
+                position: 'start'
+              }
+            },
+            optimalLine: {
+              type: 'line',
+              yMin: CONFIG.thresholds.cellVoltage.optimal,
+              yMax: CONFIG.thresholds.cellVoltage.optimal,
+              borderColor: 'rgba(0, 255, 0, 0.8)',
+              borderWidth: 2,
+              borderDash: [5, 5],
+              label: {
+                display: true,
+                content: `Optimal (${CONFIG.thresholds.cellVoltage.optimal}V)`,
+                position: 'end'
+              }
+            }
+          }
+        }
+      }
+    }
   });
 };
 
@@ -897,7 +1231,68 @@ const initializeChemistryChart = () => {
         }
       ]
     },
-    options: getChartConfig('chemistry')
+    options: {
+      ...getChartConfig('chemistry'),
+      plugins: {
+        ...getChartConfig('chemistry').plugins,
+        annotation: {
+          annotations: {
+            tooLowRegion: {
+              type: 'box',
+              yMin: CONFIG.thresholds.salt.min,
+              yMax: CONFIG.thresholds.salt.low,
+              backgroundColor: 'rgba(255, 255, 0, 0.1)',
+              borderColor: 'rgba(255, 255, 0, 0.3)',
+              borderWidth: 1,
+              label: {
+                display: true,
+                content: 'Low Salt',
+                position: 'start'
+              }
+            },
+            safeRegion: {
+              type: 'box',
+              yMin: CONFIG.thresholds.salt.low,
+              yMax: CONFIG.thresholds.salt.high,
+              backgroundColor: 'rgba(0, 255, 0, 0.1)',
+              borderColor: 'rgba(0, 255, 0, 0.3)',
+              borderWidth: 1,
+              label: {
+                display: true,
+                content: 'Optimal Range',
+                position: 'center'
+              }
+            },
+            tooHighRegion: {
+              type: 'box',
+              yMin: CONFIG.thresholds.salt.high,
+              yMax: CONFIG.thresholds.salt.max,
+              backgroundColor: 'rgba(255, 0, 0, 0.1)',
+              borderColor: 'rgba(255, 0, 0, 0.3)',
+              borderWidth: 1,
+              label: {
+                display: true,
+                content: 'High Salt',
+                position: 'end'
+              }
+            },
+            optimalLine: {
+              type: 'line',
+              yMin: CONFIG.thresholds.salt.optimal,
+              yMax: CONFIG.thresholds.salt.optimal,
+              borderColor: 'rgba(0, 255, 0, 0.8)',
+              borderWidth: 2,
+              borderDash: [5, 5],
+              label: {
+                display: true,
+                content: `Target (${CONFIG.thresholds.salt.optimal} PPM)`,
+                position: 'end'
+              }
+            }
+          }
+        }
+      }
+    }
   });
 };
 
@@ -979,12 +1374,12 @@ const debouncedUpdateCharts = debounce(async () => {
     document.getElementById('chemistryChartStatus').textContent = statusText;
 
   } catch (error) {
-    console.error('Chart update error:', error);
+    handleApiError(error, 'Chart update');
     document.getElementById('tempChartStatus').textContent = 'Error loading data';
     document.getElementById('electricalChartStatus').textContent = 'Error loading data';
     document.getElementById('chemistryChartStatus').textContent = 'Error loading data';
   }
-}, 300); // 300ms debounce
+}, CONFIG.intervals.debounceDelay);
 
 const updateAllCharts = debouncedUpdateCharts;
 
@@ -1051,12 +1446,16 @@ const _startChartAutoRefresh = () => {
     clearInterval(chartRefreshInterval);
   }
 
-  chartRefreshInterval = setInterval(() => {
-    updateAllCharts();
-    updateSparklines();
-    loadWeatherAlerts(); // Refresh weather alerts every 30 seconds
-    loadWeatherTimeSeries(); // Refresh weather time series every 30 seconds
-  }, 30000); // Refresh every 30 seconds
+  const refreshCharts = async () => {
+    await Promise.all([
+      updateAllCharts(),
+      updateSparklines(),
+      loadWeatherAlerts(),
+      loadWeatherTimeSeries()
+    ]);
+  };
+
+  chartRefreshInterval = setInterval(refreshCharts, CONFIG.intervals.chartRefresh);
 };
 
 /**
@@ -1087,11 +1486,15 @@ const _startStatsAutoRefresh = () => {
     clearInterval(statsRefreshInterval);
   }
 
-  statsRefreshInterval = setInterval(() => {
-    loadPoolData();
-    loadWeatherAlerts(); // Refresh weather alerts every 30 seconds
-    loadWeatherTimeSeries(); // Refresh weather time series every 30 seconds
-  }, 30000); // Refresh every 30 seconds (more frequent since no manual button)
+  const refreshStats = async () => {
+    await Promise.all([
+      loadPoolData(),
+      loadWeatherAlerts(),
+      loadWeatherTimeSeries()
+    ]);
+  };
+
+  statsRefreshInterval = setInterval(refreshStats, CONFIG.intervals.statsRefresh);
 };
 
 /**
@@ -1107,7 +1510,7 @@ const stopStatsAutoRefresh = () => {
 /**
  * Update status cards with real data and pulse animation
  */
-const _updateStatusCards = (data) => {
+const _updateStatusCards = async (data) => {
   console.log('🔄 Updating status cards with data:', data);
 
   // Initialize DOM cache if not done
@@ -1277,11 +1680,11 @@ const _updateStatusCards = (data) => {
     timestampElement.textContent = new Date().toLocaleTimeString();
   }
 };
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   /**
    * Handle dark mode changes
    */
-  const handleDarkModeChange = (_e) => {
+  const handleDarkModeChange = async (_e) => {
     // Reinitialize charts with new color scheme
     if (tempChart) {
       tempChart.destroy();
@@ -1318,23 +1721,47 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Reinitialize spark lines
     initializeSparklines();
+    initializeWeatherTimeSeriesChart();
 
     // Update charts with current data
     updateAllCharts();
     updateSparklines();
   };
 
-  loadPoolData();
-  loadWeatherAlerts(); // Load weather alerts on page load
-  loadWeatherTimeSeries(); // Load weather time series on page load
+  // Initialize configuration first
+  await initializeConfig();
+  
+  // Initialize all components
+  initializeSparklines();
+  initializeWeatherTimeSeriesChart();
+  initializeTempChart();
+  initializeElectricalChart();
+  initializeChemistryChart();
+
+  // Load initial data
+  await Promise.all([
+    loadPoolData(),
+    loadWeatherAlerts(),
+    loadWeatherTimeSeries()
+  ]);
+
+  // Start auto-refresh intervals
+  _startChartAutoRefresh();
+  _startStatsAutoRefresh();
 
   // Process the loaded data after functions are defined
-  setTimeout(() => {
+  const processInitialData = async () => {
+    await delay(100);
     if (window.currentPoolData) {
-      _updateStatusCards(window.currentPoolData);
-      updateAllCharts();
+      await Promise.all([
+        _updateStatusCards(window.currentPoolData),
+        updateAllCharts(),
+        updateSparklines()
+      ]);
     }
-  }, 100);
+  };
+  
+  await processInitialData();
 
   // Listen for dark mode changes
   const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');

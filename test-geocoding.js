@@ -6,7 +6,7 @@
 const WeatherAlertService = require('./src/services/weatherAlertService');
 
 async function testGeocoding() {
-  const zipCode = process.argv[2] || '90210';
+  const zipCode = process.argv[2] || process.env.POOL_ZIP_CODE || '32708';
   console.log(`🧪 Testing geocoding for ZIP code: ${zipCode}\n`);
   
   const weatherAlerts = new WeatherAlertService();

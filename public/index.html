@@ -218,9 +218,9 @@
         .status-value {
             padding: var(--space-1) var(--space-2);
             background: var(--color-surface);
-            border: 1px solid var(--color-border);
+            border: none;
             border-radius: var(--radius-sm);
-            font-family: 'Courier New', monospace;
+            font-family: var(--font-family);
             font-size: 0.8125rem;
             font-weight: 600;
         }
@@ -231,12 +231,26 @@
             border-color: var(--color-success);
         }
 
+        .logo-section {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-1);
+        }
+        
         .logo {
             display: flex;
             align-items: center;
             gap: var(--space-3);
             text-decoration: none;
             color: var(--color-text-primary);
+            transition: color 0.3s ease;
+        }
+        
+        .location-display {
+            font-size: var(--font-size-sm);
+            color: var(--color-text-secondary);
+            font-weight: 400;
+            margin-left: calc(32px + var(--space-3)); /* Align with logo text */
             transition: color 0.3s ease;
         }
 
@@ -842,13 +856,12 @@
     <header class="header">
         <div class="container">
             <div class="header-content">
-                <a href="/" class="logo">
-                    <div class="logo-icon"></div>
-                    <span class="logo-text">Night Swim</span>
-                </a>
-                <div class="architecture-status" id="architectureStatus">
-                    <span class="status-label">Architecture:</span>
-                    <span class="status-value" id="architectureVersion">v1 (legacy)</span>
+                <div class="logo-section">
+                    <a href="/" class="logo">
+                        <div class="logo-icon"></div>
+                        <span class="logo-text">Night Swim</span>
+                    </a>
+                    <div class="location-display" id="locationDisplay" style="display: none;"></div>
                 </div>
             </div>
         </div>
@@ -936,7 +949,7 @@
                     <div class="status-details">
                       <div class="status-detail">
                         <span class="status-detail-label">Zip Code</span>
-                        <span class="status-detail-value">32708</span>
+                        <span class="status-detail-value" id="weatherZipCode">32708</span>
                       </div>
                     </div>
                   </div>

@@ -399,6 +399,73 @@ router.get('/pump/state', async (req, res) => {
   }
 });
 
+// Get sparkline data for dashboard cards
+router.get('/sparklines', async (req, res) => {
+  try {
+    console.log('📈 Fetching sparkline data...');
+    
+    // Get last 4 hours of data for sparklines
+    const endTime = new Date();
+    const startTime = new Date(endTime.getTime() - (4 * 60 * 60 * 1000));
+    
+    const dataPoints = await influxDBService.queryDataPoints(startTime, endTime);
+    
+    if (dataPoints.length === 0) {
+      return res.json({
+        success: true,
+        data: {
+          salt: [],
+          waterTemp: [],
+          cellVoltage: [],
+          filterPump: []
+        },
+        message: 'No sparkline data available yet',
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+    // Process data for sparklines
+    const sparklineData = {
+      salt: dataPoints
+        .filter(dp => dp.saltInstant !== null && dp.saltInstant !== undefined)
+        .map(dp => ({ timestamp: dp.timestamp, value: dp.saltInstant })),
+      
+      waterTemp: dataPoints
+        .filter(dp => dp.waterTemp !== null && dp.waterTemp !== undefined)
+        .map(dp => ({ timestamp: dp.timestamp, value: dp.waterTemp })),
+      
+      cellVoltage: dataPoints
+        .filter(dp => dp.cellVoltage !== null && dp.cellVoltage !== undefined)
+        .map(dp => ({ timestamp: dp.timestamp, value: dp.cellVoltage })),
+      
+      filterPump: dataPoints
+        .filter(dp => dp.pumpStatus !== null && dp.pumpStatus !== undefined)
+        .map(dp => ({ timestamp: dp.timestamp, value: dp.pumpStatus ? 1 : 0 }))
+    };
+    
+    console.log(`✅ Sparkline data processed: ${Object.values(sparklineData).reduce((acc, arr) => acc + arr.length, 0)} total points`);
+    
+    res.json({
+      success: true,
+      data: sparklineData,
+      dataRange: {
+        start: startTime.toISOString(),
+        end: endTime.toISOString(),
+        hours: 4
+      },
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('Sparkline data fetch error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch sparkline data',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // Get 24-hour rolling average for salt levels
 router.get('/salt/average', async (req, res) => {
   try {
@@ -755,6 +822,112 @@ router.get('/test/mock-data', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to generate mock data',
+      message: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Get location information for the pool monitoring system
+router.get('/location', async (req, res) => {
+  try {
+    console.log('📍 Fetching location information...');
+    
+    // Get location from both weather services (they should be unified now)
+    await weatherService.initialize();
+    await weatherAlerts.initialize();
+    
+    const weatherCoords = weatherService.getCoordinates();
+    const alertsCoords = weatherAlerts.getCoordinates();
+    
+    // Use weather service coordinates as primary
+    const coordinates = weatherCoords || alertsCoords;
+    
+    if (!coordinates) {
+      return res.status(500).json({
+        success: false,
+        error: 'No location coordinates available',
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+    const locationInfo = {
+      zipCode: weatherService.getZipCode() || weatherAlerts.getZipCode(),
+      coordinates: {
+        lat: coordinates.lat,
+        lng: coordinates.lng
+      },
+      displayName: coordinates.displayName,
+      state: weatherAlerts.getState(),
+      source: coordinates.source || 'geocoding service',
+      lastUpdated: new Date().toISOString()
+    };
+    
+    console.log(`✅ Location info retrieved: ${locationInfo.displayName}`);
+    
+    res.json({
+      success: true,
+      data: locationInfo,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('Error fetching location information:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch location information',
+      message: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Update location (ZIP code) for all services
+router.post('/location', async (req, res) => {
+  try {
+    const { zipCode } = req.body;
+    
+    if (!zipCode || typeof zipCode !== 'string') {
+      return res.status(400).json({
+        success: false,
+        error: 'Valid ZIP code is required',
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+    console.log(`🔄 Updating location to ZIP code: ${zipCode}`);
+    
+    // Update both services
+    const weatherSuccess = await weatherService.updateZipCode(zipCode);
+    const alertsSuccess = await weatherAlerts.updateZipCode(zipCode);
+    
+    if (!weatherSuccess || !alertsSuccess) {
+      console.warn('⚠️ Some services failed to update ZIP code');
+    }
+    
+    // Get updated location info
+    const coordinates = weatherService.getCoordinates() || weatherAlerts.getCoordinates();
+    
+    const locationInfo = {
+      zipCode,
+      coordinates: coordinates ? { lat: coordinates.lat, lng: coordinates.lng } : null,
+      displayName: coordinates?.displayName,
+      state: weatherAlerts.getState(),
+      lastUpdated: new Date().toISOString()
+    };
+    
+    res.json({
+      success: true,
+      message: 'Location updated successfully',
+      data: locationInfo,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('Error updating location:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update location',
       message: error.message,
       timestamp: new Date().toISOString()
     });

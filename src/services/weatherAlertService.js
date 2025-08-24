@@ -1,5 +1,6 @@
 const axios = require('axios');
 const { influxDBService } = require('./influxDBService');
+const geocodingService = require('./geocodingService');
 
 /**
  * Weather Alert Service
@@ -7,37 +8,48 @@ const { influxDBService } = require('./influxDBService');
  * as range annotations in InfluxDB
  */
 class WeatherAlertService {
-  /**
-   *
-   */
   constructor() {
     this.baseUrl = 'https://api.weather.gov';
     this.userAgent = 'NightSwim Pool Monitor (https://github.com/timothyferrell/nightswim, contact@example.com)';
     this.influxDB = influxDBService;
 
-    // Configuration
-    this.zipCode = process.env.POOL_ZIP_CODE || '90210';
-    this.state = this.getStateFromZip(this.zipCode);
+    // Configuration - unified with other services
+    this.zipCode = process.env.POOL_ZIP_CODE || '32708';
+    this.state = null; // Will be derived from coordinates
     this.coordinates = null; // Will be set during initialization
     this.initialized = false;
   }
 
   /**
    * Initialize the service with proper coordinates
+   * @returns {Promise<boolean>} True if initialization successful
    */
   async initialize() {
-    if (this.initialized) return;
+    if (this.initialized && this.coordinates) {
+      return true;
+    }
 
     try {
       console.log(`🌍 Initializing weather alert service for ZIP code: ${this.zipCode}`);
-      this.coordinates = await this.getCoordinatesFromZip(this.zipCode);
+      this.coordinates = await geocodingService.getCoordinatesFromZip(this.zipCode);
+      
+      if (!geocodingService.validateCoordinates(this.coordinates)) {
+        throw new Error('Invalid coordinates received from geocoding service');
+      }
+
+      // Derive state from coordinates or ZIP code
+      this.state = await this.getStateFromCoordinates(this.coordinates) || this.getStateFromZip(this.zipCode);
+      
       this.initialized = true;
-      console.log(`✅ Weather alert service initialized for: ${this.coordinates.displayName}`);
+      console.log(`✅ Weather alert service initialized for: ${this.coordinates.displayName} (State: ${this.state})`);
+      return true;
     } catch (error) {
-      console.error('❌ Failed to initialize weather alert service:', error);
+      console.error('❌ Failed to initialize weather alert service:', error.message);
       // Use fallback coordinates
-      this.coordinates = this.getFallbackCoordinates(this.zipCode);
+      this.coordinates = geocodingService.getFallbackCoordinates(this.zipCode);
+      this.state = this.getStateFromZip(this.zipCode);
       this.initialized = true;
+      return false;
     }
   }
 
@@ -234,185 +246,88 @@ class WeatherAlertService {
   }
 
   /**
-   * Get state from zip code (simplified mapping)
-   * @param {string} zipCode - ZIP code
-   * @returns {string} State abbreviation
+   * Get state from coordinates using reverse geocoding
+   * @param {object} coordinates - Coordinates object
+   * @returns {Promise<string|null>} State abbreviation or null
    */
-  getStateFromZip(zipCode) {
-    // Simplified ZIP to state mapping
-    // In production, you'd want a more comprehensive mapping
-    const zipToState = {
-      '90210': 'CA',
-      '90211': 'CA',
-      '90212': 'CA',
-      '10001': 'NY',
-      '10002': 'NY',
-      '33101': 'FL',
-      '33102': 'FL',
-      '77001': 'TX',
-      '77002': 'TX',
-      '60601': 'IL',
-      '60602': 'IL'
-    };
-
-    return zipToState[zipCode] || 'CA'; // Default to CA
-  }
-
-  /**
-   * Get coordinates from zip code using geocoding service
-   * @param {string} zipCode - ZIP code
-   * @returns {Promise<object>} Coordinates object
-   */
-  async getCoordinatesFromZip(zipCode) {
+  async getStateFromCoordinates(coordinates) {
     try {
-      // Use a free geocoding service (Nominatim/OpenStreetMap)
+      // Use Nominatim reverse geocoding to get state
       const response = await axios.get(
-        `https://nominatim.openstreetmap.org/search?postalcode=${zipCode}&country=US&format=json&limit=1`,
+        `https://nominatim.openstreetmap.org/reverse?lat=${coordinates.lat}&lon=${coordinates.lng}&format=json`,
         {
-          headers: {
-            'User-Agent': this.userAgent
-          },
-          timeout: 5000
+          headers: { 'User-Agent': this.userAgent },
+          timeout: 3000
         }
       );
 
-      if (response.data && response.data.length > 0) {
-        const location = response.data[0];
-        console.log(`📍 Geocoded ${zipCode} to: ${location.lat}, ${location.lon} (${location.display_name})`);
-        return {
-          lat: parseFloat(location.lat),
-          lng: parseFloat(location.lon),
-          displayName: location.display_name
-        };
+      if (response.data && response.data.address && response.data.address.state) {
+        // Convert state name to abbreviation
+        const stateName = response.data.address.state;
+        return this.getStateAbbreviation(stateName);
       }
-      console.warn(`⚠️ Could not geocode ZIP code ${zipCode}, using fallback`);
-      return this.getFallbackCoordinates(zipCode);
-
+      return null;
     } catch (error) {
-      console.error(`❌ Geocoding failed for ${zipCode}:`, error.message);
-      return this.getFallbackCoordinates(zipCode);
+      console.warn('Failed to get state from coordinates:', error.message);
+      return null;
     }
   }
 
   /**
-   * Get fallback coordinates for a ZIP code (simplified mapping)
-   * @param {string} zipCode - ZIP code
-   * @returns {object} Coordinates object
+   * Convert state name to abbreviation
+   * @param {string} stateName - Full state name
+   * @returns {string} State abbreviation
    */
-  getFallbackCoordinates(zipCode) {
-    // Extended fallback mapping for common ZIP codes
-    const zipToCoords = {
-      // California
-      '90210': { lat: 34.1030, lng: -118.4105, displayName: 'Beverly Hills, CA' },
-      '90211': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90212': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90213': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90214': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90215': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90216': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90217': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90218': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90219': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90220': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90221': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90222': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90223': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90224': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90225': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90226': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90227': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90228': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90229': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90230': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90231': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90232': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90233': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90234': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90235': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90236': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90237': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90238': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90239': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90240': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90241': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90242': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90243': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90244': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90245': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90246': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90247': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90248': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90249': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90250': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90251': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90252': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90253': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90254': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90255': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90256': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90257': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90258': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90259': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90260': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90261': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90262': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90263': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90264': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90265': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90266': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90267': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90268': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90269': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90270': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90271': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90272': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90273': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90274': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90275': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90276': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90277': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90278': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90279': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90280': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90281': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90282': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90283': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90284': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90285': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90286': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90287': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90288': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90289': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90290': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90291': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90292': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90293': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90294': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90295': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90296': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90297': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90298': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      '90299': { lat: 34.0667, lng: -118.3833, displayName: 'Los Angeles, CA' },
-      // New York
-      '10001': { lat: 40.7505, lng: -73.9934, displayName: 'New York, NY' },
-      '10002': { lat: 40.7168, lng: -73.9861, displayName: 'New York, NY' },
-      // Florida
-      '33101': { lat: 25.7617, lng: -80.1918, displayName: 'Miami, FL' },
-      '33102': { lat: 25.7617, lng: -80.1918, displayName: 'Miami, FL' },
-      // Texas
-      '77001': { lat: 29.7604, lng: -95.3698, displayName: 'Houston, TX' },
-      '77002': { lat: 29.7604, lng: -95.3698, displayName: 'Houston, TX' },
-      // Illinois
-      '60601': { lat: 41.8781, lng: -87.6298, displayName: 'Chicago, IL' },
-      '60602': { lat: 41.8781, lng: -87.6298, displayName: 'Chicago, IL' }
+  getStateAbbreviation(stateName) {
+    const stateMap = {
+      'Florida': 'FL',
+      'California': 'CA',
+      'Texas': 'TX',
+      'New York': 'NY',
+      'Arizona': 'AZ',
+      'Nevada': 'NV',
+      'Illinois': 'IL',
+      'Georgia': 'GA',
+      'North Carolina': 'NC',
+      'South Carolina': 'SC'
+    };
+    return stateMap[stateName] || stateName.substring(0, 2).toUpperCase();
+  }
+
+  /**
+   * Get state from zip code (fallback mapping)
+   * @param {string} zipCode - ZIP code
+   * @returns {string} State abbreviation
+   */
+  getStateFromZip(zipCode) {
+    // Enhanced ZIP to state mapping
+    const firstThree = zipCode.substring(0, 3);
+    
+    // ZIP code ranges by state
+    if (firstThree >= '327' && firstThree <= '347') return 'FL'; // Florida
+    if (firstThree >= '900' && firstThree <= '966') return 'CA'; // California  
+    if (firstThree >= '770' && firstThree <= '799') return 'TX'; // Texas
+    if (firstThree >= '100' && firstThree <= '149') return 'NY'; // New York
+    if (firstThree >= '850' && firstThree <= '865') return 'AZ'; // Arizona
+    if (firstThree >= '890' && firstThree <= '898') return 'NV'; // Nevada
+    if (firstThree >= '600' && firstThree <= '629') return 'IL'; // Illinois
+    
+    // Specific ZIP code mappings for edge cases
+    const zipToState = {
+      '32708': 'FL', // Winter Springs, FL
+      '90210': 'CA', // Beverly Hills, CA
+      '33101': 'FL', // Miami Beach, FL
+      '10001': 'NY', // New York, NY
+      '77001': 'TX', // Houston, TX
+      '85001': 'AZ', // Phoenix, AZ
+      '89101': 'NV', // Las Vegas, NV
+      '60601': 'IL'  // Chicago, IL
     };
 
-    return zipToCoords[zipCode] || {
-      lat: 34.1030,
-      lng: -118.4105,
-      displayName: 'Beverly Hills, CA (fallback)'
-    };
+    return zipToState[zipCode] || 'FL'; // Default to FL for pool locations
   }
+
+
 
   /**
    * Get weather alert information for dashboard display
@@ -456,6 +371,49 @@ class WeatherAlertService {
 
       return currentIndex < mostSevereIndex ? current : mostSevere;
     });
+  }
+
+  /**
+   * Get current ZIP code
+   * @returns {string} Current ZIP code
+   */
+  getZipCode() {
+    return this.zipCode;
+  }
+
+  /**
+   * Update ZIP code and reinitialize
+   * @param {string} newZipCode - New ZIP code
+   * @returns {Promise<boolean>} True if update successful
+   */
+  async updateZipCode(newZipCode) {
+    if (newZipCode === this.zipCode) {
+      return true;
+    }
+
+    console.log(`🔄 Updating weather alert service ZIP code from ${this.zipCode} to ${newZipCode}`);
+    this.zipCode = newZipCode;
+    this.initialized = false;
+    this.coordinates = null;
+    this.state = null;
+    
+    return await this.initialize();
+  }
+
+  /**
+   * Get current coordinates
+   * @returns {object|null} Current coordinates or null if not initialized
+   */
+  getCoordinates() {
+    return this.coordinates;
+  }
+
+  /**
+   * Get current state
+   * @returns {string|null} Current state abbreviation
+   */
+  getState() {
+    return this.state;
   }
 }
 
