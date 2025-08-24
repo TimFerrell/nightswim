@@ -188,7 +188,7 @@ const debounce = (func, wait) => {
 const _requestCache = {
   data: null,
   timestamp: 0,
-  ttl: 5000, // 5 seconds cache
+  ttl: CONFIG.api.cacheTimeout,
 
   isValid() {
     return this.data && (Date.now() - this.timestamp) < this.ttl;
