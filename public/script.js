@@ -647,7 +647,10 @@ const initializeSparklines = () => {
         fill: true,
         tension: 0.4,
         pointRadius: 0,
-        pointHoverRadius: 3
+        pointHoverRadius: 4,
+        pointBackgroundColor: color,
+        pointBorderColor: 'white',
+        pointBorderWidth: 2
       }]
     },
     options: {
@@ -656,7 +659,38 @@ const initializeSparklines = () => {
       interaction: { intersect: false },
       plugins: {
         legend: { display: false },
-        tooltip: { enabled: false }
+        tooltip: {
+          enabled: true,
+          mode: 'nearest',
+          intersect: false,
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          titleColor: 'white',
+          bodyColor: 'white',
+          borderColor: color,
+          borderWidth: 1,
+          cornerRadius: 6,
+          displayColors: false,
+          callbacks: {
+            title: (tooltipItems) => {
+              const dataIndex = tooltipItems[0].dataIndex;
+              const timestamp = tooltipItems[0].chart.data.labels[dataIndex];
+              return new Date(timestamp).toLocaleString();
+            },
+            label: (tooltipItem) => {
+              const value = tooltipItem.parsed.y;
+              if (label.includes('Salt')) {
+                return `${Math.round(value)} PPM`;
+              } else if (label.includes('Temp')) {
+                return `${Math.round(value * 10) / 10}°F`;
+              } else if (label.includes('Voltage')) {
+                return `${Math.round(value * 10) / 10}V`;
+              } else if (label.includes('Pump')) {
+                return value === 1 ? 'Pump ON' : 'Pump OFF';
+              }
+              return `${value}`;
+            }
+          }
+        }
       },
       scales: {
         x: { display: false },
