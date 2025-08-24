@@ -692,9 +692,9 @@ const initializeSparklines = () => {
                 }).toLowerCase();
 
                 if (targetDate.getTime() === today.getTime()) {
-                  return `today, ${timeStr}`;
+                  return `Today, ${timeStr}`;
                 } else if (targetDate.getTime() === yesterday.getTime()) {
-                  return `yesterday, ${timeStr}`;
+                  return `Yesterday, ${timeStr}`;
                 }
                 // For older dates, show month/day
                 const monthDay = target.toLocaleDateString('en-US', {
