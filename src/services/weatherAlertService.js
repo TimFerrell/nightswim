@@ -32,14 +32,14 @@ class WeatherAlertService {
     try {
       console.log(`🌍 Initializing weather alert service for ZIP code: ${this.zipCode}`);
       this.coordinates = await geocodingService.getCoordinatesFromZip(this.zipCode);
-      
+
       if (!geocodingService.validateCoordinates(this.coordinates)) {
         throw new Error('Invalid coordinates received from geocoding service');
       }
 
       // Derive state from coordinates or ZIP code
       this.state = await this.getStateFromCoordinates(this.coordinates) || this.getStateFromZip(this.zipCode);
-      
+
       this.initialized = true;
       console.log(`✅ Weather alert service initialized for: ${this.coordinates.displayName} (State: ${this.state})`);
       return true;
@@ -302,16 +302,16 @@ class WeatherAlertService {
   getStateFromZip(zipCode) {
     // Enhanced ZIP to state mapping
     const firstThree = zipCode.substring(0, 3);
-    
+
     // ZIP code ranges by state
     if (firstThree >= '327' && firstThree <= '347') return 'FL'; // Florida
-    if (firstThree >= '900' && firstThree <= '966') return 'CA'; // California  
+    if (firstThree >= '900' && firstThree <= '966') return 'CA'; // California
     if (firstThree >= '770' && firstThree <= '799') return 'TX'; // Texas
     if (firstThree >= '100' && firstThree <= '149') return 'NY'; // New York
     if (firstThree >= '850' && firstThree <= '865') return 'AZ'; // Arizona
     if (firstThree >= '890' && firstThree <= '898') return 'NV'; // Nevada
     if (firstThree >= '600' && firstThree <= '629') return 'IL'; // Illinois
-    
+
     // Specific ZIP code mappings for edge cases
     const zipToState = {
       '32708': 'FL', // Winter Springs, FL
@@ -396,7 +396,7 @@ class WeatherAlertService {
     this.initialized = false;
     this.coordinates = null;
     this.state = null;
-    
+
     return await this.initialize();
   }
 

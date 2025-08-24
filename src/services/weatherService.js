@@ -25,7 +25,7 @@ class WeatherService {
     try {
       console.log(`🌤️ Initializing weather service for ZIP code: ${this.zipCode}`);
       this.coordinates = await geocodingService.getCoordinatesFromZip(this.zipCode);
-      
+
       if (!geocodingService.validateCoordinates(this.coordinates)) {
         throw new Error('Invalid coordinates received from geocoding service');
       }
@@ -49,7 +49,7 @@ class WeatherService {
   async getCurrentWeather() {
     // Ensure service is initialized
     await this.initialize();
-    
+
     try {
       // OpenMeteo API for current conditions (free, no API key required)
       const url = `https://api.open-meteo.com/v1/forecast?latitude=${this.coordinates.lat}&longitude=${this.coordinates.lng}&current=temperature_2m,relative_humidity_2m,apparent_temperature&temperature_unit=fahrenheit&timezone=auto`;
@@ -95,7 +95,7 @@ class WeatherService {
   async getNWSWeather() {
     // Ensure service is initialized
     await this.initialize();
-    
+
     try {
       // Get office and grid information
       const gridInfo = await this.getOfficeAndGrid(this.coordinates.lat, this.coordinates.lng);
@@ -211,7 +211,7 @@ class WeatherService {
     this.zipCode = newZipCode;
     this.initialized = false;
     this.coordinates = null;
-    
+
     return await this.initialize();
   }
 
@@ -231,7 +231,7 @@ class WeatherService {
   async getHistoricalWeather(days = 7) {
     // Ensure service is initialized
     await this.initialize();
-    
+
     try {
       const endDate = new Date();
       const startDate = new Date();
