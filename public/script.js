@@ -676,6 +676,7 @@ const initializeSparklines = () => {
               const value = tooltipItem.parsed.y;
               const dataIndex = tooltipItem.dataIndex;
               const timestamp = tooltipItem.chart.data.labels[dataIndex];
+              const chartLabel = tooltipItem.chart.data.datasets[0].label;
 
               // Helper function for concise date formatting
               const formatConciseDate = (date) => {
@@ -708,13 +709,13 @@ const initializeSparklines = () => {
               const dateStr = formatConciseDate(timestamp);
 
               let valueStr;
-              if (label.includes('Salt')) {
+              if (chartLabel.includes('Salt')) {
                 valueStr = `${Math.round(value)} PPM`;
-              } else if (label.includes('Temp')) {
+              } else if (chartLabel.includes('Temp')) {
                 valueStr = `${Math.round(value * 10) / 10}°F`;
-              } else if (label.includes('Voltage')) {
+              } else if (chartLabel.includes('Voltage')) {
                 valueStr = `${Math.round(value * 10) / 10}V`;
-              } else if (label.includes('Pump')) {
+              } else if (chartLabel.includes('Pump')) {
                 valueStr = value === 1 ? 'Pump ON' : 'Pump OFF';
               } else {
                 valueStr = `${value}`;
