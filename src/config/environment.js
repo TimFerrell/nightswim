@@ -3,9 +3,11 @@
  * Centralized environment variable handling with validation
  */
 
-// InfluxDB vars are optional for development - app should work without them
-const requiredEnvVars = [
-  // No required vars for basic operation
+// Session secret is required in production for security
+const requiredEnvVars = process.env.NODE_ENV === 'production' ? [
+  'SESSION_SECRET'
+] : [
+  // No required vars for development
 ];
 
 const optionalEnvVars = {
@@ -34,6 +36,33 @@ class EnvironmentConfig {
     const missing = requiredEnvVars.filter(varName => !process.env[varName]);
     if (missing.length > 0) {
       throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+    }
+
+    // Additional validation for session secret security
+    this.validateSessionSecret();
+  }
+
+  validateSessionSecret() {
+    const sessionSecret = process.env.SESSION_SECRET || optionalEnvVars.SESSION_SECRET;
+
+    // In production, session secret must be provided and secure
+    if (process.env.NODE_ENV === 'production') {
+      if (!process.env.SESSION_SECRET) {
+        throw new Error('SESSION_SECRET environment variable is required in production');
+      }
+
+      if (sessionSecret.length < 32) {
+        throw new Error('SESSION_SECRET must be at least 32 characters long for security');
+      }
+
+      if (sessionSecret === 'default-secret-change-me') {
+        throw new Error('SESSION_SECRET cannot use the default value in production');
+      }
+    }
+
+    // In development, warn if using default secret
+    if (process.env.NODE_ENV !== 'production' && sessionSecret === 'default-secret-change-me') {
+      console.warn('⚠️  WARNING: Using default SESSION_SECRET in development. Set SESSION_SECRET environment variable for production.');
     }
   }
 

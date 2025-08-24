@@ -524,8 +524,16 @@ router.get('/salt/average', async (req, res) => {
   }
 });
 
-// Debug endpoint for salt average calculation
+// Debug endpoint for salt average calculation (development only)
 router.get('/salt/debug', async (req, res) => {
+  // Security: Only allow debug endpoints in development
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(404).json({
+      success: false,
+      error: 'Endpoint not available'
+    });
+  }
+
   try {
     // Test the connection
     const isConnected = influxDBService.isConnected;
@@ -564,8 +572,16 @@ router.get('/salt/debug', async (req, res) => {
   }
 });
 
-// Debug endpoint to see raw InfluxDB data
+// Debug endpoint to see raw InfluxDB data (development only)
 router.get('/debug-influxdb', async (req, res) => {
+  // Security: Only allow debug endpoints in development
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(404).json({
+      success: false,
+      error: 'Endpoint not available'
+    });
+  }
+
   try {
     console.log('🔍 Debug: Querying raw InfluxDB data...');
 
@@ -936,6 +952,14 @@ router.post('/location', async (req, res) => {
 
 // Debug endpoint to check credential status (development only)
 router.get('/debug/credentials', async (req, res) => {
+  // Security: Only allow debug endpoints in development
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(404).json({
+      success: false,
+      error: 'Endpoint not available'
+    });
+  }
+
   try {
     const credStatus = credentials.logCredentialStatus(true);
     const envVars = {
