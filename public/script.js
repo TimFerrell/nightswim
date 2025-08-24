@@ -4,14 +4,14 @@ const CONFIG = {
   weather: {
     zipCode: '32708' // Default ZIP code for weather data
   },
-  
+
   // Location settings
   location: {
     displayName: null, // Will be set from backend
     coordinates: null, // Will be set from backend
     lastUpdated: null
   },
-  
+
   // Threshold values for monitoring
   thresholds: {
     salt: {
@@ -36,14 +36,14 @@ const CONFIG = {
       max: 20
     }
   },
-  
+
   // Refresh intervals (in milliseconds)
   intervals: {
     chartRefresh: 30000,
     statsRefresh: 30000,
     debounceDelay: 300
   },
-  
+
   // API settings
   api: {
     retryAttempts: 3,
@@ -59,21 +59,21 @@ let saltSparkline, waterTempSparkline, cellVoltageSparkline, filterPumpSparkline
 const initializeConfig = async () => {
   try {
     // Try to load location info from backend
-    await loadLocationInfo();
-    
+    await loadLocationInfo(); // eslint-disable-line no-use-before-define
+
     // Update ZIP code display
     const zipCodeElement = document.getElementById('weatherZipCode');
     if (zipCodeElement) {
       zipCodeElement.textContent = CONFIG.weather.zipCode;
     }
-    
+
     // Update location header
-    updateLocationHeader();
-    
+    updateLocationHeader(); // eslint-disable-line no-use-before-define
+
     console.log('🔧 Configuration initialized:', CONFIG);
     return CONFIG;
   } catch (error) {
-    handleApiError(error, 'Configuration initialization');
+    handleApiError(error, 'Configuration initialization'); // eslint-disable-line no-use-before-define
     return CONFIG; // Fallback to default config
   }
 };
@@ -82,7 +82,7 @@ const initializeConfig = async () => {
 const loadLocationInfo = async () => {
   try {
     const response = await fetch('/api/pool/location', { credentials: 'include' });
-    
+
     if (response.ok) {
       const result = await response.json();
       if (result.success && result.data) {
@@ -96,7 +96,7 @@ const loadLocationInfo = async () => {
       CONFIG.location.displayName = 'Winter Springs, FL';
       console.log('📍 Using fallback location info');
     }
-  } catch (error) {
+  } catch {
     // Use fallback location info
     CONFIG.location.displayName = 'Winter Springs, FL';
     console.log('⚠️ Failed to load location info, using fallback');
@@ -188,7 +188,7 @@ const debounce = (func, wait) => {
 const _requestCache = {
   data: null,
   timestamp: 0,
-  ttl: CONFIG.api.cacheTimeout
+  ttl: 5000, // 5 seconds cache
 
   isValid() {
     return this.data && (Date.now() - this.timestamp) < this.ttl;
@@ -409,7 +409,7 @@ const updateWeatherTimeSeriesCard = (data) => {
 // Centralized error handling
 const handleApiError = (error, context, retryCount = 0) => {
   console.error(`${context} error (attempt ${retryCount + 1}):`, error);
-  
+
   if (error.name === 'TypeError' && error.message.includes('fetch')) {
     console.error('🌐 Network error - check connection');
   } else if (error.message.includes('HTTP')) {
@@ -464,10 +464,10 @@ const loadPoolData = async (retryCount = 0) => {
       console.log(`🔄 Retrying data load in ${delaySeconds}s...`);
       await delay(delaySeconds * 1000);
       return loadPoolData(retryCount + 1);
-    } else {
-      console.error(`❌ Failed to load pool data after ${CONFIG.api.retryAttempts} attempts`);
-      // showDataLoadError(error.message);
     }
+    console.error(`❌ Failed to load pool data after ${CONFIG.api.retryAttempts} attempts`);
+    // showDataLoadError(error.message);
+
   }
 };
 
@@ -708,7 +708,7 @@ const initializeSparklines = () => {
   if (waterTempCanvas) {
     if (waterTempSparkline) waterTempSparkline.destroy();
     const tempConfig = chartConfig('Water Temp', '#e74c3c');
-    
+
     // Add temperature threshold annotations
     const { waterTemperature } = CONFIG.thresholds;
     tempConfig.options.plugins.annotation = {
@@ -737,7 +737,7 @@ const initializeSparklines = () => {
       }
     };
     tempConfig.options.scales.y = { min: waterTemperature.min, max: waterTemperature.max, display: false };
-    
+
     waterTempSparkline = new Chart(waterTempCanvas, tempConfig);
   }
 
@@ -745,7 +745,7 @@ const initializeSparklines = () => {
   if (cellVoltageCanvas) {
     if (cellVoltageSparkline) cellVoltageSparkline.destroy();
     const voltageConfig = chartConfig('Cell Voltage', '#f39c12');
-    
+
     // Add voltage threshold annotations
     const { cellVoltage } = CONFIG.thresholds;
     voltageConfig.options.plugins.annotation = {
@@ -774,7 +774,7 @@ const initializeSparklines = () => {
       }
     };
     voltageConfig.options.scales.y = { min: cellVoltage.min, max: cellVoltage.max, display: false };
-    
+
     cellVoltageSparkline = new Chart(cellVoltageCanvas, voltageConfig);
   }
 
@@ -865,7 +865,7 @@ const initializeWeatherTimeSeriesChart = () => {
  */
 const getWaterComfortLevel = (temperature) => {
   const { waterTemperature } = CONFIG.thresholds;
-  
+
   if (temperature >= 95) return 'Too Hot';
   if (temperature >= waterTemperature.hot) return 'Hot';
   if (temperature >= waterTemperature.optimal) return 'Warm';
@@ -1730,7 +1730,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Initialize configuration first
   await initializeConfig();
-  
+
   // Initialize all components
   initializeSparklines();
   initializeWeatherTimeSeriesChart();
@@ -1760,7 +1760,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       ]);
     }
   };
-  
+
   await processInitialData();
 
   // Listen for dark mode changes
