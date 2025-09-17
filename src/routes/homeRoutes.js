@@ -374,7 +374,7 @@ router.get('/debug', async (req, res) => {
 
     // Test the query with different time ranges
     const queryTests = [];
-    const timeRanges = [1, 6, 24];
+    const timeRanges = [12, 24, 48];
 
     for (const hours of timeRanges) {
       try {
@@ -405,7 +405,7 @@ router.get('/debug', async (req, res) => {
 
     try {
       // Test 1: Basic connectivity
-      const testQuery = `from(bucket: "pool-data") |> range(start: -24h) |> limit(n: 3)`;
+      const testQuery = `from(bucket: "pool-data") |> range(start: -48h) |> limit(n: 5)`;
       console.log('🔍 [Debug] Testing basic connectivity...');
 
       const testPoints = [];
@@ -431,10 +431,10 @@ router.get('/debug', async (req, res) => {
       // Test 2: Check for specific sensors
       const sensorQuery = `
         from(bucket: "pool-data")
-          |> range(start: -24h)
+          |> range(start: -48h)
           |> filter(fn: (r) => r._measurement == "pool_metrics")
           |> filter(fn: (r) => r.sensor == "pool_temperature" or r.sensor == "pool_humidity")
-          |> limit(n: 5)
+          |> limit(n: 10)
       `;
 
       const sensorPoints = [];
