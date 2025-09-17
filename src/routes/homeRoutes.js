@@ -402,9 +402,9 @@ router.get('/debug', async (req, res) => {
     let sensorDataTest = null;
 
     try {
-      // Test 1: Basic connectivity
-      const testQuery = `from(bucket: "pool-data") |> range(start: -48h) |> limit(n: 5)`;
-      console.log('🔍 [Debug] Testing basic connectivity...');
+      // Test 1: Basic connectivity - check much wider range
+      const testQuery = `from(bucket: "pool-data") |> range(start: -30d) |> limit(n: 10)`;
+      console.log('🔍 [Debug] Testing basic connectivity with 30-day range...');
 
       const testPoints = [];
       const testResult = influxDBClient.queryApi.queryRows(testQuery, {
@@ -426,13 +426,12 @@ router.get('/debug', async (req, res) => {
         samplePoints: testPoints.slice(0, 2)
       };
 
-      // Test 2: Check for specific sensors
+      // Test 2: Check what measurements and sensors exist
       const sensorQuery = `
         from(bucket: "pool-data")
-          |> range(start: -48h)
-          |> filter(fn: (r) => r._measurement == "pool_metrics")
-          |> filter(fn: (r) => r.sensor == "pool_temperature" or r.sensor == "pool_humidity")
-          |> limit(n: 10)
+          |> range(start: -30d)
+          |> limit(n: 20)
+          |> group()
       `;
 
       const sensorPoints = [];
@@ -452,8 +451,10 @@ router.get('/debug', async (req, res) => {
       sensorDataTest = {
         success: true,
         pointCount: sensorPoints.length,
-        samplePoints: sensorPoints.slice(0, 3),
-        uniqueSensors: [...new Set(sensorPoints.map(p => p.sensor))]
+        samplePoints: sensorPoints.slice(0, 5),
+        uniqueMeasurements: [...new Set(sensorPoints.map(p => p._measurement).filter(Boolean))],
+        uniqueSensors: [...new Set(sensorPoints.map(p => p.sensor).filter(Boolean))],
+        uniqueFields: [...new Set(sensorPoints.map(p => p._field).filter(Boolean))]
       };
 
     } catch (error) {
