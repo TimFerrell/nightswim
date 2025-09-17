@@ -778,4 +778,107 @@ router.get('/step1-write-temp-data', async (req, res) => {
   }
 });
 
+/**
+ * STEP 2: Test with _value field and check what data actually exists
+ * GET /api/home/step2-check-data-structure
+ */
+router.get('/step2-check-data-structure', async (req, res) => {
+  try {
+    console.log('🔍 [Step 2] Checking actual data structure in InfluxDB...');
+
+    const { InfluxDB, Point } = require('@influxdata/influxdb-client');
+
+    const client = new InfluxDB({
+      url: process.env.INFLUXDB_URL,
+      token: process.env.INFLUX_DB_TOKEN
+    });
+
+    const writeApi = client.getWriteApi(process.env.INFLUXDB_ORG, 'pool-data');
+
+    // Write data with _value field (InfluxDB standard)
+    const tempPoint = new Point('pool_metrics')
+      .tag('sensor', 'pool_temperature')
+      .floatField('_value', 73.2)
+      .timestamp(new Date());
+
+    const humidityPoint = new Point('pool_metrics')
+      .tag('sensor', 'pool_humidity')
+      .floatField('_value', 42.8)
+      .timestamp(new Date());
+
+    writeApi.writePoint(tempPoint);
+    writeApi.writePoint(humidityPoint);
+    await writeApi.close();
+
+    console.log('🔍 Data written with _value field');
+
+    // Wait for data to be available
+    await new Promise(resolve => setTimeout(resolve, 3000));
+
+    const queryApi = client.getQueryApi(process.env.INFLUXDB_ORG);
+
+    // Test 1: Check all recent data (no filters)
+    const allDataQuery = `from(bucket: "pool-data") |> range(start: -10m) |> limit(n: 20)`;
+
+    const allDataResults = [];
+    await queryApi.queryRows(allDataQuery, {
+      next: (row, tableMeta) => {
+        allDataResults.push(tableMeta.toObject(row));
+      },
+      error: (error) => {
+        console.error('🔍 All data query error:', error);
+      },
+      complete: () => {
+        console.log(`🔍 All data query: ${allDataResults.length} points found`);
+      }
+    });
+
+    // Test 2: Simple temperature query
+    const tempQuery = `
+      from(bucket: "pool-data")
+        |> range(start: -10m)
+        |> filter(fn: (r) => r._measurement == "pool_metrics")
+        |> filter(fn: (r) => r.sensor == "pool_temperature")
+        |> limit(n: 5)
+    `;
+
+    const tempResults = [];
+    await queryApi.queryRows(tempQuery, {
+      next: (row, tableMeta) => {
+        tempResults.push(tableMeta.toObject(row));
+      },
+      error: (error) => {
+        console.error('🔍 Temperature query error:', error);
+      },
+      complete: () => {
+        console.log(`🔍 Temperature query: ${tempResults.length} points found`);
+      }
+    });
+
+    return res.json({
+      success: true,
+      test: 'step2-data-structure',
+      timestamp: new Date().toISOString(),
+      results: {
+        allRecentData: {
+          pointCount: allDataResults.length,
+          samplePoints: allDataResults.slice(0, 5)
+        },
+        temperatureData: {
+          pointCount: tempResults.length,
+          samplePoints: tempResults.slice(0, 3)
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('🔍 [Step 2] Error:', error);
+    return res.status(500).json({
+      success: false,
+      test: 'step2-data-structure',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;
