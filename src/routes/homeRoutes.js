@@ -355,7 +355,7 @@ router.get('/debug', async (req, res) => {
       INFLUXDB_URL: process.env.INFLUXDB_URL ? `${process.env.INFLUXDB_URL.substring(0, 20)}...` : 'NOT_SET',
       INFLUXDB_ORG: process.env.INFLUXDB_ORG ? `${process.env.INFLUXDB_ORG.substring(0, 10)}...` : 'NOT_SET',
       INFLUXDB_BUCKET: process.env.INFLUXDB_BUCKET || 'NOT_SET',
-      INFLUXDB_TOKEN: process.env.INFLUXDB_TOKEN ? 'SET (hidden)' : 'NOT_SET'
+      INFLUXDB_TOKEN: process.env.INFLUXDB_TOKEN ? `SET (${process.env.INFLUXDB_TOKEN.length} chars, starts: ${process.env.INFLUXDB_TOKEN.substring(0, 8)}...)` : 'NOT_SET'
     };
 
     // Connection status
