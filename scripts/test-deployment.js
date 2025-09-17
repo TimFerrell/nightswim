@@ -83,6 +83,12 @@ async function runTests() {
   results.push(await testEndpoint('/script.js', 200, 'JavaScript file'));
   results.push(await testEndpoint('/api/pool/data', 200, 'Pool data endpoint'));
   
+  // Test new home environment endpoints
+  results.push(await testEndpoint('/api/home/environment', 200, 'Home environment data'));
+  results.push(await testEndpoint('/api/home/timeseries', 200, 'Home environment time series'));
+  results.push(await testEndpoint('/api/home/timeseries/stats', 200, 'Home environment stats'));
+  results.push(await testEndpoint('/api/home/comfort', 200, 'Home environment comfort'));
+  
   // Test 404 handling
   results.push(await testEndpoint('/nonexistent', 404, '404 handling'));
   

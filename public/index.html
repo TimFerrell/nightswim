@@ -1014,6 +1014,54 @@
                       </div>
                     </div>
                   </div>
+
+                  <!-- Home Temperature Card -->
+                  <div class="status-card" id="homeTempCard">
+                    <h3>Home Temperature</h3>
+                    <div class="status-value skeleton-value" id="homeTempValue">--</div>
+                    <div class="status-unit">°F</div>
+                    <div class="sparkline-container">
+                      <canvas id="homeTempSparkline" class="sparkline-canvas"></canvas>
+                    </div>
+                    <div class="status-details">
+                      <div class="status-detail">
+                        <span class="status-detail-label">Comfort</span>
+                        <span class="status-detail-value skeleton-text" id="homeTempComfort">--</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Home Humidity Card -->
+                  <div class="status-card" id="homeHumidityCard">
+                    <h3>Home Humidity</h3>
+                    <div class="status-value skeleton-value" id="homeHumidityValue">--</div>
+                    <div class="status-unit">%</div>
+                    <div class="sparkline-container">
+                      <canvas id="homeHumiditySparkline" class="sparkline-canvas"></canvas>
+                    </div>
+                    <div class="status-details">
+                      <div class="status-detail">
+                        <span class="status-detail-label">Level</span>
+                        <span class="status-detail-value skeleton-text" id="homeHumidityLevel">--</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Home Feels-Like Card -->
+                  <div class="status-card" id="homeFeelsLikeCard">
+                    <h3>Feels Like</h3>
+                    <div class="status-value skeleton-value" id="homeFeelsLikeValue">--</div>
+                    <div class="status-unit">°F</div>
+                    <div class="sparkline-container">
+                      <canvas id="homeFeelsLikeSparkline" class="sparkline-canvas"></canvas>
+                    </div>
+                    <div class="status-details">
+                      <div class="status-detail">
+                        <span class="status-detail-label">Comfort</span>
+                        <span class="status-detail-value skeleton-text" id="homeFeelsLikeComfort">--</span>
+                      </div>
+                    </div>
+                  </div>
               </div>
 
             <!-- Charts Section -->
@@ -1064,6 +1112,26 @@
                         </div>
                         <div class="chart-canvas">
                             <canvas id="chemistryChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Home Environment -->
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3 class="chart-title">Home Environment</h3>
+                            <div class="chart-controls">
+                                <label for="homeTimeRange">Time Range:</label>
+                                <select id="homeTimeRange" class="time-selector" onchange="updateHomeEnvironmentChart()">
+                                    <option value="1">Last Hour</option>
+                                    <option value="6">Last 6 Hours</option>
+                                    <option value="24" selected>Last 24 Hours</option>
+                                    <option value="48">Last 48 Hours</option>
+                                </select>
+                                <div class="chart-status" id="homeEnvironmentChartStatus">Loading...</div>
+                            </div>
+                        </div>
+                        <div class="chart-canvas">
+                            <canvas id="homeEnvironmentChart"></canvas>
                         </div>
                     </div>
                 </div>

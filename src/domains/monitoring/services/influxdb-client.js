@@ -175,6 +175,137 @@ class InfluxDBClient {
   }
 
   /**
+   * Query home environment data using the provided Flux query
+   * Returns temperature, humidity, and feels-like data
+   */
+  async queryHomeEnvironmentData(hours = 24, limit = 1000) {
+    if (!this.isConnected || !this.queryApi) {
+      console.log('⚠️ InfluxDB not connected, returning empty array');
+      return [];
+    }
+
+    try {
+      const query = `
+        // Three smoothed series: Temp (F), Humidity (%), Feels-Like (F)
+        // Auto-detects units: if temp>60 assume °F; if hum<=1.5 assume 0–1 and scale to %.
+        src =
+          from(bucket: "${this.config.bucket}")
+            |> range(start: -${hours}h)
+            |> filter(fn: (r) => r._measurement == "pool_metrics")
+            |> filter(fn: (r) => r.sensor == "pool_temperature" or r.sensor == "pool_humidity")
+            |> keep(columns: ["_time", "_value", "sensor"])
+
+        // Normalize to Temp(F) and Humidity(%)
+        norm =
+          src
+            |> map(fn: (r) => ({
+                r with
+                _field: if r.sensor == "pool_temperature" then "Temp (F)" else "Humidity (%)",
+                _value:
+                  if r.sensor == "pool_temperature" then
+                    (if r._value > 60.0 then r._value else r._value * 9.0 / 5.0 + 32.0)
+                  else
+                    (if r._value <= 1.5 then r._value * 100.0 else r._value)
+              }))
+            |> keep(columns: ["_time", "_field", "_value"])
+
+        // Smooth each series
+        smoothed =
+          norm
+            |> group(columns: ["_field"])
+            |> aggregateWindow(every: 1m, fn: mean, createEmpty: false)
+            |> movingAverage(n: 3)
+
+        // Pivot to compute Feels-Like from smoothed Temp/Humidity
+        wide =
+          smoothed
+            |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
+            // guardrails: clamp to plausible ranges to avoid wild spikes
+            |> map(fn: (r) => ({
+                r with
+                "Temp (F)": if r["Temp (F)"] < -20.0 then -20.0 else (if r["Temp (F)"] > 140.0 then 140.0 else r["Temp (F)"]),
+                "Humidity (%)": if r["Humidity (%)"] < 0.0 then 0.0 else (if r["Humidity (%)"] > 100.0 then 100.0 else r["Humidity (%)"])
+              }))
+            |> map(fn: (r) => ({
+                r with
+                "Feels-Like (F)":
+                  if r["Temp (F)"] < 80.0 then
+                    0.5 * (r["Temp (F)"] + 61.0 + ((r["Temp (F)"] - 68.0) * 1.2) + (r["Humidity (%)"] * 0.094))
+                  else
+                    -42.379 +
+                    2.04901523 * r["Temp (F)"] +
+                    10.14333127 * r["Humidity (%)"] -
+                    0.22475541 * r["Temp (F)"] * r["Humidity (%)"] -
+                    0.00683783 * r["Temp (F)"] * r["Temp (F)"] -
+                    0.05481717 * r["Humidity (%)"] * r["Humidity (%)"] +
+                    0.00122874 * r["Temp (F)"] * r["Temp (F)"] * r["Humidity (%)"] +
+                    0.00085282 * r["Temp (F)"] * r["Humidity (%)"] * r["Humidity (%)"] -
+                    0.00000199 * r["Temp (F)"] * r["Temp (F)"] * r["Humidity (%)"] * r["Humidity (%)"]
+              }))
+
+        // Convert back to long-form so the line chart draws 3 series
+        tempS = wide |> keep(columns: ["_time","Temp (F)"])        |> rename(columns: {"Temp (F)": "_value"})        |> set(key: "_field", value: "Temp (F)")
+        humS  = wide |> keep(columns: ["_time","Humidity (%)"])    |> rename(columns: {"Humidity (%)": "_value"})     |> set(key: "_field", value: "Humidity (%)")
+        hiS   = wide |> keep(columns: ["_time","Feels-Like (F)"])  |> rename(columns: {"Feels-Like (F)": "_value"})   |> set(key: "_field", value: "Feels-Like (F)")
+
+        union(tables: [tempS, humS, hiS])
+          |> group(columns: ["_field"])
+          |> sort(columns: ["_time"])
+          |> limit(n: ${limit})
+          |> yield(name: "three_series")
+      `;
+
+      const dataPoints = [];
+      const _queryResult = this.queryApi.queryRows(query, {
+        next: (row, tableMeta) => {
+          const dataPoint = tableMeta.toObject(row);
+          dataPoints.push(this.transformHomeEnvironmentPoint(dataPoint));
+        },
+        error: (error) => {
+          console.error('❌ Home environment query error:', error);
+        },
+        complete: () => {
+          console.log(`🏠 Retrieved ${dataPoints.length} home environment data points from InfluxDB`);
+        }
+      });
+
+      await _queryResult;
+      return this.groupHomeEnvironmentData(dataPoints);
+    } catch (error) {
+      console.error('❌ Error querying home environment data:', error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Get home environment statistics
+   */
+  async getHomeEnvironmentStats(hours = 24) {
+    if (!this.isConnected || !this.queryApi) {
+      return null;
+    }
+
+    try {
+      const data = await this.queryHomeEnvironmentData(hours);
+      if (data.length === 0) {
+        return null;
+      }
+
+      // Calculate statistics for each metric
+      const stats = {
+        temperature: this.calculateStats(data.map(d => d.temperature).filter(v => v !== null)),
+        humidity: this.calculateStats(data.map(d => d.humidity).filter(v => v !== null)),
+        feelsLike: this.calculateStats(data.map(d => d.feelsLike).filter(v => v !== null))
+      };
+
+      return stats;
+    } catch (error) {
+      console.error('❌ Error getting home environment stats:', error.message);
+      return null;
+    }
+  }
+
+  /**
    * Test InfluxDB connection
    */
   async testConnection() {
@@ -251,6 +382,76 @@ class InfluxDBClient {
       pumpStatus: influxPoint.pumpStatus,
       weatherTemp: influxPoint.weatherTemp,
       weatherHumidity: influxPoint.weatherHumidity
+    };
+  }
+
+  /**
+   * Transform home environment InfluxDB point to our data format
+   */
+  transformHomeEnvironmentPoint(influxPoint) {
+    return {
+      timestamp: influxPoint._time,
+      field: influxPoint._field,
+      value: influxPoint._value
+    };
+  }
+
+  /**
+   * Group home environment data by timestamp
+   */
+  groupHomeEnvironmentData(dataPoints) {
+    const grouped = {};
+    
+    // Group by timestamp
+    dataPoints.forEach(point => {
+      if (!grouped[point.timestamp]) {
+        grouped[point.timestamp] = {
+          timestamp: point.timestamp,
+          temperature: null,
+          humidity: null,
+          feelsLike: null
+        };
+      }
+      
+      // Map field names to our data structure
+      switch (point.field) {
+        case 'Temp (F)':
+          grouped[point.timestamp].temperature = point.value;
+          break;
+        case 'Humidity (%)':
+          grouped[point.timestamp].humidity = point.value;
+          break;
+        case 'Feels-Like (F)':
+          grouped[point.timestamp].feelsLike = point.value;
+          break;
+      }
+    });
+    
+    // Convert to array and sort by timestamp
+    return Object.values(grouped).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  }
+
+  /**
+   * Calculate basic statistics for an array of values
+   */
+  calculateStats(values) {
+    if (values.length === 0) {
+      return { min: null, max: null, avg: null };
+    }
+    
+    const validValues = values.filter(v => v !== null && !isNaN(v));
+    if (validValues.length === 0) {
+      return { min: null, max: null, avg: null };
+    }
+    
+    const min = Math.min(...validValues);
+    const max = Math.max(...validValues);
+    const avg = validValues.reduce((sum, val) => sum + val, 0) / validValues.length;
+    
+    return {
+      min: Math.round(min * 10) / 10,
+      max: Math.round(max * 10) / 10,
+      avg: Math.round(avg * 10) / 10
     };
   }
 

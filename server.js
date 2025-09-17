@@ -12,6 +12,7 @@ const { influxDBClient } = require('./src/domains/monitoring');
 // Import routes (will be migrated gradually)
 const poolRoutes = require('./src/routes/poolRoutes');
 const cronRoutes = require('./src/routes/cronRoutes');
+const homeRoutes = require('./src/routes/homeRoutes');
 
 // New architecture API routes
 const newPoolRoutes = require('./src/web/api/routes');
@@ -118,6 +119,7 @@ app.use('/api/pool', poolRoutes); // Legacy routes (v1)
 app.use('/api/pool', newPoolRoutes); // New architecture routes (v2)
 app.use('/api/cron', cronRoutes); // Legacy cron routes (v1)
 app.use('/api/cron', newCronRoutes); // New architecture cron routes (v2)
+app.use('/api/home', homeRoutes); // Home environment routes
 
 // GET / - Main pool data page
 app.get('/', (req, res) => {

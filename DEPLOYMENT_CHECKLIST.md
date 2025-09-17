@@ -55,6 +55,10 @@ npm run test:deployment
 #### ✅ API Endpoints
 - [ ] Pool status endpoint (`/api/pool/status`)
 - [ ] Cron endpoint responds (`/api/cron/collect-data`)
+- [ ] Home environment data (`/api/home/environment`)
+- [ ] Home environment time series (`/api/home/timeseries`)
+- [ ] Home environment statistics (`/api/home/timeseries/stats`)
+- [ ] Home environment comfort analysis (`/api/home/comfort`)
 
 #### ✅ Cron Job Verification
 - [ ] Check Vercel dashboard for cron job execution logs
@@ -63,6 +67,14 @@ npm run test:deployment
 #### ✅ Environment Variables
 - [ ] `hasCredentials` shows `true` in health check
 - [ ] No environment-related errors in logs
+
+#### ✅ Home Environment Features
+- [ ] Home temperature card displays correctly
+- [ ] Home humidity card displays correctly  
+- [ ] Home feels-like card displays correctly
+- [ ] Home environment chart loads with data
+- [ ] Comfort level calculations work properly
+- [ ] Time range selector functions correctly
 
 ### 5. Vercel Dashboard Monitoring
 

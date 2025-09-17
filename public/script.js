@@ -34,6 +34,20 @@ const CONFIG = {
       optimal: 10,
       high: 15,
       max: 20
+    },
+    homeTemperature: {
+      min: 60,
+      cold: 68,
+      optimal: 73,
+      hot: 78,
+      max: 85
+    },
+    homeHumidity: {
+      min: 20,
+      low: 30,
+      optimal: 45,
+      high: 60,
+      max: 80
     }
   },
 
@@ -52,8 +66,9 @@ const CONFIG = {
 };
 
 // Global chart variables
-let tempChart, electricalChart, chemistryChart;
+let tempChart, electricalChart, chemistryChart, homeEnvironmentChart;
 let saltSparkline, waterTempSparkline, cellVoltageSparkline, filterPumpSparkline, weatherTimeSeriesChart;
+let homeTempSparkline, homeHumiditySparkline, homeFeelsLikeSparkline;
 
 // Configuration initialization
 const initializeConfig = async () => {
@@ -263,6 +278,11 @@ const formatTime = (timeString) => {
   });
 };
 
+const capitalizeFirst = (str) => {
+  if (!str) return str;
+  return str.charAt(0).toUpperCase() + str.slice(1);
+};
+
 const updateSaltAnnotations = (currentSalt) => {
   if (!saltSparkline) return;
 
@@ -406,6 +426,115 @@ const updateWeatherTimeSeriesCard = (data) => {
   updateWeatherTimeSeriesChart(data);
 };
 
+// Home Environment Card Update Functions
+const updateHomeEnvironmentCards = (data) => {
+  if (data.error) {
+    // Handle error state
+    updateHomeEnvironmentCard('homeTempCard', { error: data.error });
+    updateHomeEnvironmentCard('homeHumidityCard', { error: data.error });
+    updateHomeEnvironmentCard('homeFeelsLikeCard', { error: data.error });
+    return;
+  }
+
+  // Update temperature card
+  updateHomeEnvironmentCard('homeTempCard', {
+    value: data.temperature,
+    unit: '°F',
+    comfort: data.comfortLevel,
+    sparkline: 'homeTempSparkline'
+  });
+
+  // Update humidity card
+  updateHomeEnvironmentCard('homeHumidityCard', {
+    value: data.humidity,
+    unit: '%',
+    level: data.humidityLevel,
+    sparkline: 'homeHumiditySparkline'
+  });
+
+  // Update feels-like card
+  updateHomeEnvironmentCard('homeFeelsLikeCard', {
+    value: data.feelsLike,
+    unit: '°F',
+    comfort: data.comfortLevel,
+    sparkline: 'homeFeelsLikeSparkline'
+  });
+};
+
+const updateHomeEnvironmentCard = (cardId, data) => {
+  const card = document.getElementById(cardId);
+  if (!card) return;
+
+  if (data.error) {
+    // Error state
+    const valueElement = card.querySelector('.status-value');
+    if (valueElement) {
+      valueElement.textContent = '!';
+      valueElement.classList.add('error');
+    }
+    return;
+  }
+
+  // Update main value
+  const valueElement = card.querySelector('.status-value');
+  if (valueElement && data.value !== null) {
+    valueElement.textContent = Math.round(data.value * 10) / 10;
+    valueElement.classList.remove('skeleton-value', 'error');
+    valueElement.classList.add('loaded');
+  }
+
+  // Update detail value
+  const detailElement = card.querySelector('.status-detail-value');
+  if (detailElement) {
+    if (data.comfort) {
+      detailElement.textContent = capitalizeFirst(data.comfort);
+    } else if (data.level) {
+      detailElement.textContent = capitalizeFirst(data.level);
+    }
+    detailElement.classList.remove('skeleton-text');
+    detailElement.classList.add('loaded');
+  }
+
+  // Mark card as loaded
+  card.classList.add('loaded');
+};
+
+const updateHomeEnvironmentChart = (data) => {
+  if (data.error) {
+    const statusElement = document.getElementById('homeEnvironmentChartStatus');
+    if (statusElement) {
+      statusElement.textContent = 'Error loading data';
+      statusElement.classList.add('error');
+    }
+    return;
+  }
+
+  if (!homeEnvironmentChart) {
+    console.warn('Home environment chart not initialized');
+    return;
+  }
+
+  // Update chart data
+  const labels = data.map(d => new Date(d.timestamp));
+  const temperatureData = data.map(d => d.temperature);
+  const humidityData = data.map(d => d.humidity);
+  const feelsLikeData = data.map(d => d.feelsLike);
+
+  homeEnvironmentChart.data.labels = labels;
+  homeEnvironmentChart.data.datasets[0].data = temperatureData;
+  homeEnvironmentChart.data.datasets[1].data = humidityData;
+  homeEnvironmentChart.data.datasets[2].data = feelsLikeData;
+
+  homeEnvironmentChart.update('none');
+
+  // Update status
+  const statusElement = document.getElementById('homeEnvironmentChartStatus');
+  if (statusElement) {
+    statusElement.textContent = `${data.length} data points`;
+    statusElement.classList.remove('error');
+  }
+};
+
 // Centralized error handling
 const handleApiError = (error, context, retryCount = 0) => {
   console.error(`${context} error (attempt ${retryCount + 1}):`, error);
@@ -545,6 +674,71 @@ const loadWeatherTimeSeries = async () => {
   } catch (error) {
     handleApiError(error, 'Weather time series loading');
     updateWeatherTimeSeriesCard({
+      error: error.message
+    });
+  }
+};
+
+// Home Environment Data Loading Functions
+const loadHomeEnvironmentData = async () => {
+  try {
+    console.log('🏠 Loading home environment data...');
+    const startTime = Date.now();
+
+    const response = await fetch('/api/home/environment', { credentials: 'include' });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+
+    if (!result.success) {
+      throw new Error(result.error || 'Invalid home environment response format');
+    }
+
+    const data = result.data;
+    const loadTime = Date.now() - startTime;
+    console.log(`✅ Home environment data loaded in ${loadTime}ms`);
+
+    // Update home environment status cards
+    updateHomeEnvironmentCards(data);
+
+  } catch (error) {
+    handleApiError(error, 'Home environment data loading');
+    updateHomeEnvironmentCards({
+      error: error.message
+    });
+  }
+};
+
+const loadHomeEnvironmentTimeSeries = async (hours = 24) => {
+  try {
+    console.log(`🏠 Loading home environment time series (${hours}h)...`);
+    const startTime = Date.now();
+
+    const response = await fetch(`/api/home/timeseries?hours=${hours}`, { credentials: 'include' });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+
+    if (!result.success) {
+      throw new Error(result.error || 'Invalid home environment time series response format');
+    }
+
+    const data = result.data;
+    const loadTime = Date.now() - startTime;
+    console.log(`✅ Home environment time series loaded in ${loadTime}ms`);
+
+    // Update home environment chart
+    updateHomeEnvironmentChart(data);
+
+  } catch (error) {
+    handleApiError(error, 'Home environment time series loading');
+    updateHomeEnvironmentChart({
       error: error.message
     });
   }
@@ -1365,6 +1559,145 @@ const initializeChemistryChart = () => {
 };
 
 /**
+ * Initialize the home environment chart
+ */
+const initializeHomeEnvironmentChart = () => {
+  if (homeEnvironmentChart) {
+    homeEnvironmentChart.destroy();
+  }
+
+  const ctx = document.getElementById('homeEnvironmentChart').getContext('2d');
+  homeEnvironmentChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [
+        {
+          label: 'Temperature (°F)',
+          data: [],
+          borderColor: '#ef4444',
+          backgroundColor: 'rgba(239, 68, 68, 0.1)',
+          borderWidth: 3,
+          fill: true,
+          tension: 0.4,
+          pointRadius: 0,
+          pointHoverRadius: 6,
+          pointBackgroundColor: '#ef4444',
+          pointBorderColor: 'white',
+          pointBorderWidth: 2
+        },
+        {
+          label: 'Humidity (%)',
+          data: [],
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16, 185, 129, 0.1)',
+          borderWidth: 3,
+          fill: true,
+          tension: 0.4,
+          pointRadius: 0,
+          pointHoverRadius: 6,
+          pointBackgroundColor: '#10b981',
+          pointBorderColor: 'white',
+          pointBorderWidth: 2
+        },
+        {
+          label: 'Feels-Like (°F)',
+          data: [],
+          borderColor: '#8b5cf6',
+          backgroundColor: 'rgba(139, 92, 246, 0.1)',
+          borderWidth: 3,
+          fill: true,
+          tension: 0.4,
+          pointRadius: 0,
+          pointHoverRadius: 6,
+          pointBackgroundColor: '#8b5cf6',
+          pointBorderColor: 'white',
+          pointBorderWidth: 2
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        intersect: false,
+        mode: 'index'
+      },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          labels: {
+            usePointStyle: true,
+            padding: 20,
+            font: {
+              size: 12,
+              weight: '500'
+            }
+          }
+        },
+        tooltip: {
+          enabled: true,
+          mode: 'index',
+          intersect: false,
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          titleColor: 'white',
+          bodyColor: 'white',
+          borderColor: 'rgba(255, 255, 255, 0.2)',
+          borderWidth: 1,
+          cornerRadius: 8,
+          displayColors: true,
+          callbacks: {
+            title: (tooltipItems) => {
+              const date = new Date(tooltipItems[0].label);
+              return date.toLocaleString();
+            },
+            label: (tooltipItem) => {
+              const value = tooltipItem.parsed.y;
+              const label = tooltipItem.dataset.label;
+              return `${label}: ${Math.round(value * 10) / 10}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          type: 'time',
+          time: {
+            displayFormats: {
+              hour: 'HH:mm',
+              day: 'MMM dd'
+            }
+          },
+          grid: {
+            color: 'rgba(255, 255, 255, 0.1)',
+            drawBorder: false
+          },
+          ticks: {
+            color: 'rgba(255, 255, 255, 0.7)',
+            font: {
+              size: 11
+            }
+          }
+        },
+        y: {
+          grid: {
+            color: 'rgba(255, 255, 255, 0.1)',
+            drawBorder: false
+          },
+          ticks: {
+            color: 'rgba(255, 255, 255, 0.7)',
+            font: {
+              size: 11
+            }
+          }
+        }
+      }
+    }
+  });
+};
+
+/**
  * Update all charts with new data
  */
 // Debounced chart update function
@@ -1452,6 +1785,17 @@ const debouncedUpdateCharts = debounce(async () => {
 const updateAllCharts = debouncedUpdateCharts;
 
 /**
+ * Update home environment chart with time range
+ */
+const updateHomeEnvironmentChart = async (hours = 24) => {
+  try {
+    await loadHomeEnvironmentTimeSeries(hours);
+  } catch (error) {
+    console.error('Error updating home environment chart:', error);
+  }
+};
+
+/**
  * Append a single data point to all charts
  */
 const _appendDataPoint = (dataPoint) => {
@@ -1519,7 +1863,8 @@ const _startChartAutoRefresh = () => {
       updateAllCharts(),
       updateSparklines(),
       loadWeatherAlerts(),
-      loadWeatherTimeSeries()
+      loadWeatherTimeSeries(),
+      loadHomeEnvironmentData()
     ]);
   };
 
@@ -1558,7 +1903,8 @@ const _startStatsAutoRefresh = () => {
     await Promise.all([
       loadPoolData(),
       loadWeatherAlerts(),
-      loadWeatherTimeSeries()
+      loadWeatherTimeSeries(),
+      loadHomeEnvironmentData()
     ]);
   };
 
@@ -1805,12 +2151,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   initializeTempChart();
   initializeElectricalChart();
   initializeChemistryChart();
+  initializeHomeEnvironmentChart();
 
   // Load initial data
   await Promise.all([
     loadPoolData(),
     loadWeatherAlerts(),
-    loadWeatherTimeSeries()
+    loadWeatherTimeSeries(),
+    loadHomeEnvironmentData(),
+    loadHomeEnvironmentTimeSeries(24)
   ]);
 
   // Start auto-refresh intervals
@@ -1840,8 +2189,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 window.addEventListener('beforeunload', () => {
   stopChartAutoRefresh();
   stopStatsAutoRefresh();
-  cleanupChart();
+  cleanupChart(tempChart);
+  cleanupChart(electricalChart);
+  cleanupChart(chemistryChart);
+  cleanupChart(homeEnvironmentChart);
+  cleanupChart(saltSparkline);
+  cleanupChart(waterTempSparkline);
+  cleanupChart(cellVoltageSparkline);
+  cleanupChart(filterPumpSparkline);
+  cleanupChart(weatherTimeSeriesChart);
+  cleanupChart(homeTempSparkline);
+  cleanupChart(homeHumiditySparkline);
+  cleanupChart(homeFeelsLikeSparkline);
 });
 
 // Make functions globally available
 window.updateAllCharts = updateAllCharts;
+window.updateHomeEnvironmentChart = updateHomeEnvironmentChart;
