@@ -595,4 +595,78 @@ router.get('/simple-test', async (req, res) => {
   }
 });
 
+/**
+ * TEST WRITE: Write test data to InfluxDB to verify write permissions
+ * GET /api/home/test-write
+ */
+router.get('/test-write', async (req, res) => {
+  try {
+    console.log('✍️ [Test Write] Testing InfluxDB write capability...');
+
+    const { InfluxDB, Point } = require('@influxdata/influxdb-client');
+
+    const client = new InfluxDB({
+      url: process.env.INFLUXDB_URL,
+      token: process.env.INFLUX_DB_TOKEN
+    });
+
+    const writeApi = client.getWriteApi(process.env.INFLUXDB_ORG, 'pool-data');
+
+    // Write a simple test point
+    const testPoint = new Point('test_measurement')
+      .tag('sensor', 'test_sensor')
+      .floatField('test_field', 42.0)
+      .timestamp(new Date());
+
+    writeApi.writePoint(testPoint);
+    await writeApi.close();
+
+    console.log('✍️ Test data written successfully');
+
+    // Now try to read it back
+    const queryApi = client.getQueryApi(process.env.INFLUXDB_ORG);
+    const readQuery = `
+      from(bucket: "pool-data")
+        |> range(start: -1h)
+        |> filter(fn: (r) => r._measurement == "test_measurement")
+        |> limit(n: 1)
+    `;
+
+    const readResults = [];
+    await queryApi.queryRows(readQuery, {
+      next: (row, tableMeta) => {
+        readResults.push(tableMeta.toObject(row));
+      },
+      error: (error) => {
+        console.error('✍️ Read test error:', error);
+      },
+      complete: () => {
+        console.log(`✍️ Read test complete: ${readResults.length} points`);
+      }
+    });
+
+    return res.json({
+      success: true,
+      test: 'influx-write-test',
+      timestamp: new Date().toISOString(),
+      results: {
+        writeTest: 'SUCCESS',
+        readBackTest: {
+          pointCount: readResults.length,
+          samplePoints: readResults
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('✍️ [Test Write] Error:', error);
+    return res.status(500).json({
+      success: false,
+      test: 'influx-write-test',
+      error: error.message,
+      details: error.stack
+    });
+  }
+});
+
 module.exports = router;
