@@ -215,77 +215,16 @@ class InfluxDBClient {
     }
 
     try {
+      // SIMPLIFIED QUERY: Start with basic temperature and humidity data
       const query = `
-        // Three smoothed series: Temp (F), Humidity (%), Feels-Like (F)
-        // Auto-detects units: if temp>60 assume °F; if hum<=1.5 assume 0–1 and scale to %.
-        src =
-          from(bucket: "pool-data")
-            |> range(start: -${hours}h, stop: now())
-            |> filter(fn: (r) => r._measurement == "pool_metrics")
-            |> filter(fn: (r) => r.sensor == "pool_temperature" or r.sensor == "pool_humidity")
-            |> keep(columns: ["_time", "_value", "sensor"])
-
-        // Normalize to Temp(F) and Humidity(%)
-        norm =
-          src
-            |> map(fn: (r) => ({
-                r with
-                _field: if r.sensor == "pool_temperature" then "Temp (F)" else "Humidity (%)",
-                _value:
-                  if r.sensor == "pool_temperature" then
-                    (if r._value > 60.0 then r._value else r._value * 9.0 / 5.0 + 32.0)
-                  else
-                    (if r._value <= 1.5 then r._value * 100.0 else r._value)
-              }))
-            |> keep(columns: ["_time", "_field", "_value"])
-
-        // Smooth each series
-        smoothed =
-          norm
-            |> group(columns: ["_field"])
-            |> aggregateWindow(every: 1m, fn: mean, createEmpty: false)
-            |> movingAverage(n: 3)
-
-        // Pivot to compute Feels-Like from smoothed Temp/Humidity
-        wide =
-          smoothed
-            |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
-            // guardrails: clamp to plausible ranges to avoid wild spikes
-            |> map(fn: (r) => ({
-                r with
-                "Temp (F)": if r["Temp (F)"] < -20.0 then -20.0 else (if r["Temp (F)"] > 140.0 then 140.0 else r["Temp (F)"]),
-                "Humidity (%)": if r["Humidity (%)"] < 0.0 then 0.0 else (if r["Humidity (%)"] > 100.0 then 100.0 else r["Humidity (%)"])
-              }))
-            |> map(fn: (r) => ({
-                r with
-                "Feels-Like (F)":
-                  if r["Temp (F)"] < 80.0 then
-                    0.5 * (r["Temp (F)"] + 61.0 + ((r["Temp (F)"] - 68.0) * 1.2) + (r["Humidity (%)"] * 0.094))
-                  else
-                    -42.379 +
-                    2.04901523 * r["Temp (F)"] +
-                    10.14333127 * r["Humidity (%)"] -
-                    0.22475541 * r["Temp (F)"] * r["Humidity (%)"] -
-                    0.00683783 * r["Temp (F)"] * r["Temp (F)"] -
-                    0.05481717 * r["Humidity (%)"] * r["Humidity (%)"] +
-                    0.00122874 * r["Temp (F)"] * r["Temp (F)"] * r["Humidity (%)"] +
-                    0.00085282 * r["Temp (F)"] * r["Humidity (%)"] * r["Humidity (%)"] -
-                    0.00000199 * r["Temp (F)"] * r["Temp (F)"] * r["Humidity (%)"] * r["Humidity (%)"]
-              }))
-
-        // Convert back to long-form so the line chart draws 3 series
-        tempS = wide |> keep(columns: ["_time","Temp (F)"])        |> rename(columns: {"Temp (F)": "_value"})        |> set(key: "_field", value: "Temp (F)")
-        humS  = wide |> keep(columns: ["_time","Humidity (%)"])    |> rename(columns: {"Humidity (%)": "_value"})     |> set(key: "_field", value: "Humidity (%)")
-        hiS   = wide |> keep(columns: ["_time","Feels-Like (F)"])  |> rename(columns: {"Feels-Like (F)": "_value"})   |> set(key: "_field", value: "Feels-Like (F)")
-
-        union(tables: [tempS, humS, hiS])
-          |> group(columns: ["_field"])
-          |> sort(columns: ["_time"])
+        from(bucket: "pool-data")
+          |> range(start: -${hours}h)
+          |> filter(fn: (r) => r._measurement == "pool_metrics")
+          |> filter(fn: (r) => r.sensor == "pool_temperature" or r.sensor == "pool_humidity")
           |> limit(n: ${limit})
-          |> yield(name: "three_series")
       `;
 
-      console.log('🏠 Executing home environment query for', hours, 'hours with limit', limit);
+      console.log('🏠 Executing simplified home environment query for', hours, 'hours');
       console.log('🏠 Query:', query);
 
       const dataPoints = [];
@@ -295,7 +234,7 @@ class InfluxDBClient {
           rowCount++;
           const dataPoint = tableMeta.toObject(row);
           console.log(`🏠 Raw data point ${rowCount}:`, JSON.stringify(dataPoint, null, 2));
-          dataPoints.push(this.transformHomeEnvironmentPoint(dataPoint));
+          dataPoints.push(this.transformHomeEnvironmentPointSimple(dataPoint));
         },
         error: (error) => {
           console.error('❌ Home environment query error:', error);
@@ -306,7 +245,7 @@ class InfluxDBClient {
       });
 
       await _queryResult;
-      return this.groupHomeEnvironmentData(dataPoints);
+      return this.groupHomeEnvironmentDataSimple(dataPoints);
     } catch (error) {
       console.error('❌ Error querying home environment data:', error.message);
       return [];
@@ -471,13 +410,56 @@ class InfluxDBClient {
   }
 
   /**
+   * Transform simple home environment InfluxDB point to our data format
+   */
+  transformHomeEnvironmentPointSimple(influxPoint) {
+    return {
+      timestamp: influxPoint._time,
+      sensor: influxPoint.sensor,
+      value: influxPoint._value
+    };
+  }
+
+  /**
+   * Group simple home environment data by timestamp
+   */
+  groupHomeEnvironmentDataSimple(dataPoints) {
+    const grouped = {};
+
+    // Group by timestamp
+    dataPoints.forEach(point => {
+      if (!grouped[point.timestamp]) {
+        grouped[point.timestamp] = {
+          timestamp: point.timestamp,
+          temperature: null,
+          humidity: null,
+          feelsLike: null
+        };
+      }
+
+      // Map sensor names to our data structure
+      switch (point.sensor) {
+      case 'pool_temperature':
+        grouped[point.timestamp].temperature = point.value;
+        break;
+      case 'pool_humidity':
+        grouped[point.timestamp].humidity = point.value;
+        break;
+      }
+    });
+
+    // Convert to array and sort by timestamp
+    return Object.values(grouped).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  }
+
+  /**
    * Calculate basic statistics for an array of values
    */
   calculateStats(values) {
     if (values.length === 0) {
       return { min: null, max: null, avg: null };
     }
-    
+
     const validValues = values.filter(v => v !== null && !isNaN(v));
     if (validValues.length === 0) {
       return { min: null, max: null, avg: null };
