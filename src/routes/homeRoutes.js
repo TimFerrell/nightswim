@@ -1440,4 +1440,65 @@ router.get('/create-bucket', async (req, res) => {
   }
 });
 
+/**
+ * BASIC RAW QUERY: Test the exact basic query from your working example
+ * GET /api/home/test-basic-query
+ */
+router.get('/test-basic-query', async (req, res) => {
+  try {
+    const { InfluxDB } = require('@influxdata/influxdb-client');
+
+    const client = new InfluxDB({
+      url: process.env.INFLUXDB_URL,
+      token: process.env.INFLUX_DB_TOKEN
+    });
+
+    const queryApi = client.getQueryApi(process.env.INFLUXDB_ORG);
+
+    // Just the basic source query from your working example
+    const query = `
+      from(bucket: "pool-data")
+        |> range(start: 2026-09-16T00:00:00Z, stop: 2026-09-16T23:59:59Z)
+        |> filter(fn: (r) => r._measurement == "pool_metrics")
+        |> filter(fn: (r) => r.sensor == "pool_temperature" or r.sensor == "pool_humidity")
+        |> keep(columns: ["_time", "_value", "sensor"])
+        |> limit(n: 10)
+    `;
+
+    console.log('🔍 Testing basic raw query:', query);
+
+    const results = [];
+    await queryApi.queryRows(query, {
+      next: (row, tableMeta) => {
+        const obj = tableMeta.toObject(row);
+        console.log('🔍 Raw result:', JSON.stringify(obj, null, 2));
+        results.push(obj);
+      },
+      error: (error) => {
+        console.error('🔍 Basic query error:', error);
+      },
+      complete: () => {
+        console.log(`🔍 Basic query complete: ${results.length} results`);
+      }
+    });
+
+    return res.json({
+      success: true,
+      test: 'basic-raw-query',
+      dateRange: '2026-09-16 full day',
+      totalResults: results.length,
+      sampleResults: results.slice(0, 5),
+      query: query.trim()
+    });
+
+  } catch (error) {
+    console.error('🔍 Basic query test error:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message,
+      stack: error.stack
+    });
+  }
+});
+
 module.exports = router;
