@@ -19,10 +19,10 @@ const optionalEnvVars = {
   POOL_PASSWORD: null,
   LOG_LEVEL: 'info',
   // InfluxDB configuration (optional)
-  INFLUXDB_URL: null,
-  INFLUXDB_TOKEN: null,
-  INFLUXDB_ORG: null,
-  INFLUXDB_BUCKET: 'pool_metrics'
+  INFLUX_DB_URL: null,
+  INFLUX_DB_TOKEN: null,
+  INFLUX_DB_ORG: null,
+  INFLUX_DB_BUCKET: 'pool_metrics'
 };
 
 class EnvironmentConfig {
@@ -95,7 +95,7 @@ class EnvironmentConfig {
   getInfluxDBConfig() {
     return {
       url: this.get('INFLUXDB_URL'),
-      token: this.get('INFLUXDB_TOKEN'),
+      token: this.get('INFLUX_DB_TOKEN'),
       org: this.get('INFLUXDB_ORG'),
       bucket: this.get('INFLUXDB_BUCKET')
     };
