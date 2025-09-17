@@ -20,16 +20,27 @@ class InfluxDBClient {
   }
 
   /**
-   * Ensure client is initialized
+   * Ensure client is initialized (thread-safe)
    */
   async ensureInitialized() {
-    if (this.isConnected) return true;
+    // If already connected, return immediately
+    if (this.isConnected && this.queryApi) return true;
 
-    if (!this.initializationPromise) {
-      this.initializationPromise = this.initialize();
+    // If initialization is already in progress, wait for it
+    if (this.initializationPromise) {
+      return await this.initializationPromise;
     }
 
-    return await this.initializationPromise;
+    // Start initialization
+    this.initializationPromise = this.initialize();
+    const result = await this.initializationPromise;
+
+    // Keep the promise for subsequent calls until we're definitely connected
+    if (!this.isConnected) {
+      this.initializationPromise = null;
+    }
+
+    return result;
   }
 
   /**
@@ -107,6 +118,9 @@ class InfluxDBClient {
    * Query data points from InfluxDB
    */
   async queryDataPoints(hours = 24, limit = 1000) {
+    // Ensure client is initialized
+    await this.ensureInitialized();
+
     if (!this.isConnected || !this.queryApi) {
       console.log('⚠️ InfluxDB not connected, returning empty array');
       return [];
@@ -303,6 +317,9 @@ class InfluxDBClient {
    * Get home environment statistics
    */
   async getHomeEnvironmentStats(hours = 24) {
+    // Ensure client is initialized
+    await this.ensureInitialized();
+
     if (!this.isConnected || !this.queryApi) {
       return null;
     }

@@ -358,19 +358,17 @@ router.get('/debug', async (req, res) => {
       INFLUX_DB_TOKEN: process.env.INFLUX_DB_TOKEN ? `SET (${process.env.INFLUX_DB_TOKEN.length} chars, starts: ${process.env.INFLUX_DB_TOKEN.substring(0, 8)}...)` : 'NOT_SET'
     };
 
-    // Connection status
+    // Ensure initialization before checking status
+    console.log('🔍 [Debug] Ensuring InfluxDB initialization...');
+    try {
+      await influxDBClient.ensureInitialized();
+    } catch (connError) {
+      console.error('🔍 [Debug] Connection initialization failed:', connError.message);
+    }
+
+    // Connection status (after ensuring initialization)
     const connectionStatus = influxDBClient.getConnectionStatus();
     const isConnected = influxDBClient.isConnected;
-
-    // Try to manually initialize connection if not connected
-    if (!isConnected) {
-      console.log('🔍 [Debug] Attempting to initialize InfluxDB connection...');
-      try {
-        await influxDBClient.ensureInitialized();
-      } catch (connError) {
-        console.error('🔍 [Debug] Connection initialization failed:', connError.message);
-      }
-    }
 
     // Test the query with different time ranges
     const queryTests = [];
