@@ -366,9 +366,9 @@ router.get('/debug', async (req, res) => {
     if (!isConnected) {
       console.log('🔍 [Debug] Attempting to initialize InfluxDB connection...');
       try {
-        await influxDBClient.testConnection();
+        await influxDBClient.ensureInitialized();
       } catch (connError) {
-        console.error('🔍 [Debug] Connection test failed:', connError.message);
+        console.error('🔍 [Debug] Connection initialization failed:', connError.message);
       }
     }
 

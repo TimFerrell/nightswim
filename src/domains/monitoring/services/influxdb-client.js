@@ -14,9 +14,22 @@ class InfluxDBClient {
     this.isConnected = false;
     this.connectionAttempts = 0;
     this.maxRetries = 3;
+    this.initializationPromise = null;
 
     this.config = envConfig.getInfluxDBConfig();
-    this.initialize();
+  }
+
+  /**
+   * Ensure client is initialized
+   */
+  async ensureInitialized() {
+    if (this.isConnected) return true;
+
+    if (!this.initializationPromise) {
+      this.initializationPromise = this.initialize();
+    }
+
+    return await this.initializationPromise;
   }
 
   /**
@@ -179,6 +192,9 @@ class InfluxDBClient {
    * Returns temperature, humidity, and feels-like data
    */
   async queryHomeEnvironmentData(hours = 24, limit = 1000) {
+    // Ensure client is initialized
+    await this.ensureInitialized();
+
     if (!this.isConnected || !this.queryApi) {
       console.log('⚠️ InfluxDB not connected, returning empty array');
       return [];
