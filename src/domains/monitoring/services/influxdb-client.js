@@ -255,10 +255,12 @@ class InfluxDBClient {
           |> yield(name: "three_series")
       `;
 
+      console.log('🏠 Executing home environment query:', query);
       const dataPoints = [];
       const _queryResult = this.queryApi.queryRows(query, {
         next: (row, tableMeta) => {
           const dataPoint = tableMeta.toObject(row);
+          console.log('🏠 Raw data point:', dataPoint);
           dataPoints.push(this.transformHomeEnvironmentPoint(dataPoint));
         },
         error: (error) => {
