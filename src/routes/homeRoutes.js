@@ -502,4 +502,97 @@ router.get('/debug', async (req, res) => {
   }
 });
 
+/**
+ * SIMPLE TEST: Direct InfluxDB connection with minimal query
+ * GET /api/home/simple-test
+ */
+router.get('/simple-test', async (req, res) => {
+  try {
+    console.log('🔬 [Simple Test] Starting direct InfluxDB test...');
+
+    // Step 1: Direct connection test
+    const { InfluxDB } = require('@influxdata/influxdb-client');
+
+    const client = new InfluxDB({
+      url: process.env.INFLUXDB_URL,
+      token: process.env.INFLUX_DB_TOKEN
+    });
+
+    const queryApi = client.getQueryApi(process.env.INFLUXDB_ORG);
+
+    // Step 2: Simplest possible query - just get anything from the bucket
+    const simpleQuery = `from(bucket: "pool-data") |> range(start: -7d) |> limit(n: 5)`;
+
+    console.log('🔬 Executing simple query:', simpleQuery);
+
+    const results = [];
+    await queryApi.queryRows(simpleQuery, {
+      next: (row, tableMeta) => {
+        const point = tableMeta.toObject(row);
+        results.push(point);
+        console.log('🔬 Found data point:', point);
+      },
+      error: (error) => {
+        console.error('🔬 Query error:', error);
+      },
+      complete: () => {
+        console.log(`🔬 Query complete: ${results.length} points found`);
+      }
+    });
+
+    // Step 3: If we have data, try a basic temperature/humidity filter
+    let tempHumidityResults = [];
+    if (results.length > 0) {
+      const tempHumQuery = `
+        from(bucket: "pool-data")
+          |> range(start: -7d)
+          |> filter(fn: (r) => r._field == "temperature" or r._field == "humidity")
+          |> limit(n: 5)
+      `;
+
+      await queryApi.queryRows(tempHumQuery, {
+        next: (row, tableMeta) => {
+          tempHumidityResults.push(tableMeta.toObject(row));
+        },
+        error: (error) => {
+          console.error('🔬 Temp/Humidity query error:', error);
+        },
+        complete: () => {
+          console.log(`🔬 Temp/Humidity query complete: ${tempHumidityResults.length} points`);
+        }
+      });
+    }
+
+    return res.json({
+      success: true,
+      test: 'simple-influx-connection',
+      timestamp: new Date().toISOString(),
+      results: {
+        environment: {
+          url: process.env.INFLUXDB_URL ? 'SET' : 'NOT_SET',
+          org: process.env.INFLUXDB_ORG ? 'SET' : 'NOT_SET',
+          token: process.env.INFLUX_DB_TOKEN ? 'SET' : 'NOT_SET'
+        },
+        rawDataQuery: {
+          pointCount: results.length,
+          samplePoints: results.slice(0, 3)
+        },
+        tempHumidityQuery: {
+          pointCount: tempHumidityResults.length,
+          samplePoints: tempHumidityResults.slice(0, 3)
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('🔬 [Simple Test] Error:', error);
+    return res.status(500).json({
+      success: false,
+      test: 'simple-influx-connection',
+      error: error.message,
+      stack: error.stack
+    });
+  }
+});
+
 module.exports = router;
