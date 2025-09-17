@@ -19,10 +19,10 @@ const optionalEnvVars = {
   POOL_PASSWORD: null,
   LOG_LEVEL: 'info',
   // InfluxDB configuration (optional)
-  INFLUX_DB_URL: null,
+  INFLUXDB_URL: null,
   INFLUX_DB_TOKEN: null,
-  INFLUX_DB_ORG: null,
-  INFLUX_DB_BUCKET: 'pool_metrics'
+  INFLUXDB_ORG: null,
+  INFLUXDB_BUCKET: 'pool_metrics'
 };
 
 class EnvironmentConfig {
