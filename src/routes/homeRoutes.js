@@ -428,7 +428,7 @@ router.get('/debug', async (req, res) => {
 
       // Test 2: Check what measurements and sensors exist
       const sensorQuery = `
-        from(bucket: "pool-data")
+        from(bucket: "${process.env.INFLUXDB_BUCKET || 'default'}")
           |> range(start: -30d)
           |> limit(n: 20)
           |> group()
@@ -544,7 +544,7 @@ router.get('/simple-test', async (req, res) => {
     let tempHumidityResults = [];
     if (results.length > 0) {
       const tempHumQuery = `
-        from(bucket: "pool-data")
+        from(bucket: "${process.env.INFLUXDB_BUCKET || 'default'}")
           |> range(start: -7d)
           |> filter(fn: (r) => r._field == "temperature" or r._field == "humidity")
           |> limit(n: 5)
@@ -610,7 +610,7 @@ router.get('/test-write', async (req, res) => {
       token: process.env.INFLUX_DB_TOKEN
     });
 
-    const writeApi = client.getWriteApi(process.env.INFLUXDB_ORG, 'pool-data');
+    const writeApi = client.getWriteApi(process.env.INFLUXDB_ORG, process.env.INFLUXDB_BUCKET || 'default');
 
     // Write a simple test point
     const testPoint = new Point('test_measurement')
@@ -626,7 +626,7 @@ router.get('/test-write', async (req, res) => {
     // Now try to read it back
     const queryApi = client.getQueryApi(process.env.INFLUXDB_ORG);
     const readQuery = `
-      from(bucket: "pool-data")
+      from(bucket: "${process.env.INFLUXDB_BUCKET || 'default'}")
         |> range(start: -1h)
         |> filter(fn: (r) => r._measurement == "test_measurement")
         |> limit(n: 1)
@@ -684,7 +684,7 @@ router.get('/step1-write-temp-data', async (req, res) => {
       token: process.env.INFLUX_DB_TOKEN
     });
 
-    const writeApi = client.getWriteApi(process.env.INFLUXDB_ORG, 'pool-data');
+    const writeApi = client.getWriteApi(process.env.INFLUXDB_ORG, process.env.INFLUXDB_BUCKET || 'default');
 
     // Write simple temperature and humidity points
     const tempPoint = new Point('pool_metrics')
@@ -710,7 +710,7 @@ router.get('/step1-write-temp-data', async (req, res) => {
 
     // Test 1: Basic read of our data
     const basicQuery = `
-      from(bucket: "pool-data")
+      from(bucket: "${process.env.INFLUXDB_BUCKET || 'default'}")
         |> range(start: -5m)
         |> filter(fn: (r) => r._measurement == "pool_metrics")
         |> limit(n: 10)
@@ -731,7 +731,7 @@ router.get('/step1-write-temp-data', async (req, res) => {
 
     // Test 2: Filter for temperature/humidity sensors
     const sensorQuery = `
-      from(bucket: "pool-data")
+      from(bucket: "${process.env.INFLUXDB_BUCKET || 'default'}")
         |> range(start: -5m)
         |> filter(fn: (r) => r._measurement == "pool_metrics")
         |> filter(fn: (r) => r.sensor == "pool_temperature" or r.sensor == "pool_humidity")
@@ -793,7 +793,7 @@ router.get('/step2-check-data-structure', async (req, res) => {
       token: process.env.INFLUX_DB_TOKEN
     });
 
-    const writeApi = client.getWriteApi(process.env.INFLUXDB_ORG, 'pool-data');
+    const writeApi = client.getWriteApi(process.env.INFLUXDB_ORG, process.env.INFLUXDB_BUCKET || 'default');
 
     // Write data with _value field (InfluxDB standard)
     const tempPoint = new Point('pool_metrics')
@@ -835,7 +835,7 @@ router.get('/step2-check-data-structure', async (req, res) => {
 
     // Test 2: Simple temperature query
     const tempQuery = `
-      from(bucket: "pool-data")
+      from(bucket: "${process.env.INFLUXDB_BUCKET || 'default'}")
         |> range(start: -10m)
         |> filter(fn: (r) => r._measurement == "pool_metrics")
         |> filter(fn: (r) => r.sensor == "pool_temperature")
@@ -981,7 +981,7 @@ router.get('/discover-schema', async (req, res) => {
     // 4. Alternative: Get raw sample data from the last 30 days
     console.log('🔍 Getting raw sample data...');
     const sampleQuery = `
-      from(bucket: "pool-data")
+      from(bucket: "${process.env.INFLUXDB_BUCKET || 'default'}")
         |> range(start: -30d)
         |> limit(n: 50)
     `;
@@ -1049,7 +1049,7 @@ router.get('/populate-test-data', async (req, res) => {
       token: process.env.INFLUX_DB_TOKEN
     });
 
-    const writeApi = client.getWriteApi(process.env.INFLUXDB_ORG, 'pool-data');
+    const writeApi = client.getWriteApi(process.env.INFLUXDB_ORG, process.env.INFLUXDB_BUCKET || 'default');
 
     // Write sample data points over the last 24 hours
     const now = new Date();
@@ -1091,7 +1091,7 @@ router.get('/populate-test-data', async (req, res) => {
     // Test the basic query
     const queryApi = client.getQueryApi(process.env.INFLUXDB_ORG);
     const testQuery = `
-      from(bucket: "pool-data")
+      from(bucket: "${process.env.INFLUXDB_BUCKET || 'default'}")
         |> range(start: -25h)
         |> filter(fn: (r) => r._measurement == "pool_metrics")
         |> filter(fn: (r) => r.sensor == "pool_temperature" or r.sensor == "pool_humidity")
@@ -1148,7 +1148,7 @@ router.get('/debug-timing', async (req, res) => {
       token: process.env.INFLUX_DB_TOKEN
     });
 
-    const writeApi = client.getWriteApi(process.env.INFLUXDB_ORG, 'pool-data');
+    const writeApi = client.getWriteApi(process.env.INFLUXDB_ORG, process.env.INFLUXDB_BUCKET || 'default');
     const queryApi = client.getQueryApi(process.env.INFLUXDB_ORG);
 
     // Write test data with explicit timestamp
@@ -1167,8 +1167,9 @@ router.get('/debug-timing', async (req, res) => {
     await new Promise(resolve => setTimeout(resolve, 2000));
 
     // Query with very wide range
+    const bucketName = process.env.INFLUXDB_BUCKET || 'default';
     const query = `
-      from(bucket: "pool-data")
+      from(bucket: "${bucketName}")
         |> range(start: -7d)
         |> filter(fn: (r) => r._measurement == "debug_test")
         |> limit(n: 10)
@@ -1225,8 +1226,9 @@ router.get('/sample-all', async (req, res) => {
     const queryApi = client.getQueryApi(process.env.INFLUXDB_ORG);
 
     // Query EVERYTHING in the bucket with no filters
+    const bucketName = process.env.INFLUXDB_BUCKET || 'default';
     const query = `
-      from(bucket: "pool-data")
+      from(bucket: "${bucketName}")
         |> range(start: -30d)
         |> limit(n: 50)
     `;
