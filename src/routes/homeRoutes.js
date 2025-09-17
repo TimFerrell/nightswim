@@ -1322,8 +1322,8 @@ router.get('/list-buckets', async (req, res) => {
 
     const queryApi = client.getQueryApi(process.env.INFLUXDB_ORG);
 
-    // List all buckets
-    const query = `buckets()`;
+    // List all buckets including system buckets
+    const query = `buckets() |> filter(fn: (r) => true)`;
 
     console.log('🪣 Listing all buckets...');
 
@@ -1362,6 +1362,78 @@ router.get('/list-buckets', async (req, res) => {
       success: false,
       error: error.message,
       stack: error.stack
+    });
+  }
+});
+
+/**
+ * CREATE BUCKET: Create the pool-data bucket
+ * GET /api/home/create-bucket
+ */
+router.get('/create-bucket', async (req, res) => {
+  try {
+    const { InfluxDB } = require('@influxdata/influxdb-client');
+    const { BucketsAPI } = require('@influxdata/influxdb-client-apis');
+
+    const client = new InfluxDB({
+      url: process.env.INFLUXDB_URL,
+      token: process.env.INFLUX_DB_TOKEN
+    });
+
+    // Get org ID first
+    const queryApi = client.getQueryApi(process.env.INFLUXDB_ORG);
+    const orgQuery = `from(bucket: "_monitoring") |> range(start: -1h) |> limit(n: 1)`;
+
+    // Try to get org info - this will tell us the org ID
+    let orgID = null;
+    try {
+      const orgResults = [];
+      await queryApi.queryRows(orgQuery, {
+        next: (row, tableMeta) => {
+          const obj = tableMeta.toObject(row);
+          if (obj.orgID) orgID = obj.orgID;
+        },
+        error: () => {}, // Ignore errors
+        complete: () => {}
+      });
+    } catch (e) {
+      // Ignore - we'll try another way
+    }
+
+    // If we couldn't get org ID, try the buckets API to create anyway
+    const bucketsAPI = new BucketsAPI(client);
+
+    const bucketRequest = {
+      name: 'pool-data',
+      orgID: orgID,
+      description: 'Pool monitoring data for nightswim app',
+      retentionRules: [{
+        type: 'expire',
+        everySeconds: 365 * 24 * 60 * 60 // 1 year retention
+      }]
+    };
+
+    console.log('🪣 Creating bucket with request:', JSON.stringify(bucketRequest, null, 2));
+
+    const bucket = await bucketsAPI.postBuckets({ body: bucketRequest });
+
+    return res.json({
+      success: true,
+      message: 'Bucket created successfully',
+      bucket: {
+        id: bucket.id,
+        name: bucket.name,
+        orgID: bucket.orgID,
+        description: bucket.description
+      }
+    });
+
+  } catch (error) {
+    console.error('🪣 Create bucket error:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message,
+      details: error.response?.data || 'No additional details'
     });
   }
 });
