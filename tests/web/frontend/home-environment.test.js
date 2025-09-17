@@ -36,7 +36,7 @@ describe('Home Environment Frontend', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // Reset DOM mocks
     document.getElementById = mockDOM.getElementById;
     document.querySelector = mockDOM.querySelector;

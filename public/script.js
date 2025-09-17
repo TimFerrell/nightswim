@@ -1787,7 +1787,7 @@ const updateAllCharts = debouncedUpdateCharts;
 /**
  * Update home environment chart with time range
  */
-const updateHomeEnvironmentChart = async (hours = 24) => {
+const updateHomeEnvironmentChartTimeRange = async (hours = 24) => {
   try {
     await loadHomeEnvironmentTimeSeries(hours);
   } catch (error) {
@@ -2205,4 +2205,4 @@ window.addEventListener('beforeunload', () => {
 
 // Make functions globally available
 window.updateAllCharts = updateAllCharts;
-window.updateHomeEnvironmentChart = updateHomeEnvironmentChart;
+window.updateHomeEnvironmentChart = updateHomeEnvironmentChartTimeRange;

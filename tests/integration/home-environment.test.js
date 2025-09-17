@@ -23,7 +23,7 @@ describe('Home Environment Integration', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     app = express();
     app.use(express.json());
     app.use('/api/home', homeRoutes);
@@ -180,7 +180,7 @@ describe('Home Environment Integration', () => {
           .expect(200);
 
         expect(response.body.analysis.overallComfort).toBe(scenario.expectedComfort);
-        
+
         if (scenario.expectedRecommendations.length > 0) {
           expect(response.body.analysis.recommendations).toEqual(
             expect.arrayContaining(scenario.expectedRecommendations)
@@ -193,21 +193,21 @@ describe('Home Environment Integration', () => {
       influxDBClient.queryHomeEnvironmentData.mockResolvedValue([]);
 
       // Test with invalid hours parameter
-      const response1 = await request(app)
+      await request(app)
         .get('/api/home/timeseries?hours=invalid')
         .expect(200);
 
       expect(influxDBClient.queryHomeEnvironmentData).toHaveBeenCalledWith(NaN, 1000);
 
       // Test with very large hours parameter
-      const response2 = await request(app)
+      await request(app)
         .get('/api/home/timeseries?hours=999999')
         .expect(200);
 
       expect(influxDBClient.queryHomeEnvironmentData).toHaveBeenCalledWith(999999, 1000);
 
       // Test with custom limit
-      const response3 = await request(app)
+      await request(app)
         .get('/api/home/timeseries?hours=6&limit=100')
         .expect(200);
 
@@ -258,7 +258,7 @@ describe('Home Environment Integration', () => {
       influxDBClient.queryHomeEnvironmentData.mockResolvedValue(mockData);
 
       // Make multiple concurrent requests
-      const requests = Array(10).fill().map(() => 
+      const requests = Array(10).fill().map(() =>
         request(app).get('/api/home/environment')
       );
 

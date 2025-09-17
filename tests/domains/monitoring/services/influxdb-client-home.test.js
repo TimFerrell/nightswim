@@ -3,7 +3,7 @@
  * Tests for home environment data querying functionality
  */
 
-const { InfluxDBClient, influxDBClient } = require('../../../../src/domains/monitoring/services/influxdb-client');
+const { InfluxDBClient } = require('../../../../src/domains/monitoring/services/influxdb-client');
 
 // Mock InfluxDB client
 jest.mock('@influxdata/influxdb-client', () => ({

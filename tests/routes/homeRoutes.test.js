@@ -22,7 +22,7 @@ describe('Home Routes', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     app = express();
     app.use(express.json());
     app.use('/api/home', homeRoutes);

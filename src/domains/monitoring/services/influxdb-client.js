@@ -401,7 +401,7 @@ class InfluxDBClient {
    */
   groupHomeEnvironmentData(dataPoints) {
     const grouped = {};
-    
+
     // Group by timestamp
     dataPoints.forEach(point => {
       if (!grouped[point.timestamp]) {
@@ -412,21 +412,21 @@ class InfluxDBClient {
           feelsLike: null
         };
       }
-      
+
       // Map field names to our data structure
       switch (point.field) {
-        case 'Temp (F)':
-          grouped[point.timestamp].temperature = point.value;
-          break;
-        case 'Humidity (%)':
-          grouped[point.timestamp].humidity = point.value;
-          break;
-        case 'Feels-Like (F)':
-          grouped[point.timestamp].feelsLike = point.value;
-          break;
+      case 'Temp (F)':
+        grouped[point.timestamp].temperature = point.value;
+        break;
+      case 'Humidity (%)':
+        grouped[point.timestamp].humidity = point.value;
+        break;
+      case 'Feels-Like (F)':
+        grouped[point.timestamp].feelsLike = point.value;
+        break;
       }
     });
-    
+
     // Convert to array and sort by timestamp
     return Object.values(grouped).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
   }
@@ -443,11 +443,11 @@ class InfluxDBClient {
     if (validValues.length === 0) {
       return { min: null, max: null, avg: null };
     }
-    
+
     const min = Math.min(...validValues);
     const max = Math.max(...validValues);
     const avg = validValues.reduce((sum, val) => sum + val, 0) / validValues.length;
-    
+
     return {
       min: Math.round(min * 10) / 10,
       max: Math.round(max * 10) / 10,

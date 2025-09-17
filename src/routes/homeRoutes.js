@@ -18,11 +18,11 @@ router.get('/environment', async (req, res) => {
   try {
     // Get the latest data point (last hour)
     const data = await influxDBClient.queryHomeEnvironmentData(1, 1);
-    
+
     if (data.length === 0) {
       const totalTime = Date.now() - requestStartTime;
       console.log(`❌ [Home Environment] No data available after ${totalTime}ms`);
-      
+
       return res.status(200).json({
         success: true,
         data: {
@@ -179,7 +179,7 @@ router.get('/comfort', async (req, res) => {
 
   try {
     const data = await influxDBClient.queryHomeEnvironmentData(hours, 1000);
-    
+
     if (data.length === 0) {
       const totalTime = Date.now() - requestStartTime;
       console.log(`❌ [Home Environment] No data for comfort analysis after ${totalTime}ms`);
@@ -238,15 +238,17 @@ function calculateComfortLevel(temperature, humidity) {
     return 'comfortable';
   } else if (temperature > 78 || (temperature > 75 && humidity > 60)) {
     return 'hot';
-  } else if (temperature < 68) {
-    return 'cold';
-  } else if (humidity > 60) {
-    return 'humid';
-  } else if (humidity < 30) {
-    return 'dry';
-  } else {
-    return 'marginal';
   }
+  if (temperature < 68) {
+    return 'cold';
+  }
+  if (humidity > 60) {
+    return 'humid';
+  }
+  if (humidity < 30) {
+    return 'dry';
+  }
+  return 'marginal';
 }
 
 /**
@@ -259,13 +261,14 @@ function calculateHumidityLevel(humidity) {
 
   if (humidity < 30) {
     return 'low';
-  } else if (humidity >= 30 && humidity <= 60) {
-    return 'normal';
-  } else if (humidity > 60 && humidity <= 70) {
-    return 'high';
-  } else {
-    return 'very_high';
   }
+  if (humidity >= 30 && humidity <= 60) {
+    return 'normal';
+  }
+  if (humidity > 60 && humidity <= 70) {
+    return 'high';
+  }
+  return 'very_high';
 }
 
 /**
@@ -291,7 +294,7 @@ function analyzeComfortLevels(data) {
 
   const total = data.length;
   const comfortDistribution = {};
-  
+
   Object.keys(comfortCounts).forEach(level => {
     comfortDistribution[level] = {
       count: comfortCounts[level],
@@ -301,8 +304,8 @@ function analyzeComfortLevels(data) {
 
   // Determine overall comfort
   let overallComfort = 'unknown';
-  if (comfortCounts.comfortable > comfortCounts.hot && 
-      comfortCounts.comfortable > comfortCounts.cold && 
+  if (comfortCounts.comfortable > comfortCounts.hot &&
+      comfortCounts.comfortable > comfortCounts.cold &&
       comfortCounts.comfortable > comfortCounts.humid) {
     overallComfort = 'comfortable';
   } else if (comfortCounts.hot > comfortCounts.cold) {
