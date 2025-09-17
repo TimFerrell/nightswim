@@ -556,13 +556,32 @@ const loadPoolData = async (retryCount = 0) => {
 
     // Try new architecture endpoint first (v2), fallback to legacy (v1)
     let response;
+    let useV1Fallback = false;
+
     try {
       response = await fetch('/api/pool/v2/data', { credentials: 'include' });
       if (!response.ok) throw new Error('v2 endpoint failed');
-      console.log('📊 Using new architecture (v2) endpoint');
-      updateArchitectureStatus('v2 (domain-driven)');
+
+      // Check if v2 returned success: false, if so, fall back to v1
+      const v2Result = await response.json();
+      if (!v2Result.success) {
+        console.log('📊 v2 endpoint returned no data, falling back to legacy (v1) endpoint');
+        useV1Fallback = true;
+      } else {
+        console.log('📊 Using new architecture (v2) endpoint');
+        updateArchitectureStatus('v2 (domain-driven)');
+        // Return the v2 response for processing
+        response = new Response(JSON.stringify(v2Result), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
     } catch {
-      console.log('📊 Falling back to legacy (v1) endpoint');
+      console.log('📊 v2 endpoint failed, falling back to legacy (v1) endpoint');
+      useV1Fallback = true;
+    }
+
+    if (useV1Fallback) {
       response = await fetch('/api/pool/data', { credentials: 'include' });
       updateArchitectureStatus('v1 (legacy)');
     }

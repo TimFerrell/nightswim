@@ -32,6 +32,6 @@
   ],
   "env": {
     "NODE_ENV": "production",
-    "SESSION_SECRET": "2beea37438d482d9ac05799ee6180dd7b491ad56c0dcb502e671577063e8282c"
+    "SESSION_SECRET": "REDACTED"
   }
 } 
