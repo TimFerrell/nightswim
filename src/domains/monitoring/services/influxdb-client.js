@@ -189,7 +189,7 @@ class InfluxDBClient {
         // Three smoothed series: Temp (F), Humidity (%), Feels-Like (F)
         // Auto-detects units: if temp>60 assume °F; if hum<=1.5 assume 0–1 and scale to %.
         src =
-          from(bucket: "${this.config.bucket}")
+          from(bucket: "pool-data")
             |> range(start: -${hours}h)
             |> filter(fn: (r) => r._measurement == "pool_metrics")
             |> filter(fn: (r) => r.sensor == "pool_temperature" or r.sensor == "pool_humidity")
