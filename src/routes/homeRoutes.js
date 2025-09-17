@@ -881,4 +881,157 @@ router.get('/step2-check-data-structure', async (req, res) => {
   }
 });
 
+/**
+ * SCHEMA DISCOVERY: Interrogate InfluxDB to discover actual schema
+ * GET /api/home/discover-schema
+ */
+router.get('/discover-schema', async (req, res) => {
+  try {
+    console.log('🔍 [Schema Discovery] Interrogating InfluxDB schema...');
+
+    const { InfluxDB } = require('@influxdata/influxdb-client');
+
+    const client = new InfluxDB({
+      url: process.env.INFLUXDB_URL,
+      token: process.env.INFLUX_DB_TOKEN
+    });
+
+    const queryApi = client.getQueryApi(process.env.INFLUXDB_ORG);
+
+    const results = {};
+
+    // 1. Get all measurements
+    console.log('🔍 Finding measurements...');
+    const measurementsQuery = `
+      import "influxdata/influxdb/schema"
+      schema.measurements(bucket: "pool-data")
+    `;
+
+    const measurements = [];
+    try {
+      await queryApi.queryRows(measurementsQuery, {
+        next: (row, tableMeta) => {
+          measurements.push(tableMeta.toObject(row));
+        },
+        error: (error) => {
+          console.error('🔍 Measurements query error:', error);
+        },
+        complete: () => {
+          console.log(`🔍 Found ${measurements.length} measurements`);
+        }
+      });
+    } catch (error) {
+      console.log('🔍 Measurements query failed, trying alternative...');
+    }
+
+    results.measurements = measurements;
+
+    // 2. Get all tag keys
+    console.log('🔍 Finding tag keys...');
+    const tagKeysQuery = `
+      import "influxdata/influxdb/schema"
+      schema.tagKeys(bucket: "pool-data")
+    `;
+
+    const tagKeys = [];
+    try {
+      await queryApi.queryRows(tagKeysQuery, {
+        next: (row, tableMeta) => {
+          tagKeys.push(tableMeta.toObject(row));
+        },
+        error: (error) => {
+          console.error('🔍 Tag keys query error:', error);
+        },
+        complete: () => {
+          console.log(`🔍 Found ${tagKeys.length} tag keys`);
+        }
+      });
+    } catch (error) {
+      console.log('🔍 Tag keys query failed, trying alternative...');
+    }
+
+    results.tagKeys = tagKeys;
+
+    // 3. Get all field keys
+    console.log('🔍 Finding field keys...');
+    const fieldKeysQuery = `
+      import "influxdata/influxdb/schema"
+      schema.fieldKeys(bucket: "pool-data")
+    `;
+
+    const fieldKeys = [];
+    try {
+      await queryApi.queryRows(fieldKeysQuery, {
+        next: (row, tableMeta) => {
+          fieldKeys.push(tableMeta.toObject(row));
+        },
+        error: (error) => {
+          console.error('🔍 Field keys query error:', error);
+        },
+        complete: () => {
+          console.log(`🔍 Found ${fieldKeys.length} field keys`);
+        }
+      });
+    } catch (error) {
+      console.log('🔍 Field keys query failed, trying alternative...');
+    }
+
+    results.fieldKeys = fieldKeys;
+
+    // 4. Alternative: Get raw sample data from the last 30 days
+    console.log('🔍 Getting raw sample data...');
+    const sampleQuery = `
+      from(bucket: "pool-data")
+        |> range(start: -30d)
+        |> limit(n: 50)
+    `;
+
+    const sampleData = [];
+    await queryApi.queryRows(sampleQuery, {
+      next: (row, tableMeta) => {
+        sampleData.push(tableMeta.toObject(row));
+      },
+      error: (error) => {
+        console.error('🔍 Sample data query error:', error);
+      },
+      complete: () => {
+        console.log(`🔍 Found ${sampleData.length} sample data points`);
+      }
+    });
+
+    results.sampleData = {
+      pointCount: sampleData.length,
+      samplePoints: sampleData.slice(0, 10),
+      uniqueMeasurements: [...new Set(sampleData.map(p => p._measurement).filter(Boolean))],
+      uniqueFields: [...new Set(sampleData.map(p => p._field).filter(Boolean))],
+      uniqueTags: {}
+    };
+
+    // Extract unique tag values
+    const tagColumns = ['sensor', 'location', 'device', 'type'];
+    tagColumns.forEach(tagCol => {
+      const values = [...new Set(sampleData.map(p => p[tagCol]).filter(Boolean))];
+      if (values.length > 0) {
+        results.sampleData.uniqueTags[tagCol] = values;
+      }
+    });
+
+    return res.json({
+      success: true,
+      test: 'schema-discovery',
+      timestamp: new Date().toISOString(),
+      schema: results
+    });
+
+  } catch (error) {
+    console.error('🔍 [Schema Discovery] Error:', error);
+    return res.status(500).json({
+      success: false,
+      test: 'schema-discovery',
+      error: error.message,
+      stack: error.stack
+    });
+  }
+});
+
 module.exports = router;
