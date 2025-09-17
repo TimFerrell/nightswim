@@ -1034,4 +1034,105 @@ router.get('/discover-schema', async (req, res) => {
   }
 });
 
+/**
+ * POPULATE TEST DATA: Write sample temperature/humidity data to test with
+ * GET /api/home/populate-test-data
+ */
+router.get('/populate-test-data', async (req, res) => {
+  try {
+    console.log('📝 [Populate] Writing test temperature/humidity data...');
+
+    const { InfluxDB, Point } = require('@influxdata/influxdb-client');
+
+    const client = new InfluxDB({
+      url: process.env.INFLUXDB_URL,
+      token: process.env.INFLUX_DB_TOKEN
+    });
+
+    const writeApi = client.getWriteApi(process.env.INFLUXDB_ORG, 'pool-data');
+
+    // Write sample data points over the last 24 hours
+    const now = new Date();
+    const dataPoints = [];
+
+    for (let i = 0; i < 24; i++) {
+      const timestamp = new Date(now.getTime() - (i * 60 * 60 * 1000)); // Each hour back
+
+      // Temperature data (simulate varying between 70-80°F)
+      const tempValue = 75 + Math.sin(i * 0.5) * 3 + Math.random() * 2;
+      const tempPoint = new Point('pool_metrics')
+        .tag('sensor', 'pool_temperature')
+        .floatField('_value', tempValue)
+        .timestamp(timestamp);
+
+      // Humidity data (simulate varying between 40-60%)
+      const humidityValue = 50 + Math.sin(i * 0.3) * 8 + Math.random() * 3;
+      const humidityPoint = new Point('pool_metrics')
+        .tag('sensor', 'pool_humidity')
+        .floatField('_value', humidityValue)
+        .timestamp(timestamp);
+
+      writeApi.writePoint(tempPoint);
+      writeApi.writePoint(humidityPoint);
+
+      dataPoints.push({
+        time: timestamp.toISOString(),
+        temperature: Math.round(tempValue * 10) / 10,
+        humidity: Math.round(humidityValue * 10) / 10
+      });
+    }
+
+    await writeApi.close();
+    console.log('📝 Test data written successfully');
+
+    // Wait for data to be available
+    await new Promise(resolve => setTimeout(resolve, 3000));
+
+    // Test the basic query
+    const queryApi = client.getQueryApi(process.env.INFLUXDB_ORG);
+    const testQuery = `
+      from(bucket: "pool-data")
+        |> range(start: -25h)
+        |> filter(fn: (r) => r._measurement == "pool_metrics")
+        |> filter(fn: (r) => r.sensor == "pool_temperature" or r.sensor == "pool_humidity")
+        |> limit(n: 10)
+    `;
+
+    const queryResults = [];
+    await queryApi.queryRows(testQuery, {
+      next: (row, tableMeta) => {
+        queryResults.push(tableMeta.toObject(row));
+      },
+      error: (error) => {
+        console.error('📝 Test query error:', error);
+      },
+      complete: () => {
+        console.log(`📝 Test query found ${queryResults.length} points`);
+      }
+    });
+
+    return res.json({
+      success: true,
+      test: 'populate-test-data',
+      timestamp: new Date().toISOString(),
+      results: {
+        dataPointsWritten: dataPoints.length * 2, // temp + humidity
+        sampleDataWritten: dataPoints.slice(0, 5),
+        testQuery: {
+          pointCount: queryResults.length,
+          samplePoints: queryResults.slice(0, 5)
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('📝 [Populate] Error:', error);
+    return res.status(500).json({
+      success: false,
+      test: 'populate-test-data',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;
