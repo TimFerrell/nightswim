@@ -341,32 +341,125 @@ function analyzeComfortLevels(data) {
 }
 
 /**
- * DEBUG: Test home environment query directly
+ * DEBUG: Comprehensive home environment diagnostics
  * GET /api/home/debug
  */
 router.get('/debug', async (req, res) => {
   try {
-    console.log('🔍 [Debug] Testing home environment query...');
+    console.log('🔍 [Debug] Starting comprehensive home environment diagnostics...');
+    const startTime = Date.now();
 
-    // Test the exact query
-    const data = await influxDBClient.queryHomeEnvironmentData(1, 10);
+    // Environment variable checks (masked for security)
+    const envVars = {
+      NODE_ENV: process.env.NODE_ENV,
+      INFLUXDB_URL: process.env.INFLUXDB_URL ? `${process.env.INFLUXDB_URL.substring(0, 20)}...` : 'NOT_SET',
+      INFLUXDB_ORG: process.env.INFLUXDB_ORG ? `${process.env.INFLUXDB_ORG.substring(0, 10)}...` : 'NOT_SET',
+      INFLUXDB_BUCKET: process.env.INFLUXDB_BUCKET || 'NOT_SET',
+      INFLUXDB_TOKEN: process.env.INFLUXDB_TOKEN ? 'SET (hidden)' : 'NOT_SET'
+    };
+
+    // Connection status
+    const connectionStatus = influxDBClient.getConnectionStatus();
+    const isConnected = influxDBClient.isConnected;
+
+    // Try to manually initialize connection if not connected
+    if (!isConnected) {
+      console.log('🔍 [Debug] Attempting to initialize InfluxDB connection...');
+      try {
+        await influxDBClient.testConnection();
+      } catch (connError) {
+        console.error('🔍 [Debug] Connection test failed:', connError.message);
+      }
+    }
+
+    // Test the query with different time ranges
+    const queryTests = [];
+    const timeRanges = [1, 6, 24];
+
+    for (const hours of timeRanges) {
+      try {
+        const queryStart = Date.now();
+        const data = await influxDBClient.queryHomeEnvironmentData(hours, 5);
+        const queryTime = Date.now() - queryStart;
+
+        queryTests.push({
+          hours,
+          success: true,
+          resultCount: data.length,
+          queryTime,
+          sampleData: data.slice(0, 2) // Just first 2 results for inspection
+        });
+      } catch (queryError) {
+        queryTests.push({
+          hours,
+          success: false,
+          error: queryError.message,
+          stack: queryError.stack
+        });
+      }
+    }
+
+    // Test basic InfluxDB connectivity with a simple query
+    let basicConnectivityTest = null;
+    try {
+      const testQuery = `from(bucket: "pool-data") |> range(start: -1h) |> limit(n: 1)`;
+      console.log('🔍 [Debug] Testing basic connectivity with simple query...');
+
+      const testPoints = [];
+      const testResult = influxDBClient.queryApi.queryRows(testQuery, {
+        next: (row, tableMeta) => {
+          testPoints.push(tableMeta.toObject(row));
+        },
+        error: (error) => {
+          console.error('🔍 [Debug] Basic connectivity test error:', error);
+        },
+        complete: () => {
+          console.log(`🔍 [Debug] Basic connectivity test returned ${testPoints.length} points`);
+        }
+      });
+
+      await testResult;
+      basicConnectivityTest = {
+        success: true,
+        pointCount: testPoints.length,
+        samplePoint: testPoints[0] || null
+      };
+    } catch (basicError) {
+      basicConnectivityTest = {
+        success: false,
+        error: basicError.message
+      };
+    }
+
+    const totalTime = Date.now() - startTime;
 
     return res.json({
       success: true,
       debug: true,
-      queryResult: data,
-      resultCount: data.length,
-      isConnected: influxDBClient.isConnected,
-      connectionStatus: influxDBClient.getConnectionStatus()
+      timestamp: new Date().toISOString(),
+      diagnostics: {
+        environment: envVars,
+        influxConnection: {
+          isConnected,
+          connectionStatus,
+          hasQueryApi: !!influxDBClient.queryApi
+        },
+        basicConnectivityTest,
+        homeEnvironmentQueryTests: queryTests,
+        performance: {
+          totalDiagnosticTime: totalTime
+        }
+      }
     });
 
   } catch (error) {
-    console.error('🔍 [Debug] Error:', error);
+    console.error('🔍 [Debug] Diagnostic error:', error);
     return res.status(500).json({
       success: false,
       debug: true,
       error: error.message,
-      stack: error.stack
+      stack: error.stack,
+      timestamp: new Date().toISOString()
     });
   }
 });
