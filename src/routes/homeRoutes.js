@@ -399,11 +399,14 @@ router.get('/debug', async (req, res) => {
       }
     }
 
-    // Test basic InfluxDB connectivity with a simple query
+    // Test basic InfluxDB connectivity and data availability
     let basicConnectivityTest = null;
+    let sensorDataTest = null;
+
     try {
-      const testQuery = `from(bucket: "pool-data") |> range(start: -1h) |> limit(n: 1)`;
-      console.log('🔍 [Debug] Testing basic connectivity with simple query...');
+      // Test 1: Basic connectivity
+      const testQuery = `from(bucket: "pool-data") |> range(start: -24h) |> limit(n: 3)`;
+      console.log('🔍 [Debug] Testing basic connectivity...');
 
       const testPoints = [];
       const testResult = influxDBClient.queryApi.queryRows(testQuery, {
@@ -422,12 +425,47 @@ router.get('/debug', async (req, res) => {
       basicConnectivityTest = {
         success: true,
         pointCount: testPoints.length,
-        samplePoint: testPoints[0] || null
+        samplePoints: testPoints.slice(0, 2)
       };
-    } catch (basicError) {
+
+      // Test 2: Check for specific sensors
+      const sensorQuery = `
+        from(bucket: "pool-data")
+          |> range(start: -24h)
+          |> filter(fn: (r) => r._measurement == "pool_metrics")
+          |> filter(fn: (r) => r.sensor == "pool_temperature" or r.sensor == "pool_humidity")
+          |> limit(n: 5)
+      `;
+
+      const sensorPoints = [];
+      const sensorResult = influxDBClient.queryApi.queryRows(sensorQuery, {
+        next: (row, tableMeta) => {
+          sensorPoints.push(tableMeta.toObject(row));
+        },
+        error: (error) => {
+          console.error('🔍 [Debug] Sensor data test error:', error);
+        },
+        complete: () => {
+          console.log(`🔍 [Debug] Sensor data test returned ${sensorPoints.length} points`);
+        }
+      });
+
+      await sensorResult;
+      sensorDataTest = {
+        success: true,
+        pointCount: sensorPoints.length,
+        samplePoints: sensorPoints.slice(0, 3),
+        uniqueSensors: [...new Set(sensorPoints.map(p => p.sensor))]
+      };
+
+    } catch (error) {
       basicConnectivityTest = {
         success: false,
-        error: basicError.message
+        error: error.message
+      };
+      sensorDataTest = {
+        success: false,
+        error: error.message
       };
     }
 
@@ -445,6 +483,7 @@ router.get('/debug', async (req, res) => {
           hasQueryApi: !!influxDBClient.queryApi
         },
         basicConnectivityTest,
+        sensorDataTest,
         homeEnvironmentQueryTests: queryTests,
         performance: {
           totalDiagnosticTime: totalTime

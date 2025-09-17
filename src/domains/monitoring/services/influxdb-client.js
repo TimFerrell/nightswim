@@ -271,19 +271,23 @@ class InfluxDBClient {
           |> yield(name: "three_series")
       `;
 
-      console.log('🏠 Executing home environment query:', query);
+      console.log('🏠 Executing home environment query for', hours, 'hours with limit', limit);
+      console.log('🏠 Query:', query);
+
       const dataPoints = [];
+      let rowCount = 0;
       const _queryResult = this.queryApi.queryRows(query, {
         next: (row, tableMeta) => {
+          rowCount++;
           const dataPoint = tableMeta.toObject(row);
-          console.log('🏠 Raw data point:', dataPoint);
+          console.log(`🏠 Raw data point ${rowCount}:`, JSON.stringify(dataPoint, null, 2));
           dataPoints.push(this.transformHomeEnvironmentPoint(dataPoint));
         },
         error: (error) => {
           console.error('❌ Home environment query error:', error);
         },
         complete: () => {
-          console.log(`🏠 Retrieved ${dataPoints.length} home environment data points from InfluxDB`);
+          console.log(`🏠 Query complete: processed ${rowCount} raw rows, created ${dataPoints.length} data points`);
         }
       });
 
