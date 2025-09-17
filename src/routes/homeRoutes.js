@@ -1501,4 +1501,64 @@ router.get('/test-basic-query', async (req, res) => {
   }
 });
 
+/**
+ * TEST PROCESSED DATA: Look for the already processed temperature/humidity data
+ * GET /api/home/test-processed-data
+ */
+router.get('/test-processed-data', async (req, res) => {
+  try {
+    const { InfluxDB } = require('@influxdata/influxdb-client');
+
+    const client = new InfluxDB({
+      url: process.env.INFLUXDB_URL,
+      token: process.env.INFLUX_DB_TOKEN
+    });
+
+    const queryApi = client.getQueryApi(process.env.INFLUXDB_ORG);
+
+    // Look for already processed data like in the CSV
+    const query = `
+      from(bucket: "pool-data")
+        |> range(start: 2025-09-17T11:50:00Z, stop: 2025-09-17T12:50:00Z)
+        |> filter(fn: (r) => r._field == "Temp (F)" or r._field == "Humidity (%)" or r._field == "Feels-Like (F)")
+        |> limit(n: 20)
+    `;
+
+    console.log('🔍 Testing processed data query:', query);
+
+    const results = [];
+    await queryApi.queryRows(query, {
+      next: (row, tableMeta) => {
+        const obj = tableMeta.toObject(row);
+        console.log('🔍 Processed result:', JSON.stringify(obj, null, 2));
+        results.push(obj);
+      },
+      error: (error) => {
+        console.error('🔍 Processed query error:', error);
+      },
+      complete: () => {
+        console.log(`🔍 Processed query complete: ${results.length} results`);
+      }
+    });
+
+    return res.json({
+      success: true,
+      test: 'processed-data',
+      dateRange: '2025-09-17 11:50-12:50',
+      totalResults: results.length,
+      sampleResults: results.slice(0, 10),
+      fields: [...new Set(results.map(r => r._field).filter(Boolean))],
+      query: query.trim()
+    });
+
+  } catch (error) {
+    console.error('🔍 Processed data test error:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message,
+      stack: error.stack
+    });
+  }
+});
+
 module.exports = router;
