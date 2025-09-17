@@ -1209,4 +1209,102 @@ router.get('/debug-timing', async (req, res) => {
   }
 });
 
+/**
+ * SAMPLE ALL DATA: See what's actually in the bucket
+ * GET /api/home/sample-all
+ */
+router.get('/sample-all', async (req, res) => {
+  try {
+    const { InfluxDB } = require('@influxdata/influxdb-client');
+
+    const client = new InfluxDB({
+      url: process.env.INFLUXDB_URL,
+      token: process.env.INFLUX_DB_TOKEN
+    });
+
+    const queryApi = client.getQueryApi(process.env.INFLUXDB_ORG);
+
+    // Query EVERYTHING in the bucket with no filters
+    const query = `
+      from(bucket: "pool-data")
+        |> range(start: -30d)
+        |> limit(n: 50)
+    `;
+
+    console.log('🔍 Sampling all data in bucket with query:', query);
+
+    const results = [];
+    await queryApi.queryRows(query, {
+      next: (row, tableMeta) => {
+        const obj = tableMeta.toObject(row);
+        console.log('🔍 Raw data:', JSON.stringify(obj, null, 2));
+        results.push(obj);
+      },
+      error: (error) => {
+        console.error('🔍 Sample all error:', error);
+      },
+      complete: () => {
+        console.log(`🔍 Sample complete: ${results.length} total results`);
+      }
+    });
+
+    // Also get bucket info
+    const bucketQuery = `buckets() |> filter(fn: (r) => r.name == "pool-data")`;
+    const bucketResults = [];
+    await queryApi.queryRows(bucketQuery, {
+      next: (row, tableMeta) => {
+        bucketResults.push(tableMeta.toObject(row));
+      },
+      error: (error) => {
+        console.error('🔍 Bucket info error:', error);
+      },
+      complete: () => {
+        console.log(`🔍 Bucket info: ${bucketResults.length} results`);
+      }
+    });
+
+    // Get unique measurements, fields, tags
+    const measurements = [...new Set(results.map(r => r._measurement).filter(Boolean))];
+    const fields = [...new Set(results.map(r => r._field).filter(Boolean))];
+    const tags = {};
+    results.forEach(r => {
+      Object.keys(r).forEach(key => {
+        if (!key.startsWith('_') && key !== 'result' && key !== 'table') {
+          if (!tags[key]) tags[key] = new Set();
+          tags[key].add(r[key]);
+        }
+      });
+    });
+
+    // Convert Sets to arrays for JSON
+    Object.keys(tags).forEach(key => {
+      tags[key] = [...tags[key]].filter(Boolean);
+    });
+
+    return res.json({
+      success: true,
+      test: 'sample-all',
+      bucket: 'pool-data',
+      totalResults: results.length,
+      timeRange: '30 days',
+      bucketExists: bucketResults.length > 0,
+      bucketInfo: bucketResults[0] || null,
+      analysis: {
+        uniqueMeasurements: measurements,
+        uniqueFields: fields,
+        uniqueTags: tags
+      },
+      sampleData: results.slice(0, 10)
+    });
+
+  } catch (error) {
+    console.error('🔍 Sample all error:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message,
+      stack: error.stack
+    });
+  }
+});
+
 module.exports = router;
