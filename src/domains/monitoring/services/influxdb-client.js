@@ -220,7 +220,7 @@ class InfluxDBClient {
         // Source data: temperature and humidity sensors
         src =
           from(bucket: "pool-data")
-            |> range(start: -${hours}h)
+            |> range(start: 2026-09-16T00:00:00Z, stop: 2026-09-16T23:59:59Z)
             |> filter(fn: (r) => r._measurement == "pool_metrics")
             |> filter(fn: (r) => r.sensor == "pool_temperature" or r.sensor == "pool_humidity")
             |> keep(columns: ["_time", "_value", "sensor"])
