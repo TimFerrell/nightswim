@@ -340,4 +340,35 @@ function analyzeComfortLevels(data) {
   };
 }
 
+/**
+ * DEBUG: Test home environment query directly
+ * GET /api/home/debug
+ */
+router.get('/debug', async (req, res) => {
+  try {
+    console.log('🔍 [Debug] Testing home environment query...');
+
+    // Test the exact query
+    const data = await influxDBClient.queryHomeEnvironmentData(1, 10);
+
+    return res.json({
+      success: true,
+      debug: true,
+      queryResult: data,
+      resultCount: data.length,
+      isConnected: influxDBClient.isConnected,
+      connectionStatus: influxDBClient.getConnectionStatus()
+    });
+
+  } catch (error) {
+    console.error('🔍 [Debug] Error:', error);
+    return res.status(500).json({
+      success: false,
+      debug: true,
+      error: error.message,
+      stack: error.stack
+    });
+  }
+});
+
 module.exports = router;
