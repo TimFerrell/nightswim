@@ -1307,4 +1307,63 @@ router.get('/sample-all', async (req, res) => {
   }
 });
 
+/**
+ * LIST ALL BUCKETS: See what buckets actually exist
+ * GET /api/home/list-buckets
+ */
+router.get('/list-buckets', async (req, res) => {
+  try {
+    const { InfluxDB } = require('@influxdata/influxdb-client');
+
+    const client = new InfluxDB({
+      url: process.env.INFLUXDB_URL,
+      token: process.env.INFLUX_DB_TOKEN
+    });
+
+    const queryApi = client.getQueryApi(process.env.INFLUXDB_ORG);
+
+    // List all buckets
+    const query = `buckets()`;
+
+    console.log('🪣 Listing all buckets...');
+
+    const results = [];
+    await queryApi.queryRows(query, {
+      next: (row, tableMeta) => {
+        const obj = tableMeta.toObject(row);
+        console.log('🪣 Bucket:', JSON.stringify(obj, null, 2));
+        results.push(obj);
+      },
+      error: (error) => {
+        console.error('🪣 List buckets error:', error);
+      },
+      complete: () => {
+        console.log(`🪣 Found ${results.length} buckets`);
+      }
+    });
+
+    return res.json({
+      success: true,
+      test: 'list-buckets',
+      orgUsed: process.env.INFLUXDB_ORG,
+      totalBuckets: results.length,
+      buckets: results.map(b => ({
+        name: b.name,
+        id: b.id,
+        orgID: b.orgID,
+        type: b.type,
+        description: b.description
+      }))
+    });
+
+  } catch (error) {
+    console.error('🪣 List buckets error:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message,
+      stack: error.stack
+    });
+  }
+});
+
 module.exports = router;
