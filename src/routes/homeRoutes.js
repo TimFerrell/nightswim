@@ -669,4 +669,113 @@ router.get('/test-write', async (req, res) => {
   }
 });
 
+/**
+ * STEP 1: Write simple temp/humidity data and test progressive queries
+ * GET /api/home/step1-write-temp-data
+ */
+router.get('/step1-write-temp-data', async (req, res) => {
+  try {
+    console.log('🌡️ [Step 1] Writing simple temperature/humidity data...');
+
+    const { InfluxDB, Point } = require('@influxdata/influxdb-client');
+
+    const client = new InfluxDB({
+      url: process.env.INFLUXDB_URL,
+      token: process.env.INFLUX_DB_TOKEN
+    });
+
+    const writeApi = client.getWriteApi(process.env.INFLUXDB_ORG, 'pool-data');
+
+    // Write simple temperature and humidity points
+    const tempPoint = new Point('pool_metrics')
+      .tag('sensor', 'pool_temperature')
+      .floatField('value', 75.5)
+      .timestamp(new Date());
+
+    const humidityPoint = new Point('pool_metrics')
+      .tag('sensor', 'pool_humidity')
+      .floatField('value', 45.2)
+      .timestamp(new Date());
+
+    writeApi.writePoint(tempPoint);
+    writeApi.writePoint(humidityPoint);
+    await writeApi.close();
+
+    console.log('🌡️ Temperature and humidity data written');
+
+    // Wait 2 seconds for data to be available
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    const queryApi = client.getQueryApi(process.env.INFLUXDB_ORG);
+
+    // Test 1: Basic read of our data
+    const basicQuery = `
+      from(bucket: "pool-data")
+        |> range(start: -5m)
+        |> filter(fn: (r) => r._measurement == "pool_metrics")
+        |> limit(n: 10)
+    `;
+
+    const basicResults = [];
+    await queryApi.queryRows(basicQuery, {
+      next: (row, tableMeta) => {
+        basicResults.push(tableMeta.toObject(row));
+      },
+      error: (error) => {
+        console.error('🌡️ Basic query error:', error);
+      },
+      complete: () => {
+        console.log(`🌡️ Basic query complete: ${basicResults.length} points`);
+      }
+    });
+
+    // Test 2: Filter for temperature/humidity sensors
+    const sensorQuery = `
+      from(bucket: "pool-data")
+        |> range(start: -5m)
+        |> filter(fn: (r) => r._measurement == "pool_metrics")
+        |> filter(fn: (r) => r.sensor == "pool_temperature" or r.sensor == "pool_humidity")
+        |> limit(n: 10)
+    `;
+
+    const sensorResults = [];
+    await queryApi.queryRows(sensorQuery, {
+      next: (row, tableMeta) => {
+        sensorResults.push(tableMeta.toObject(row));
+      },
+      error: (error) => {
+        console.error('🌡️ Sensor query error:', error);
+      },
+      complete: () => {
+        console.log(`🌡️ Sensor query complete: ${sensorResults.length} points`);
+      }
+    });
+
+    return res.json({
+      success: true,
+      test: 'step1-temp-humidity-data',
+      timestamp: new Date().toISOString(),
+      results: {
+        writeTest: 'SUCCESS',
+        basicQuery: {
+          pointCount: basicResults.length,
+          samplePoints: basicResults.slice(0, 3)
+        },
+        sensorQuery: {
+          pointCount: sensorResults.length,
+          samplePoints: sensorResults.slice(0, 3)
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('🌡️ [Step 1] Error:', error);
+    return res.status(500).json({
+      success: false,
+      test: 'step1-temp-humidity-data',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;
