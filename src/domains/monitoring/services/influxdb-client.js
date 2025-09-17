@@ -215,17 +215,70 @@ class InfluxDBClient {
     }
 
     try {
-      // SIMPLIFIED QUERY: Start with basic temperature and humidity data
+      // USE THE WORKING QUERY FROM INFLUX DASHBOARD
       const query = `
-        from(bucket: "pool-data")
-          |> range(start: -${hours}h)
-          |> filter(fn: (r) => r._measurement == "pool_metrics")
-          |> filter(fn: (r) => r.sensor == "pool_temperature" or r.sensor == "pool_humidity")
+        // Source data: temperature and humidity sensors
+        src =
+          from(bucket: "pool-data")
+            |> range(start: -${hours}h)
+            |> filter(fn: (r) => r._measurement == "pool_metrics")
+            |> filter(fn: (r) => r.sensor == "pool_temperature" or r.sensor == "pool_humidity")
+            |> keep(columns: ["_time", "_value", "sensor"])
+
+        // Normalize to Temp(F) and Humidity(%)
+        norm =
+          src
+            |> map(fn: (r) => ({
+                r with
+                _field: if r.sensor == "pool_temperature" then "Temp (F)" else "Humidity (%)",
+                _value:
+                  if r.sensor == "pool_temperature" then
+                    (if r._value > 60.0 then r._value else r._value * 9.0 / 5.0 + 32.0)
+                  else
+                    (if r._value <= 1.5 then r._value * 100.0 else r._value)
+              }))
+            |> keep(columns: ["_time", "_field", "_value"])
+
+        // Smooth each series
+        smoothed =
+          norm
+            |> group(columns: ["_field"])
+            |> aggregateWindow(every: 1m, fn: mean, createEmpty: false)
+            |> movingAverage(n: 3)
+
+        // Pivot to compute Feels-Like from smoothed Temp/Humidity
+        wide =
+          smoothed
+            |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
+            |> map(fn: (r) => ({
+                r with
+                "Temp (F)": if r["Temp (F)"] < -20.0 then -20.0 else (if r["Temp (F)"] > 140.0 then 140.0 else r["Temp (F)"]),
+                "Humidity (%)": if r["Humidity (%)"] < 0.0 then 0.0 else (if r["Humidity (%)"] > 100.0 then 100.0 else r["Humidity (%)"])
+              }))
+            |> map(fn: (r) => ({
+                r with
+                "Feels-Like (F)":
+                  if r["Temp (F)"] < 80.0 then
+                    0.5 * (r["Temp (F)"] + 61.0 + ((r["Temp (F)"] - 68.0) * 1.2) + (r["Humidity (%)"] * 0.094))
+                  else
+                    -42.379 +
+                    2.04901523 * r["Temp (F)"] +
+                    10.14333127 * r["Humidity (%)"] -
+                    0.22475541 * r["Temp (F)"] * r["Humidity (%)"] -
+                    0.00683783 * r["Temp (F)"] * r["Temp (F)"] -
+                    0.05481717 * r["Humidity (%)"] * r["Humidity (%)"] +
+                    0.00122874 * r["Temp (F)"] * r["Temp (F)"] * r["Humidity (%)"] +
+                    0.00085282 * r["Temp (F)"] * r["Humidity (%)"] * r["Humidity (%)"] -
+                    0.00000199 * r["Temp (F)"] * r["Temp (F)"] * r["Humidity (%)"] * r["Humidity (%)"]
+              }))
+
+        // Return the wide format for our application
+        wide
+          |> sort(columns: ["_time"])
           |> limit(n: ${limit})
       `;
 
-      console.log('🏠 Executing simplified home environment query for', hours, 'hours');
-      console.log('🏠 Query:', query);
+      console.log('🏠 Executing WORKING home environment query for', hours, 'hours');
 
       const dataPoints = [];
       let rowCount = 0;
@@ -234,7 +287,7 @@ class InfluxDBClient {
           rowCount++;
           const dataPoint = tableMeta.toObject(row);
           console.log(`🏠 Raw data point ${rowCount}:`, JSON.stringify(dataPoint, null, 2));
-          dataPoints.push(this.transformHomeEnvironmentPointSimple(dataPoint));
+          dataPoints.push(this.transformWorkingHomeEnvironmentPoint(dataPoint));
         },
         error: (error) => {
           console.error('❌ Home environment query error:', error);
@@ -245,7 +298,7 @@ class InfluxDBClient {
       });
 
       await _queryResult;
-      return this.groupHomeEnvironmentDataSimple(dataPoints);
+      return dataPoints;
     } catch (error) {
       console.error('❌ Error querying home environment data:', error.message);
       return [];
@@ -407,6 +460,18 @@ class InfluxDBClient {
 
     // Convert to array and sort by timestamp
     return Object.values(grouped).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  }
+
+  /**
+   * Transform working home environment InfluxDB point to our data format
+   */
+  transformWorkingHomeEnvironmentPoint(influxPoint) {
+    return {
+      timestamp: influxPoint._time,
+      temperature: influxPoint['Temp (F)'],
+      humidity: influxPoint['Humidity (%)'],
+      feelsLike: influxPoint['Feels-Like (F)']
+    };
   }
 
   /**

@@ -22,7 +22,7 @@ const optionalEnvVars = {
   INFLUXDB_URL: null,
   INFLUX_DB_TOKEN: null,
   INFLUXDB_ORG: null,
-  INFLUXDB_BUCKET: 'default'
+  INFLUXDB_BUCKET: 'pool-data'
 };
 
 class EnvironmentConfig {
