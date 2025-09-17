@@ -1135,4 +1135,78 @@ router.get('/populate-test-data', async (req, res) => {
   }
 });
 
+/**
+ * TEMPORARY DEBUG: Write and immediately query with wide time range
+ * GET /api/home/debug-timing
+ */
+router.get('/debug-timing', async (req, res) => {
+  try {
+    const { InfluxDB, Point } = require('@influxdata/influxdb-client');
+
+    const client = new InfluxDB({
+      url: process.env.INFLUXDB_URL,
+      token: process.env.INFLUX_DB_TOKEN
+    });
+
+    const writeApi = client.getWriteApi(process.env.INFLUXDB_ORG, 'pool-data');
+    const queryApi = client.getQueryApi(process.env.INFLUXDB_ORG);
+
+    // Write test data with explicit timestamp
+    const now = new Date();
+    const point = new Point('debug_test')
+      .tag('sensor', 'timing_test')
+      .floatField('_value', 123.45)
+      .timestamp(now);
+
+    console.log('🕒 Writing test point at:', now.toISOString());
+    writeApi.writePoint(point);
+    await writeApi.close();
+    console.log('🕒 Write complete');
+
+    // Wait a moment
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // Query with very wide range
+    const query = `
+      from(bucket: "pool-data")
+        |> range(start: -7d)
+        |> filter(fn: (r) => r._measurement == "debug_test")
+        |> limit(n: 10)
+    `;
+
+    console.log('🕒 Executing query:', query);
+
+    const results = [];
+    await queryApi.queryRows(query, {
+      next: (row, tableMeta) => {
+        const obj = tableMeta.toObject(row);
+        console.log('🕒 Found result:', JSON.stringify(obj, null, 2));
+        results.push(obj);
+      },
+      error: (error) => {
+        console.error('🕒 Query error:', error);
+      },
+      complete: () => {
+        console.log(`🕒 Query complete: ${results.length} results`);
+      }
+    });
+
+    return res.json({
+      success: true,
+      test: 'debug-timing',
+      writeTimestamp: now.toISOString(),
+      queryRange: '7 days',
+      resultsFound: results.length,
+      sampleResults: results.slice(0, 3)
+    });
+
+  } catch (error) {
+    console.error('🕒 Debug timing error:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;
