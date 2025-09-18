@@ -427,40 +427,6 @@ const updateWeatherTimeSeriesCard = (data) => {
 };
 
 // Home Environment Card Update Functions
-const updateHomeEnvironmentCards = (data) => {
-  if (data.error) {
-    // Handle error state
-    updateHomeEnvironmentCard('homeTempCard', { error: data.error });
-    updateHomeEnvironmentCard('homeHumidityCard', { error: data.error });
-    updateHomeEnvironmentCard('homeFeelsLikeCard', { error: data.error });
-    return;
-  }
-
-  // Update temperature card
-  updateHomeEnvironmentCard('homeTempCard', {
-    value: data.temperature,
-    unit: '°F',
-    comfort: data.comfortLevel,
-    sparkline: 'homeTempSparkline'
-  });
-
-  // Update humidity card
-  updateHomeEnvironmentCard('homeHumidityCard', {
-    value: data.humidity,
-    unit: '%',
-    level: data.humidityLevel,
-    sparkline: 'homeHumiditySparkline'
-  });
-
-  // Update feels-like card
-  updateHomeEnvironmentCard('homeFeelsLikeCard', {
-    value: data.feelsLike,
-    unit: '°F',
-    comfort: data.comfortLevel,
-    sparkline: 'homeFeelsLikeSparkline'
-  });
-};
-
 const updateHomeEnvironmentCard = (cardId, data) => {
   const card = document.getElementById(cardId);
   if (!card) return;
@@ -497,6 +463,40 @@ const updateHomeEnvironmentCard = (cardId, data) => {
 
   // Mark card as loaded
   card.classList.add('loaded');
+};
+
+const updateHomeEnvironmentCards = (data) => {
+  if (data.error) {
+    // Handle error state
+    updateHomeEnvironmentCard('homeTempCard', { error: data.error });
+    updateHomeEnvironmentCard('homeHumidityCard', { error: data.error });
+    updateHomeEnvironmentCard('homeFeelsLikeCard', { error: data.error });
+    return;
+  }
+
+  // Update temperature card
+  updateHomeEnvironmentCard('homeTempCard', {
+    value: data.temperature,
+    unit: '°F',
+    comfort: data.comfortLevel,
+    sparkline: 'homeTempSparkline'
+  });
+
+  // Update humidity card
+  updateHomeEnvironmentCard('homeHumidityCard', {
+    value: data.humidity,
+    unit: '%',
+    level: data.humidityLevel,
+    sparkline: 'homeHumiditySparkline'
+  });
+
+  // Update feels-like card
+  updateHomeEnvironmentCard('homeFeelsLikeCard', {
+    value: data.feelsLike,
+    unit: '°F',
+    comfort: data.comfortLevel,
+    sparkline: 'homeFeelsLikeSparkline'
+  });
 };
 
 const updateHomeEnvironmentChart = (data) => {
