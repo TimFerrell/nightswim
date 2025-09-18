@@ -467,19 +467,20 @@ class InfluxDBClient {
     let humidity = undefined;
     let feelsLike = undefined;
 
-    // Check for temperature data (field: "value_f" for pool_temperature sensor)
-    if (influxPoint.sensor === 'pool_temperature' && influxPoint._field === 'value_f') {
-      temperature = influxPoint._value;
+    // Check for temperature data (field: "value" for pool_temperature sensor, in Celsius)
+    if (influxPoint.sensor === 'pool_temperature' && influxPoint._field === 'value') {
+      // Convert Celsius to Fahrenheit
+      temperature = (influxPoint._value * 9/5) + 32;
     }
 
-    // Check for humidity data (field: "value" for pool_humidity sensor)
+    // Check for humidity data (field: "value" for pool_humidity sensor, already in percentage)
     if (influxPoint.sensor === 'pool_humidity' && influxPoint._field === 'value') {
       humidity = influxPoint._value;
     }
 
     // Calculate feels-like if we have both temperature and humidity
     if (temperature !== undefined && humidity !== undefined) {
-      // Heat index calculation
+      // Heat index calculation (temperature should be in Fahrenheit)
       feelsLike = 1.8 * (0.5 * (temperature + 61.0 + ((temperature - 68.0) * 1.2) + (humidity * 0.094))) - 32.0;
     }
 
