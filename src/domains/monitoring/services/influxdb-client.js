@@ -1448,6 +1448,134 @@ class InfluxDBClient {
 
     return results;
   }
+
+  /**
+   * Ultra-minimal bucket and data discovery
+   */
+  async discoverBucketsAndData() {
+    const results = {
+      timestamp: new Date().toISOString(),
+      connectionStatus: null,
+      bucketDiscovery: null,
+      dataDiscovery: null,
+      overallStatus: 'unknown'
+    };
+
+    try {
+      await this.ensureInitialized();
+
+      if (!this.isConnected || !this.queryApi) {
+        results.connectionStatus = { connected: false, error: 'Not initialized' };
+        results.overallStatus = 'not_connected';
+        return results;
+      }
+
+      results.connectionStatus = {
+        connected: true,
+        config: {
+          url: this.config.url,
+          org: this.config.org,
+          bucket: this.config.bucket,
+          tokenLength: this.config.token ? this.config.token.length : 0
+        }
+      };
+
+      // 1. Discover ALL buckets
+      try {
+        const bucketQuery = 'buckets()';
+        const buckets = [];
+
+        await this.queryApi.queryRows(bucketQuery, {
+          next: (row, tableMeta) => {
+            const bucketInfo = tableMeta.toObject(row);
+            buckets.push(bucketInfo);
+          },
+          error: (error) => {
+            console.log('Bucket discovery error:', error.message);
+          },
+          complete: () => {}
+        });
+
+        results.bucketDiscovery = {
+          success: true,
+          totalBuckets: buckets.length,
+          buckets,
+          bucketNames: buckets.map(b => b.name),
+          targetBucketExists: buckets.some(b => b.name === this.config.bucket)
+        };
+      } catch (error) {
+        results.bucketDiscovery = {
+          success: false,
+          error: error.message
+        };
+      }
+
+      // 2. Try to find data in ANY bucket
+      const dataDiscoveryTests = [];
+
+      if (results.bucketDiscovery.success && results.bucketDiscovery.buckets.length > 0) {
+        for (const bucket of results.bucketDiscovery.buckets) {
+          try {
+            const query = `from(bucket: "${bucket.name}") |> range(start: -30d) |> limit(n: 3)`;
+            const data = [];
+
+            await this.queryApi.queryRows(query, {
+              next: (row, tableMeta) => {
+                const rawRow = tableMeta.toObject(row);
+                data.push(rawRow);
+              },
+              error: (error) => {
+                console.log(`Data discovery error for bucket ${bucket.name}:`, error.message);
+              },
+              complete: () => {}
+            });
+
+            dataDiscoveryTests.push({
+              bucketName: bucket.name,
+              success: true,
+              dataCount: data.length,
+              sampleData: data.slice(0, 2),
+              dataStructure: data.length > 0 ? {
+                keys: Object.keys(data[0]),
+                sampleRow: data[0]
+              } : null
+            });
+          } catch (error) {
+            dataDiscoveryTests.push({
+              bucketName: bucket.name,
+              success: false,
+              error: error.message
+            });
+          }
+        }
+      }
+
+      results.dataDiscovery = {
+        success: true,
+        tests: dataDiscoveryTests,
+        bucketsWithData: dataDiscoveryTests.filter(t => t.success && t.dataCount > 0)
+      };
+
+      // Determine overall status
+      const hasBuckets = results.bucketDiscovery.success && results.bucketDiscovery.totalBuckets > 0;
+      const hasData = results.dataDiscovery.bucketsWithData.length > 0;
+
+      if (hasData) {
+        results.overallStatus = 'data_found';
+      } else if (hasBuckets) {
+        results.overallStatus = 'buckets_found_no_data';
+      } else {
+        results.overallStatus = 'no_buckets_found';
+      }
+
+    } catch (error) {
+      results.error = error.message;
+      results.stack = error.stack;
+      results.overallStatus = 'error';
+    }
+
+    return results;
+  }
 }
 
 // Create singleton instance

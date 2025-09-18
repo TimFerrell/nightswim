@@ -1934,4 +1934,35 @@ router.get('/inspect-raw-data', async (req, res) => {
   }
 });
 
+router.get('/discover-buckets', async (req, res) => {
+  try {
+    console.log('🔍 [Discover Buckets] Starting bucket and data discovery...');
+    const startTime = Date.now();
+
+    const discovery = await influxDBClient.discoverBucketsAndData();
+    const totalTime = Date.now() - startTime;
+
+    console.log(`🔍 [Discover Buckets] Completed in ${totalTime}ms`);
+
+    return res.json({
+      success: true,
+      test: 'discover-buckets',
+      timestamp: new Date().toISOString(),
+      performance: {
+        totalTime
+      },
+      discovery
+    });
+
+  } catch (error) {
+    console.error('🔍 [Discover Buckets] Error:', error);
+    return res.status(500).json({
+      success: false,
+      test: 'discover-buckets',
+      error: error.message,
+      stack: error.stack
+    });
+  }
+});
+
 module.exports = router;
