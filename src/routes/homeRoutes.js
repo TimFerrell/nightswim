@@ -60,7 +60,7 @@ router.get('/environment', async (req, res) => {
       responseTime: totalTime
     });
 
-  } catch (_error) {
+  } catch (error) {
     const totalTime = Date.now() - requestStartTime;
     console.error('❌ [Home Environment] Error fetching current data:', error);
 
@@ -100,7 +100,7 @@ router.get('/timeseries', async (req, res) => {
       responseTime: totalTime
     });
 
-  } catch (_error) {
+  } catch (error) {
     const totalTime = Date.now() - requestStartTime;
     console.error('❌ [Home Environment] Error fetching time series:', error);
 
@@ -154,7 +154,7 @@ router.get('/timeseries/stats', async (req, res) => {
       responseTime: totalTime
     });
 
-  } catch (_error) {
+  } catch (error) {
     const totalTime = Date.now() - requestStartTime;
     console.error('❌ [Home Environment] Error fetching statistics:', error);
 
@@ -212,7 +212,7 @@ router.get('/comfort', async (req, res) => {
       responseTime: totalTime
     });
 
-  } catch (_error) {
+  } catch (error) {
     const totalTime = Date.now() - requestStartTime;
     console.error('❌ [Home Environment] Error analyzing comfort:', error);
 
@@ -457,7 +457,7 @@ router.get('/debug', async (req, res) => {
         uniqueFields: [...new Set(sensorPoints.map(p => p._field).filter(Boolean))]
       };
 
-    } catch (_error) {
+    } catch (error) {
       basicConnectivityTest = {
         success: false,
         error: error.message
@@ -490,7 +490,7 @@ router.get('/debug', async (req, res) => {
       }
     });
 
-  } catch (_error) {
+  } catch (error) {
     console.error('🔍 [Debug] Diagnostic error:', error);
     return res.status(500).json({
       success: false,
@@ -584,7 +584,7 @@ router.get('/simple-test', async (req, res) => {
       }
     });
 
-  } catch (_error) {
+  } catch (error) {
     console.error('🔬 [Simple Test] Error:', error);
     return res.status(500).json({
       success: false,
@@ -658,7 +658,7 @@ router.get('/test-write', async (req, res) => {
       }
     });
 
-  } catch (_error) {
+  } catch (error) {
     console.error('✍️ [Test Write] Error:', error);
     return res.status(500).json({
       success: false,
@@ -768,7 +768,7 @@ router.get('/step1-write-temp-data', async (req, res) => {
       }
     });
 
-  } catch (_error) {
+  } catch (error) {
     console.error('🌡️ [Step 1] Error:', error);
     return res.status(500).json({
       success: false,
@@ -871,7 +871,7 @@ router.get('/step2-check-data-structure', async (req, res) => {
       }
     });
 
-  } catch (_error) {
+  } catch (error) {
     console.error('🔍 [Step 2] Error:', error);
     return res.status(500).json({
       success: false,
@@ -920,7 +920,7 @@ router.get('/discover-schema', async (req, res) => {
           console.log(`🔍 Found ${measurements.length} measurements`);
         }
       });
-    } catch (_error) {
+    } catch (error) {
       console.log('🔍 Measurements query failed, trying alternative...');
     }
 
@@ -946,7 +946,7 @@ router.get('/discover-schema', async (req, res) => {
           console.log(`🔍 Found ${tagKeys.length} tag keys`);
         }
       });
-    } catch (_error) {
+    } catch (error) {
       console.log('🔍 Tag keys query failed, trying alternative...');
     }
 
@@ -972,7 +972,7 @@ router.get('/discover-schema', async (req, res) => {
           console.log(`🔍 Found ${fieldKeys.length} field keys`);
         }
       });
-    } catch (_error) {
+    } catch (error) {
       console.log('🔍 Field keys query failed, trying alternative...');
     }
 
@@ -1023,7 +1023,7 @@ router.get('/discover-schema', async (req, res) => {
       schema: results
     });
 
-  } catch (_error) {
+  } catch (error) {
     console.error('🔍 [Schema Discovery] Error:', error);
     return res.status(500).json({
       success: false,
@@ -1125,7 +1125,7 @@ router.get('/populate-test-data', async (req, res) => {
       }
     });
 
-  } catch (_error) {
+  } catch (error) {
     console.error('📝 [Populate] Error:', error);
     return res.status(500).json({
       success: false,
@@ -1201,7 +1201,7 @@ router.get('/debug-timing', async (req, res) => {
       sampleResults: results.slice(0, 3)
     });
 
-  } catch (_error) {
+  } catch (error) {
     console.error('🕒 Debug timing error:', error);
     return res.status(500).json({
       success: false,
@@ -1299,7 +1299,7 @@ router.get('/sample-all', async (req, res) => {
       sampleData: results.slice(0, 10)
     });
 
-  } catch (_error) {
+  } catch (error) {
     console.error('🔍 Sample all error:', error);
     return res.status(500).json({
       success: false,
@@ -1358,7 +1358,7 @@ router.get('/list-buckets', async (req, res) => {
       }))
     });
 
-  } catch (_error) {
+  } catch (error) {
     console.error('🪣 List buckets error:', error);
     return res.status(500).json({
       success: false,
@@ -1398,7 +1398,7 @@ router.get('/create-bucket', async (req, res) => {
         error: () => {}, // Ignore errors
         complete: () => {}
       });
-    } catch (_e) {
+    } catch (e) {
       // Ignore - we'll try another way
     }
 
@@ -1430,7 +1430,7 @@ router.get('/create-bucket', async (req, res) => {
       }
     });
 
-  } catch (_error) {
+  } catch (error) {
     console.error('🪣 Create bucket error:', error);
     return res.status(500).json({
       success: false,
@@ -1491,7 +1491,7 @@ router.get('/test-basic-query', async (req, res) => {
       query: query.trim()
     });
 
-  } catch (_error) {
+  } catch (error) {
     console.error('🔍 Basic query test error:', error);
     return res.status(500).json({
       success: false,
@@ -1526,7 +1526,7 @@ router.get('/permission-diagnostics', async (req, res) => {
       diagnostics
     });
 
-  } catch (_error) {
+  } catch (error) {
     console.error('🔐 [Permission Diagnostics] Error:', error);
     return res.status(500).json({
       success: false,
@@ -1562,7 +1562,7 @@ router.get('/token-permissions', async (req, res) => {
       tests
     });
 
-  } catch (_error) {
+  } catch (error) {
     console.error('🔑 [Token Permissions] Error:', error);
     return res.status(500).json({
       success: false,
@@ -1615,7 +1615,7 @@ router.get('/alternative-queries', async (req, res) => {
           resultCount: results.length,
           accessible: true
         });
-      } catch (_error) {
+      } catch (error) {
         alternativeTests.push({
           test: `Bucket Name: ${bucketName}`,
           success: false,
@@ -1647,7 +1647,7 @@ router.get('/alternative-queries', async (req, res) => {
           resultCount: results.length,
           accessible: true
         });
-      } catch (_error) {
+      } catch (error) {
         alternativeTests.push({
           test: `Measurement: ${measurement}`,
           success: false,
@@ -1679,7 +1679,7 @@ router.get('/alternative-queries', async (req, res) => {
           resultCount: results.length,
           accessible: true
         });
-      } catch (_error) {
+      } catch (error) {
         alternativeTests.push({
           test: `Field: ${field}`,
           success: false,
@@ -1701,7 +1701,7 @@ router.get('/alternative-queries', async (req, res) => {
       alternativeTests
     });
 
-  } catch (_error) {
+  } catch (error) {
     console.error('🔄 [Alternative Queries] Error:', error);
     return res.status(500).json({
       success: false,
@@ -1762,7 +1762,7 @@ router.get('/test-processed-data', async (req, res) => {
       query: query.trim()
     });
 
-  } catch (_error) {
+  } catch (error) {
     console.error('🔍 Processed data test error:', error);
     return res.status(500).json({
       success: false,
