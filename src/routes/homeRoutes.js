@@ -920,7 +920,7 @@ router.get('/discover-schema', async (req, res) => {
           console.log(`🔍 Found ${measurements.length} measurements`);
         }
       });
-    } catch (_error) {
+    } catch (_error) { // eslint-disable-line no-unused-vars
       console.log('🔍 Measurements query failed, trying alternative...');
     }
 
@@ -946,7 +946,7 @@ router.get('/discover-schema', async (req, res) => {
           console.log(`🔍 Found ${tagKeys.length} tag keys`);
         }
       });
-    } catch (_error) {
+    } catch (_error) { // eslint-disable-line no-unused-vars
       console.log('🔍 Tag keys query failed, trying alternative...');
     }
 
@@ -972,7 +972,7 @@ router.get('/discover-schema', async (req, res) => {
           console.log(`🔍 Found ${fieldKeys.length} field keys`);
         }
       });
-    } catch (_error) {
+    } catch (_error) { // eslint-disable-line no-unused-vars
       console.log('🔍 Field keys query failed, trying alternative...');
     }
 
@@ -1398,7 +1398,7 @@ router.get('/create-bucket', async (req, res) => {
         error: () => {}, // Ignore errors
         complete: () => {}
       });
-    } catch (_e) {
+    } catch (_e) { // eslint-disable-line no-unused-vars
       // Ignore - we'll try another way
     }
 
