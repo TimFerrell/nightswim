@@ -16,8 +16,8 @@ router.get('/environment', async (req, res) => {
   console.log('🏠 [Home Environment] /api/home/environment request started');
 
   try {
-    // Get the latest data point (last hour)
-    const data = await influxDBClient.queryHomeEnvironmentData(1, 1);
+    // Get the latest data points (last hour, need multiple points to get both temp and humidity)
+    const data = await influxDBClient.queryHomeEnvironmentData(1, 100);
 
     if (data.length === 0) {
       const totalTime = Date.now() - requestStartTime;
@@ -39,9 +39,32 @@ router.get('/environment', async (req, res) => {
       });
     }
 
-    const latestData = data[data.length - 1];
-    const comfortLevel = calculateComfortLevel(latestData.temperature, latestData.humidity);
-    const humidityLevel = calculateHumidityLevel(latestData.humidity);
+    // Find the most recent temperature and humidity values
+    let latestTemperature = null;
+    let latestHumidity = null;
+    let latestFeelsLike = null;
+    let latestTimestamp = null;
+
+    // Sort by timestamp to get the most recent values
+    const sortedData = data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    for (const point of sortedData) {
+      if (point.temperature !== undefined && latestTemperature === null) {
+        latestTemperature = point.temperature;
+      }
+      if (point.humidity !== undefined && latestHumidity === null) {
+        latestHumidity = point.humidity;
+      }
+      if (point.feelsLike !== undefined && latestFeelsLike === null) {
+        latestFeelsLike = point.feelsLike;
+      }
+      if (latestTimestamp === null) {
+        latestTimestamp = point.timestamp;
+      }
+    }
+
+    const comfortLevel = calculateComfortLevel(latestTemperature, latestHumidity);
+    const humidityLevel = calculateHumidityLevel(latestHumidity);
 
     const totalTime = Date.now() - requestStartTime;
     console.log(`✅ [Home Environment] Data retrieved in ${totalTime}ms`);
@@ -49,12 +72,12 @@ router.get('/environment', async (req, res) => {
     return res.json({
       success: true,
       data: {
-        temperature: latestData.temperature,
-        humidity: latestData.humidity,
-        feelsLike: latestData.feelsLike,
+        temperature: latestTemperature,
+        humidity: latestHumidity,
+        feelsLike: latestFeelsLike,
         comfortLevel,
         humidityLevel,
-        timestamp: latestData.timestamp,
+        timestamp: latestTimestamp,
         source: 'influxdb'
       },
       responseTime: totalTime
