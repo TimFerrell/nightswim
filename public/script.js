@@ -283,6 +283,43 @@ const capitalizeFirst = (str) => {
   return str.charAt(0).toUpperCase() + str.slice(1);
 };
 
+const calculateComfortLevel = (temperature, humidity) => {
+  if (temperature === null || humidity === null) {
+    return 'Unknown';
+  }
+  if (temperature >= 68 && temperature <= 78 && humidity >= 30 && humidity <= 60) {
+    return 'Comfortable';
+  } else if (temperature > 78 || (temperature > 75 && humidity > 60)) {
+    return 'Hot';
+  }
+  if (temperature < 68) {
+    return 'Cold';
+  }
+  if (humidity > 60) {
+    return 'Humid';
+  }
+  if (humidity < 30) {
+    return 'Dry';
+  }
+  return 'Marginal';
+};
+
+const calculateHumidityLevel = (humidity) => {
+  if (humidity === null) {
+    return 'Unknown';
+  }
+  if (humidity < 30) {
+    return 'Low';
+  }
+  if (humidity >= 30 && humidity <= 60) {
+    return 'Normal';
+  }
+  if (humidity > 60 && humidity <= 70) {
+    return 'High';
+  }
+  return 'Very High';
+};
+
 const updateSaltAnnotations = (currentSalt) => {
   if (!saltSparkline) return;
 
@@ -752,35 +789,93 @@ const loadHomeEnvironmentTimeSeries = async (hours = 24) => {
     const loadTime = Date.now() - startTime;
     console.log(`✅ Home environment time series loaded in ${loadTime}ms`);
 
-    // Update home environment sparklines
-    if (homeTempSparkline && data.length > 0) {
-      const tempData = data.filter(d => d.temperature !== null && d.temperature !== undefined);
-      if (tempData.length > 0) {
-        homeTempSparkline.data.labels = tempData.map(d => new Date(d.timestamp));
-        homeTempSparkline.data.datasets[0].data = tempData.map(d => d.temperature);
-        homeTempSparkline.update('none');
+    // Update home environment sparklines and main card values
+    if (data.length > 0) {
+      // Sort data by timestamp to get the most recent values
+      const sortedData = data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+      // Find the most recent temperature, humidity, and feels-like values
+      let latestTemperature = null;
+      let latestHumidity = null;
+      let latestFeelsLike = null;
+      let latestTimestamp = null;
+
+      for (const point of sortedData) {
+        if (point.temperature !== undefined && latestTemperature === null) {
+          latestTemperature = point.temperature;
+        }
+        if (point.humidity !== undefined && latestHumidity === null) {
+          latestHumidity = point.humidity;
+        }
+        if (point.feelsLike !== undefined && latestFeelsLike === null) {
+          latestFeelsLike = point.feelsLike;
+        }
+        if (latestTimestamp === null) {
+          latestTimestamp = point.timestamp;
+        }
+      }
+
+      // Calculate feels-like if we have both temperature and humidity
+      if (latestTemperature !== null && latestHumidity !== null && latestFeelsLike === null) {
+        const T = latestTemperature;
+        const R = latestHumidity;
+
+        if (T >= 80) {
+          latestFeelsLike = -42.379 +
+            2.04901523 * T +
+            10.14333127 * R -
+            0.22475541 * T * R -
+            0.00683783 * T * T -
+            0.05481717 * R * R +
+            0.00122874 * T * T * R +
+            0.00085282 * T * R * R -
+            0.00000199 * T * T * R * R;
+        } else {
+          latestFeelsLike = 0.5 * (T + 61.0 + ((T - 68.0) * 1.2) + (R * 0.094));
+        }
+      }
+
+      // Update main card values with the latest data from sparklines
+      updateHomeEnvironmentCards({
+        temperature: latestTemperature,
+        humidity: latestHumidity,
+        feelsLike: latestFeelsLike,
+        comfortLevel: calculateComfortLevel(latestTemperature, latestHumidity),
+        humidityLevel: calculateHumidityLevel(latestHumidity),
+        timestamp: latestTimestamp,
+        source: 'influxdb'
+      });
+
+      // Update sparklines
+      if (homeTempSparkline) {
+        const tempData = data.filter(d => d.temperature !== null && d.temperature !== undefined);
+        if (tempData.length > 0) {
+          homeTempSparkline.data.labels = tempData.map(d => new Date(d.timestamp));
+          homeTempSparkline.data.datasets[0].data = tempData.map(d => d.temperature);
+          homeTempSparkline.update('none');
+        }
+      }
+
+      if (homeHumiditySparkline) {
+        const humidityData = data.filter(d => d.humidity !== null && d.humidity !== undefined);
+        if (humidityData.length > 0) {
+          homeHumiditySparkline.data.labels = humidityData.map(d => new Date(d.timestamp));
+          homeHumiditySparkline.data.datasets[0].data = humidityData.map(d => d.humidity);
+          homeHumiditySparkline.update('none');
+        }
+      }
+
+      if (homeFeelsLikeSparkline) {
+        const feelsLikeData = data.filter(d => d.feelsLike !== null && d.feelsLike !== undefined);
+        if (feelsLikeData.length > 0) {
+          homeFeelsLikeSparkline.data.labels = feelsLikeData.map(d => new Date(d.timestamp));
+          homeFeelsLikeSparkline.data.datasets[0].data = feelsLikeData.map(d => d.feelsLike);
+          homeFeelsLikeSparkline.update('none');
+        }
       }
     }
 
-    if (homeHumiditySparkline && data.length > 0) {
-      const humidityData = data.filter(d => d.humidity !== null && d.humidity !== undefined);
-      if (humidityData.length > 0) {
-        homeHumiditySparkline.data.labels = humidityData.map(d => new Date(d.timestamp));
-        homeHumiditySparkline.data.datasets[0].data = humidityData.map(d => d.humidity);
-        homeHumiditySparkline.update('none');
-      }
-    }
-
-    if (homeFeelsLikeSparkline && data.length > 0) {
-      const feelsLikeData = data.filter(d => d.feelsLike !== null && d.feelsLike !== undefined);
-      if (feelsLikeData.length > 0) {
-        homeFeelsLikeSparkline.data.labels = feelsLikeData.map(d => new Date(d.timestamp));
-        homeFeelsLikeSparkline.data.datasets[0].data = feelsLikeData.map(d => d.feelsLike);
-        homeFeelsLikeSparkline.update('none');
-      }
-    }
-
-    console.log('✅ Home environment sparklines updated');
+    console.log('✅ Home environment sparklines and main card values updated');
 
     // Update home environment chart
     updateHomeEnvironmentChart(data);
@@ -1939,7 +2034,6 @@ const _startChartAutoRefresh = () => {
       updateSparklines(),
       loadWeatherAlerts(),
       loadWeatherTimeSeries(),
-      loadHomeEnvironmentData(),
       loadHomeEnvironmentTimeSeries(24)
     ]);
   };
@@ -1980,7 +2074,7 @@ const _startStatsAutoRefresh = () => {
       loadPoolData(),
       loadWeatherAlerts(),
       loadWeatherTimeSeries(),
-      loadHomeEnvironmentData()
+      loadHomeEnvironmentTimeSeries(24)
     ]);
   };
 
@@ -2234,7 +2328,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadPoolData(),
     loadWeatherAlerts(),
     loadWeatherTimeSeries(),
-    loadHomeEnvironmentData(),
     loadHomeEnvironmentTimeSeries(24)
   ]);
 
