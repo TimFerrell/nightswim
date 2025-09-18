@@ -74,7 +74,10 @@ describe('InfluxDBClient - Home Environment', () => {
 
       mockQueryApi.queryRows.mockImplementation((query, callbacks) => {
         mockData.forEach(point => {
-          const mockRow = { _time: point._time, _field: point._field, _value: point._value };
+          const mockRow = {
+            _time: point._time,
+            [point._field]: point._value
+          };
           callbacks.next(mockRow, { toObject: () => mockRow });
         });
         callbacks.complete();
