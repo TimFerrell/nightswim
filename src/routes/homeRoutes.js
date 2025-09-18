@@ -1965,4 +1965,35 @@ router.get('/discover-buckets', async (req, res) => {
   }
 });
 
+router.get('/test-direct-access', async (req, res) => {
+  try {
+    console.log('🔍 [Test Direct Access] Starting direct data access tests...');
+    const startTime = Date.now();
+
+    const directAccess = await influxDBClient.testDirectDataAccess();
+    const totalTime = Date.now() - startTime;
+
+    console.log(`🔍 [Test Direct Access] Completed in ${totalTime}ms`);
+
+    return res.json({
+      success: true,
+      test: 'test-direct-access',
+      timestamp: new Date().toISOString(),
+      performance: {
+        totalTime
+      },
+      directAccess
+    });
+
+  } catch (error) {
+    console.error('🔍 [Test Direct Access] Error:', error);
+    return res.status(500).json({
+      success: false,
+      test: 'test-direct-access',
+      error: error.message,
+      stack: error.stack
+    });
+  }
+});
+
 module.exports = router;

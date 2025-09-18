@@ -1576,6 +1576,127 @@ class InfluxDBClient {
 
     return results;
   }
+
+  /**
+   * Test direct data access without bucket discovery
+   */
+  async testDirectDataAccess() {
+    const results = {
+      timestamp: new Date().toISOString(),
+      connectionStatus: null,
+      directAccessTests: [],
+      overallStatus: 'unknown'
+    };
+
+    try {
+      await this.ensureInitialized();
+
+      if (!this.isConnected || !this.queryApi) {
+        results.connectionStatus = { connected: false, error: 'Not initialized' };
+        results.overallStatus = 'not_connected';
+        return results;
+      }
+
+      results.connectionStatus = {
+        connected: true,
+        config: {
+          url: this.config.url,
+          org: this.config.org,
+          bucket: this.config.bucket,
+          tokenLength: this.config.token ? this.config.token.length : 0
+        }
+      };
+
+      // Test direct access to the configured bucket with various approaches
+      const directTests = [
+        {
+          name: 'Direct - No Range',
+          query: `from(bucket: "${this.config.bucket}") |> limit(n: 5)`,
+          description: 'Direct access without time range'
+        },
+        {
+          name: 'Direct - Very Wide Range',
+          query: `from(bucket: "${this.config.bucket}") |> range(start: -365d) |> limit(n: 5)`,
+          description: 'Very wide time range (1 year)'
+        },
+        {
+          name: 'Direct - Future Range',
+          query: `from(bucket: "${this.config.bucket}") |> range(start: now(), stop: now() + 1h) |> limit(n: 5)`,
+          description: 'Future time range'
+        },
+        {
+          name: 'Direct - No Filters',
+          query: `from(bucket: "${this.config.bucket}") |> range(start: -30d) |> limit(n: 5)`,
+          description: 'No measurement or field filters'
+        },
+        {
+          name: 'Direct - Any Measurement',
+          query: `from(bucket: "${this.config.bucket}") |> range(start: -30d) |> filter(fn: (r) => r._measurement =~ /.*/) |> limit(n: 5)`,
+          description: 'Any measurement with regex'
+        }
+      ];
+
+      for (const test of directTests) {
+        try {
+          const startTime = Date.now();
+          const data = [];
+
+          await this.queryApi.queryRows(test.query, {
+            next: (row, tableMeta) => {
+              const rawRow = tableMeta.toObject(row);
+              data.push(rawRow);
+            },
+            error: (error) => {
+              console.log(`Direct access error for ${test.name}:`, error.message);
+            },
+            complete: () => {}
+          });
+
+          results.directAccessTests.push({
+            name: test.name,
+            description: test.description,
+            success: true,
+            testTime: Date.now() - startTime,
+            resultCount: data.length,
+            rawData: data,
+            query: test.query,
+            dataStructure: data.length > 0 ? {
+              keys: Object.keys(data[0]),
+              sampleRow: data[0],
+              allRows: data
+            } : null
+          });
+        } catch (error) {
+          results.directAccessTests.push({
+            name: test.name,
+            description: test.description,
+            success: false,
+            error: error.message,
+            query: test.query
+          });
+        }
+      }
+
+      // Determine overall status
+      const hasData = results.directAccessTests.some(test => test.success && test.resultCount > 0);
+      const hasWorkingQueries = results.directAccessTests.some(test => test.success);
+
+      if (hasData) {
+        results.overallStatus = 'data_found';
+      } else if (hasWorkingQueries) {
+        results.overallStatus = 'queries_work_no_data';
+      } else {
+        results.overallStatus = 'queries_fail';
+      }
+
+    } catch (error) {
+      results.error = error.message;
+      results.stack = error.stack;
+      results.overallStatus = 'error';
+    }
+
+    return results;
+  }
 }
 
 // Create singleton instance
