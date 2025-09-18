@@ -1903,4 +1903,35 @@ router.get('/verbose-environment', async (req, res) => {
   }
 });
 
+router.get('/inspect-raw-data', async (req, res) => {
+  try {
+    console.log('🔍 [Inspect Raw Data] Starting raw data inspection with zero transformations...');
+    const startTime = Date.now();
+
+    const inspection = await influxDBClient.inspectRawData();
+    const totalTime = Date.now() - startTime;
+
+    console.log(`🔍 [Inspect Raw Data] Completed in ${totalTime}ms`);
+
+    return res.json({
+      success: true,
+      test: 'inspect-raw-data',
+      timestamp: new Date().toISOString(),
+      performance: {
+        totalTime
+      },
+      inspection
+    });
+
+  } catch (error) {
+    console.error('🔍 [Inspect Raw Data] Error:', error);
+    return res.status(500).json({
+      success: false,
+      test: 'inspect-raw-data',
+      error: error.message,
+      stack: error.stack
+    });
+  }
+});
+
 module.exports = router;

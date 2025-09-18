@@ -1326,6 +1326,128 @@ class InfluxDBClient {
 
     return results;
   }
+
+  /**
+   * Raw data inspection with zero transformations
+   */
+  async inspectRawData() {
+    const results = {
+      timestamp: new Date().toISOString(),
+      connectionStatus: null,
+      rawQueries: [],
+      overallStatus: 'unknown'
+    };
+
+    try {
+      await this.ensureInitialized();
+
+      if (!this.isConnected || !this.queryApi) {
+        results.connectionStatus = { connected: false, error: 'Not initialized' };
+        results.overallStatus = 'not_connected';
+        return results;
+      }
+
+      results.connectionStatus = {
+        connected: true,
+        config: {
+          url: this.config.url,
+          org: this.config.org,
+          bucket: this.config.bucket,
+          tokenLength: this.config.token ? this.config.token.length : 0
+        }
+      };
+
+      // Test 1: Absolute minimal query - just get ANY data from the bucket
+      const minimalQueries = [
+        {
+          name: 'Minimal - Any Data',
+          query: `from(bucket: "${this.config.bucket}") |> range(start: -30d) |> limit(n: 5)`,
+          description: 'Get any 5 data points from the last 30 days'
+        },
+        {
+          name: 'Minimal - Last 7 Days',
+          query: `from(bucket: "${this.config.bucket}") |> range(start: -7d) |> limit(n: 5)`,
+          description: 'Get any 5 data points from the last 7 days'
+        },
+        {
+          name: 'Minimal - Last 24 Hours',
+          query: `from(bucket: "${this.config.bucket}") |> range(start: -24h) |> limit(n: 5)`,
+          description: 'Get any 5 data points from the last 24 hours'
+        },
+        {
+          name: 'Minimal - Last 1 Hour',
+          query: `from(bucket: "${this.config.bucket}") |> range(start: -1h) |> limit(n: 5)`,
+          description: 'Get any 5 data points from the last 1 hour'
+        },
+        {
+          name: 'Minimal - Specific Date Range',
+          query: `from(bucket: "${this.config.bucket}") |> range(start: 2025-09-17T00:00:00Z, stop: 2025-09-17T23:59:59Z) |> limit(n: 5)`,
+          description: 'Get any 5 data points from 2025-09-17'
+        }
+      ];
+
+      for (const queryTest of minimalQueries) {
+        try {
+          const startTime = Date.now();
+          const rawData = [];
+
+          await this.queryApi.queryRows(queryTest.query, {
+            next: (row, tableMeta) => {
+              const rawRow = tableMeta.toObject(row);
+              rawData.push(rawRow);
+            },
+            error: (error) => {
+              console.log(`Raw query error for ${queryTest.name}:`, error.message);
+            },
+            complete: () => {}
+          });
+
+          results.rawQueries.push({
+            name: queryTest.name,
+            description: queryTest.description,
+            success: true,
+            testTime: Date.now() - startTime,
+            resultCount: rawData.length,
+            rawData, // Include ALL raw data for inspection
+            query: queryTest.query,
+            // Analyze the structure of the first data point
+            dataStructure: rawData.length > 0 ? {
+              keys: Object.keys(rawData[0]),
+              sampleRow: rawData[0],
+              allRows: rawData
+            } : null
+          });
+        } catch (error) {
+          results.rawQueries.push({
+            name: queryTest.name,
+            description: queryTest.description,
+            success: false,
+            error: error.message,
+            query: queryTest.query
+          });
+        }
+      }
+
+      // Determine overall status
+      const hasData = results.rawQueries.some(test => test.success && test.resultCount > 0);
+      const hasWorkingQueries = results.rawQueries.some(test => test.success);
+
+      if (hasData) {
+        results.overallStatus = 'data_found';
+      } else if (hasWorkingQueries) {
+        results.overallStatus = 'queries_work_no_data';
+      } else {
+        results.overallStatus = 'queries_fail';
+      }
+
+    } catch (error) {
+      results.error = error.message;
+      results.stack = error.stack;
+      results.overallStatus = 'error';
+    }
+
+    return results;
+  }
 }
 
 // Create singleton instance
