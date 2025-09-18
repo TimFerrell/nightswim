@@ -1772,4 +1772,135 @@ router.get('/test-processed-data', async (req, res) => {
   }
 });
 
+// New comprehensive diagnostic endpoints
+router.get('/validate-transformation', async (req, res) => {
+  try {
+    console.log('🔧 [Validate Transformation] Starting comprehensive data transformation validation...');
+    const startTime = Date.now();
+
+    const validation = await influxDBClient.validateDataTransformation();
+    const totalTime = Date.now() - startTime;
+
+    console.log(`🔧 [Validate Transformation] Completed in ${totalTime}ms`);
+
+    return res.json({
+      success: true,
+      test: 'validate-transformation',
+      timestamp: new Date().toISOString(),
+      performance: {
+        totalTime
+      },
+      validation
+    });
+
+  } catch (error) {
+    console.error('🔧 [Validate Transformation] Error:', error);
+    return res.status(500).json({
+      success: false,
+      test: 'validate-transformation',
+      error: error.message,
+      stack: error.stack
+    });
+  }
+});
+
+router.get('/deep-data-analysis', async (req, res) => {
+  try {
+    console.log('🔬 [Deep Data Analysis] Starting comprehensive data structure analysis...');
+    const startTime = Date.now();
+
+    const analysis = await influxDBClient.deepDataAnalysis();
+    const totalTime = Date.now() - startTime;
+
+    console.log(`🔬 [Deep Data Analysis] Completed in ${totalTime}ms`);
+
+    return res.json({
+      success: true,
+      test: 'deep-data-analysis',
+      timestamp: new Date().toISOString(),
+      performance: {
+        totalTime
+      },
+      analysis
+    });
+
+  } catch (error) {
+    console.error('🔬 [Deep Data Analysis] Error:', error);
+    return res.status(500).json({
+      success: false,
+      test: 'deep-data-analysis',
+      error: error.message,
+      stack: error.stack
+    });
+  }
+});
+
+router.get('/verbose-environment', async (req, res) => {
+  try {
+    console.log('📊 [Verbose Environment] Starting verbose home environment data fetch...');
+    const startTime = Date.now();
+
+    // Get the hours parameter (default to 1)
+    const hours = parseInt(req.query.hours) || 1;
+    console.log(`📊 [Verbose Environment] Fetching data for last ${hours} hours`);
+
+    // Call the home environment data method with verbose logging
+    const data = await influxDBClient.queryHomeEnvironmentData(hours, 1000);
+    const totalTime = Date.now() - startTime;
+
+    console.log(`📊 [Verbose Environment] Retrieved ${data.length} data points in ${totalTime}ms`);
+
+    // Process the data to get the latest values
+    let latestData = null;
+    if (data.length > 0) {
+      // Find the most recent data point with all three values
+      const completeDataPoints = data.filter(point =>
+        point.temperature !== undefined &&
+        point.humidity !== undefined &&
+        point.feelsLike !== undefined
+      );
+
+      if (completeDataPoints.length > 0) {
+        latestData = completeDataPoints[completeDataPoints.length - 1];
+      } else {
+        // If no complete data points, use the most recent partial data
+        latestData = data[data.length - 1];
+      }
+    }
+
+    const response = {
+      success: true,
+      timestamp: new Date().toISOString(),
+      performance: {
+        totalTime,
+        dataPointsRetrieved: data.length,
+        hoursRequested: hours
+      },
+      data: latestData || {
+        temperature: null,
+        humidity: null,
+        feelsLike: null,
+        comfortLevel: 'unknown',
+        humidityLevel: 'unknown',
+        timestamp: new Date().toISOString(),
+        source: 'influxdb'
+      },
+      rawData: data, // Include all raw data points for debugging
+      message: data.length > 0 ? 'Home environment data retrieved successfully' : 'No home environment data available'
+    };
+
+    console.log('📊 [Verbose Environment] Response:', JSON.stringify(response, null, 2));
+
+    return res.json(response);
+
+  } catch (error) {
+    console.error('📊 [Verbose Environment] Error:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message,
+      stack: error.stack
+    });
+  }
+});
+
 module.exports = router;

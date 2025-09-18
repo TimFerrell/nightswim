@@ -895,6 +895,437 @@ class InfluxDBClient {
 
     return tests;
   }
+
+  /**
+   * Comprehensive data transformation validation
+   */
+  async validateDataTransformation() {
+    const results = {
+      timestamp: new Date().toISOString(),
+      connectionStatus: null,
+      rawDataTests: [],
+      transformationTests: [],
+      queryValidation: [],
+      overallStatus: 'unknown'
+    };
+
+    try {
+      await this.ensureInitialized();
+
+      if (!this.isConnected || !this.queryApi) {
+        results.connectionStatus = { connected: false, error: 'Not initialized' };
+        results.overallStatus = 'not_connected';
+        return results;
+      }
+
+      results.connectionStatus = {
+        connected: true,
+        config: {
+          url: this.config.url,
+          org: this.config.org,
+          bucket: this.config.bucket,
+          tokenLength: this.config.token ? this.config.token.length : 0
+        }
+      };
+
+      // Test 1: Raw data queries with different time ranges
+      const timeRanges = [
+        { name: 'Last 1 hour', query: '-1h' },
+        { name: 'Last 24 hours', query: '-24h' },
+        { name: 'Last 7 days', query: '-7d' },
+        { name: 'Last 30 days', query: '-30d' },
+        { name: 'Specific date range (2025-09-17)', query: '2025-09-17T00:00:00Z, 2025-09-17T23:59:59Z' }
+      ];
+
+      for (const timeRange of timeRanges) {
+        try {
+          const query = `from(bucket: "${this.config.bucket}") |> range(start: ${timeRange.query}) |> limit(n: 5)`;
+          const startTime = Date.now();
+          const rawData = [];
+
+          await this.queryApi.queryRows(query, {
+            next: (row, tableMeta) => {
+              rawData.push(tableMeta.toObject(row));
+            },
+            error: (error) => {
+              console.log(`Raw data test error for ${timeRange.name}:`, error.message);
+            },
+            complete: () => {}
+          });
+
+          results.rawDataTests.push({
+            timeRange: timeRange.name,
+            query: timeRange.query,
+            success: true,
+            resultCount: rawData.length,
+            testTime: Date.now() - startTime,
+            sampleData: rawData.slice(0, 2),
+            fields: rawData.length > 0 ? Object.keys(rawData[0]) : []
+          });
+        } catch (error) {
+          results.rawDataTests.push({
+            timeRange: timeRange.name,
+            query: timeRange.query,
+            success: false,
+            error: error.message
+          });
+        }
+      }
+
+      // Test 2: Transformation validation with mock data
+      const mockInfluxData = [
+        {
+          _time: '2025-09-17T12:00:00Z',
+          'Temp (F)': 72.5,
+          'Humidity (%)': 65.2,
+          'Feels-Like (F)': 74.1
+        },
+        {
+          _time: '2025-09-17T12:01:00Z',
+          'Temp (F)': 73.0,
+          'Humidity (%)': 64.8,
+          'Feels-Like (F)': 74.6
+        }
+      ];
+
+      for (const mockData of mockInfluxData) {
+        try {
+          const transformed = this.transformWorkingHomeEnvironmentPoint(mockData);
+          results.transformationTests.push({
+            input: mockData,
+            output: transformed,
+            success: true,
+            validation: {
+              hasTimestamp: !!transformed.timestamp,
+              hasTemperature: transformed.temperature !== undefined,
+              hasHumidity: transformed.humidity !== undefined,
+              hasFeelsLike: transformed.feelsLike !== undefined,
+              temperatureValid: typeof transformed.temperature === 'number',
+              humidityValid: typeof transformed.humidity === 'number',
+              feelsLikeValid: typeof transformed.feelsLike === 'number'
+            }
+          });
+        } catch (error) {
+          results.transformationTests.push({
+            input: mockData,
+            success: false,
+            error: error.message
+          });
+        }
+      }
+
+      // Test 3: Query validation - test the exact query used in production
+      const productionQueries = [
+        {
+          name: 'Home Environment Query (1h)',
+          query: this.buildHomeEnvironmentQuery(1),
+          description: 'The exact query used by /api/home/environment'
+        },
+        {
+          name: 'Home Environment Query (24h)',
+          query: this.buildHomeEnvironmentQuery(24),
+          description: 'The exact query used by /api/home/timeseries'
+        }
+      ];
+
+      for (const queryTest of productionQueries) {
+        try {
+          const startTime = Date.now();
+          const queryResults = [];
+
+          await this.queryApi.queryRows(queryTest.query, {
+            next: (row, tableMeta) => {
+              queryResults.push(tableMeta.toObject(row));
+            },
+            error: (error) => {
+              console.log(`Production query error for ${queryTest.name}:`, error.message);
+            },
+            complete: () => {}
+          });
+
+          // Test transformation on real results
+          const transformedResults = queryResults.map(row => this.transformWorkingHomeEnvironmentPoint(row));
+
+          results.queryValidation.push({
+            name: queryTest.name,
+            description: queryTest.description,
+            success: true,
+            testTime: Date.now() - startTime,
+            rawResultCount: queryResults.length,
+            transformedResultCount: transformedResults.length,
+            sampleRawData: queryResults.slice(0, 2),
+            sampleTransformedData: transformedResults.slice(0, 2),
+            query: queryTest.query
+          });
+        } catch (error) {
+          results.queryValidation.push({
+            name: queryTest.name,
+            description: queryTest.description,
+            success: false,
+            error: error.message,
+            query: queryTest.query
+          });
+        }
+      }
+
+      // Determine overall status
+      const hasRawData = results.rawDataTests.some(test => test.success && test.resultCount > 0);
+      const hasWorkingTransformation = results.transformationTests.every(test => test.success);
+      const hasWorkingQueries = results.queryValidation.some(test => test.success);
+
+      if (hasRawData && hasWorkingTransformation && hasWorkingQueries) {
+        results.overallStatus = 'fully_working';
+      } else if (hasWorkingTransformation && hasWorkingQueries) {
+        results.overallStatus = 'working_no_data';
+      } else if (hasWorkingTransformation) {
+        results.overallStatus = 'transformation_works_query_fails';
+      } else {
+        results.overallStatus = 'transformation_fails';
+      }
+
+    } catch (error) {
+      results.error = error.message;
+      results.stack = error.stack;
+      results.overallStatus = 'error';
+    }
+
+    return results;
+  }
+
+  /**
+   * Build the home environment query (extracted for testing)
+   */
+  buildHomeEnvironmentQuery(hours) {
+    return `
+      // Source data: temperature and humidity sensors
+      src =
+        from(bucket: "pool-data")
+          |> range(start: -${hours}h)
+          |> filter(fn: (r) => r._measurement == "pool_metrics")
+          |> filter(fn: (r) => r.sensor == "pool_temperature" or r.sensor == "pool_humidity")
+          |> keep(columns: ["_time", "_value", "sensor"])
+
+      // Normalize to Temp(F) and Humidity(%)
+      norm =
+        src
+          |> map(fn: (r) => ({
+              r with
+              _field: if r.sensor == "pool_temperature" then "Temp (F)" else "Humidity (%)",
+              _value:
+                if r.sensor == "pool_temperature" then
+                  (if r._value > 60.0 then r._value else r._value * 9.0 / 5.0 + 32.0)
+                else
+                  r._value
+            }))
+
+      // Pivot to get Temp and Humidity in same row
+      pivoted =
+        norm
+          |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
+
+      // Calculate Feels-Like temperature
+      result =
+        pivoted
+          |> map(fn: (r) => ({
+              r with
+              "Feels-Like (F)":
+                if exists r."Temp (F)" and exists r."Humidity (%)" then
+                  1.8 * (0.5 * (r."Temp (F)" + 61.0 + ((r."Temp (F)" - 68.0) * 1.2) + (r."Humidity (%)" * 0.094))) - 32.0
+                else
+                  r."Feels-Like (F)"
+            }))
+          |> keep(columns: ["_time", "Temp (F)", "Humidity (%)", "Feels-Like (F)"])
+    `;
+  }
+
+  /**
+   * Deep dive into data structure and schema
+   */
+  async deepDataAnalysis() {
+    const results = {
+      timestamp: new Date().toISOString(),
+      bucketAnalysis: null,
+      measurementAnalysis: null,
+      fieldAnalysis: null,
+      tagAnalysis: null,
+      sampleDataAnalysis: null,
+      overallStatus: 'unknown'
+    };
+
+    try {
+      await this.ensureInitialized();
+
+      if (!this.isConnected || !this.queryApi) {
+        results.overallStatus = 'not_connected';
+        return results;
+      }
+
+      // 1. Bucket Analysis
+      try {
+        const bucketQuery = 'buckets()';
+        const buckets = [];
+
+        await this.queryApi.queryRows(bucketQuery, {
+          next: (row, tableMeta) => {
+            buckets.push(tableMeta.toObject(row));
+          },
+          error: (error) => {
+            console.log('Bucket analysis error:', error.message);
+          },
+          complete: () => {}
+        });
+
+        results.bucketAnalysis = {
+          success: true,
+          totalBuckets: buckets.length,
+          buckets,
+          targetBucketExists: buckets.some(b => b.name === this.config.bucket),
+          targetBucketInfo: buckets.find(b => b.name === this.config.bucket) || null
+        };
+      } catch (error) {
+        results.bucketAnalysis = {
+          success: false,
+          error: error.message
+        };
+      }
+
+      // 2. Measurement Analysis
+      try {
+        const measurementQuery = `import "influxdata/influxdb/schema"
+          schema.measurements(bucket: "${this.config.bucket}")`;
+        const measurements = [];
+
+        await this.queryApi.queryRows(measurementQuery, {
+          next: (row, tableMeta) => {
+            measurements.push(tableMeta.toObject(row));
+          },
+          error: (error) => {
+            console.log('Measurement analysis error:', error.message);
+          },
+          complete: () => {}
+        });
+
+        results.measurementAnalysis = {
+          success: true,
+          totalMeasurements: measurements.length,
+          measurements,
+          hasPoolMetrics: measurements.some(m => m._value === 'pool_metrics')
+        };
+      } catch (error) {
+        results.measurementAnalysis = {
+          success: false,
+          error: error.message
+        };
+      }
+
+      // 3. Field Analysis
+      try {
+        const fieldQuery = `import "influxdata/influxdb/schema"
+          schema.fieldKeys(bucket: "${this.config.bucket}")`;
+        const fields = [];
+
+        await this.queryApi.queryRows(fieldQuery, {
+          next: (row, tableMeta) => {
+            fields.push(tableMeta.toObject(row));
+          },
+          error: (error) => {
+            console.log('Field analysis error:', error.message);
+          },
+          complete: () => {}
+        });
+
+        results.fieldAnalysis = {
+          success: true,
+          totalFields: fields.length,
+          fields,
+          hasValueField: fields.some(f => f._value === '_value')
+        };
+      } catch (error) {
+        results.fieldAnalysis = {
+          success: false,
+          error: error.message
+        };
+      }
+
+      // 4. Tag Analysis
+      try {
+        const tagQuery = `import "influxdata/influxdb/schema"
+          schema.tagKeys(bucket: "${this.config.bucket}")`;
+        const tags = [];
+
+        await this.queryApi.queryRows(tagQuery, {
+          next: (row, tableMeta) => {
+            tags.push(tableMeta.toObject(row));
+          },
+          error: (error) => {
+            console.log('Tag analysis error:', error.message);
+          },
+          complete: () => {}
+        });
+
+        results.tagAnalysis = {
+          success: true,
+          totalTags: tags.length,
+          tags,
+          hasSensorTag: tags.some(t => t._value === 'sensor')
+        };
+      } catch (error) {
+        results.tagAnalysis = {
+          success: false,
+          error: error.message
+        };
+      }
+
+      // 5. Sample Data Analysis
+      try {
+        const sampleQuery = `from(bucket: "${this.config.bucket}") |> range(start: -30d) |> limit(n: 10)`;
+        const sampleData = [];
+
+        await this.queryApi.queryRows(sampleQuery, {
+          next: (row, tableMeta) => {
+            sampleData.push(tableMeta.toObject(row));
+          },
+          error: (error) => {
+            console.log('Sample data analysis error:', error.message);
+          },
+          complete: () => {}
+        });
+
+        results.sampleDataAnalysis = {
+          success: true,
+          sampleCount: sampleData.length,
+          sampleData,
+          uniqueMeasurements: [...new Set(sampleData.map(d => d._measurement))],
+          uniqueFields: [...new Set(sampleData.map(d => d._field))],
+          uniqueTags: sampleData.length > 0 ? Object.keys(sampleData[0]).filter(k => !k.startsWith('_')) : []
+        };
+      } catch (error) {
+        results.sampleDataAnalysis = {
+          success: false,
+          error: error.message
+        };
+      }
+
+      // Determine overall status
+      const hasData = results.sampleDataAnalysis?.success && results.sampleDataAnalysis?.sampleCount > 0;
+      const hasCorrectStructure = results.measurementAnalysis?.hasPoolMetrics && results.tagAnalysis?.hasSensorTag;
+
+      if (hasData && hasCorrectStructure) {
+        results.overallStatus = 'data_exists_correct_structure';
+      } else if (hasData) {
+        results.overallStatus = 'data_exists_wrong_structure';
+      } else {
+        results.overallStatus = 'no_data_found';
+      }
+
+    } catch (error) {
+      results.error = error.message;
+      results.stack = error.stack;
+      results.overallStatus = 'error';
+    }
+
+    return results;
+  }
 }
 
 // Create singleton instance
