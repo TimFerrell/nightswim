@@ -752,6 +752,36 @@ const loadHomeEnvironmentTimeSeries = async (hours = 24) => {
     const loadTime = Date.now() - startTime;
     console.log(`✅ Home environment time series loaded in ${loadTime}ms`);
 
+    // Update home environment sparklines
+    if (homeTempSparkline && data.length > 0) {
+      const tempData = data.filter(d => d.temperature !== null && d.temperature !== undefined);
+      if (tempData.length > 0) {
+        homeTempSparkline.data.labels = tempData.map(d => new Date(d.timestamp));
+        homeTempSparkline.data.datasets[0].data = tempData.map(d => d.temperature);
+        homeTempSparkline.update('none');
+      }
+    }
+
+    if (homeHumiditySparkline && data.length > 0) {
+      const humidityData = data.filter(d => d.humidity !== null && d.humidity !== undefined);
+      if (humidityData.length > 0) {
+        homeHumiditySparkline.data.labels = humidityData.map(d => new Date(d.timestamp));
+        homeHumiditySparkline.data.datasets[0].data = humidityData.map(d => d.humidity);
+        homeHumiditySparkline.update('none');
+      }
+    }
+
+    if (homeFeelsLikeSparkline && data.length > 0) {
+      const feelsLikeData = data.filter(d => d.feelsLike !== null && d.feelsLike !== undefined);
+      if (feelsLikeData.length > 0) {
+        homeFeelsLikeSparkline.data.labels = feelsLikeData.map(d => new Date(d.timestamp));
+        homeFeelsLikeSparkline.data.datasets[0].data = feelsLikeData.map(d => d.feelsLike);
+        homeFeelsLikeSparkline.update('none');
+      }
+    }
+
+    console.log('✅ Home environment sparklines updated');
+
     // Update home environment chart
     updateHomeEnvironmentChart(data);
 
@@ -1063,6 +1093,46 @@ const initializeSparklines = () => {
   if (filterPumpCanvas) {
     if (filterPumpSparkline) filterPumpSparkline.destroy();
     filterPumpSparkline = new Chart(filterPumpCanvas, chartConfig('Filter Pump', '#9b59b6', { min: 0, max: 1 }));
+  }
+
+  // Initialize home environment sparklines
+  const homeTempCanvas = document.getElementById('homeTempSparkline');
+  if (homeTempCanvas) {
+    if (homeTempSparkline) homeTempSparkline.destroy();
+    const { homeTemperature } = CONFIG.thresholds;
+    homeTempSparkline = new Chart(homeTempCanvas, {
+      ...chartConfig('Home Temp', '#e74c3c'),
+      options: {
+        ...chartConfig('Home Temp', '#e74c3c').options,
+        scales: { y: { min: homeTemperature.min, max: homeTemperature.max, display: false } }
+      }
+    });
+  }
+
+  const homeHumidityCanvas = document.getElementById('homeHumiditySparkline');
+  if (homeHumidityCanvas) {
+    if (homeHumiditySparkline) homeHumiditySparkline.destroy();
+    const { homeHumidity } = CONFIG.thresholds;
+    homeHumiditySparkline = new Chart(homeHumidityCanvas, {
+      ...chartConfig('Home Humidity', '#3498db'),
+      options: {
+        ...chartConfig('Home Humidity', '#3498db').options,
+        scales: { y: { min: homeHumidity.min, max: homeHumidity.max, display: false } }
+      }
+    });
+  }
+
+  const homeFeelsLikeCanvas = document.getElementById('homeFeelsLikeSparkline');
+  if (homeFeelsLikeCanvas) {
+    if (homeFeelsLikeSparkline) homeFeelsLikeSparkline.destroy();
+    const { homeTemperature } = CONFIG.thresholds;
+    homeFeelsLikeSparkline = new Chart(homeFeelsLikeCanvas, {
+      ...chartConfig('Feels Like', '#f39c12'),
+      options: {
+        ...chartConfig('Feels Like', '#f39c12').options,
+        scales: { y: { min: homeTemperature.min, max: homeTemperature.max, display: false } }
+      }
+    });
   }
 
   console.log('✅ Sparklines initialized');
@@ -1883,7 +1953,8 @@ const _startChartAutoRefresh = () => {
       updateSparklines(),
       loadWeatherAlerts(),
       loadWeatherTimeSeries(),
-      loadHomeEnvironmentData()
+      loadHomeEnvironmentData(),
+      loadHomeEnvironmentTimeSeries(24)
     ]);
   };
 
