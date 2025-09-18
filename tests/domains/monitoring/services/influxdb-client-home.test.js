@@ -35,7 +35,7 @@ describe('InfluxDBClient - Home Environment', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // Create mock query API
     mockQueryApi = {
       queryRows: jest.fn()
@@ -56,9 +56,9 @@ describe('InfluxDBClient - Home Environment', () => {
   describe('queryHomeEnvironmentData', () => {
     it('should return empty array when not connected', async () => {
       client.isConnected = false;
-      
+
       const result = await client.queryHomeEnvironmentData(24);
-      
+
       expect(result).toEqual([]);
     });
 
@@ -133,9 +133,9 @@ describe('InfluxDBClient - Home Environment', () => {
   describe('getHomeEnvironmentStats', () => {
     it('should return null when not connected', async () => {
       client.isConnected = false;
-      
+
       const result = await client.getHomeEnvironmentStats(24);
-      
+
       expect(result).toBeNull();
     });
 
@@ -225,9 +225,9 @@ describe('InfluxDBClient - Home Environment', () => {
   describe('calculateStats', () => {
     it('should calculate min, max, and average', () => {
       const values = [70.0, 75.0, 80.0, 85.0, 90.0];
-      
+
       const result = client.calculateStats(values);
-      
+
       expect(result).toEqual({
         min: 70.0,
         max: 90.0,
@@ -237,7 +237,7 @@ describe('InfluxDBClient - Home Environment', () => {
 
     it('should handle empty array', () => {
       const result = client.calculateStats([]);
-      
+
       expect(result).toEqual({
         min: null,
         max: null,
@@ -247,9 +247,9 @@ describe('InfluxDBClient - Home Environment', () => {
 
     it('should handle null values', () => {
       const values = [70.0, null, 80.0, null, 90.0];
-      
+
       const result = client.calculateStats(values);
-      
+
       expect(result).toEqual({
         min: 70.0,
         max: 90.0,
@@ -259,9 +259,9 @@ describe('InfluxDBClient - Home Environment', () => {
 
     it('should round values to 1 decimal place', () => {
       const values = [70.123, 75.456, 80.789];
-      
+
       const result = client.calculateStats(values);
-      
+
       expect(result).toEqual({
         min: 70.1,
         max: 80.8,
