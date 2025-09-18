@@ -282,24 +282,18 @@ class InfluxDBClient {
 
       const dataPoints = [];
       let rowCount = 0;
-      const _queryResult = this.queryApi.queryRows(query, {
-        next: (row, tableMeta) => {
-          rowCount++;
-          const dataPoint = tableMeta.toObject(row);
-          console.log(`🏠 Raw data point ${rowCount}:`, JSON.stringify(dataPoint, null, 2));
-          const transformedPoint = this.transformWorkingHomeEnvironmentPoint(dataPoint);
-          console.log(`🏠 Transformed data point ${rowCount}:`, JSON.stringify(transformedPoint, null, 2));
-          dataPoints.push(transformedPoint);
-        },
-        error: (error) => {
-          console.error('❌ Home environment query error:', error);
-        },
-        complete: () => {
-          console.log(`🏠 Query complete: processed ${rowCount} raw rows, created ${dataPoints.length} data points`);
-        }
-      });
 
-      await _queryResult;
+      // Use iterateRows like the working pool routes do
+      for await (const { values, tableMeta } of this.queryApi.iterateRows(query)) {
+        rowCount++;
+        const dataPoint = tableMeta.toObject(values);
+        console.log(`🏠 Raw data point ${rowCount}:`, JSON.stringify(dataPoint, null, 2));
+        const transformedPoint = this.transformWorkingHomeEnvironmentPoint(dataPoint);
+        console.log(`🏠 Transformed data point ${rowCount}:`, JSON.stringify(transformedPoint, null, 2));
+        dataPoints.push(transformedPoint);
+      }
+
+      console.log(`🏠 Query complete: processed ${rowCount} raw rows, created ${dataPoints.length} data points`);
       return dataPoints;
     } catch (error) {
       console.error('❌ Error querying home environment data:', error.message);
@@ -468,11 +462,32 @@ class InfluxDBClient {
    * Transform working home environment InfluxDB point to our data format
    */
   transformWorkingHomeEnvironmentPoint(influxPoint) {
+    // Handle the actual field names we discovered in the data
+    let temperature = undefined;
+    let humidity = undefined;
+    let feelsLike = undefined;
+
+    // Check for temperature data (field: "value_f" for pool_temperature sensor)
+    if (influxPoint.sensor === 'pool_temperature' && influxPoint._field === 'value_f') {
+      temperature = influxPoint._value;
+    }
+
+    // Check for humidity data (field: "value" for pool_humidity sensor)
+    if (influxPoint.sensor === 'pool_humidity' && influxPoint._field === 'value') {
+      humidity = influxPoint._value;
+    }
+
+    // Calculate feels-like if we have both temperature and humidity
+    if (temperature !== undefined && humidity !== undefined) {
+      // Heat index calculation
+      feelsLike = 1.8 * (0.5 * (temperature + 61.0 + ((temperature - 68.0) * 1.2) + (humidity * 0.094))) - 32.0;
+    }
+
     return {
       timestamp: influxPoint._time,
-      temperature: influxPoint['Temp (F)'],
-      humidity: influxPoint['Humidity (%)'],
-      feelsLike: influxPoint['Feels-Like (F)']
+      temperature,
+      humidity,
+      feelsLike
     };
   }
 
