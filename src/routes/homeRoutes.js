@@ -920,7 +920,7 @@ router.get('/discover-schema', async (req, res) => {
           console.log(`🔍 Found ${measurements.length} measurements`);
         }
       });
-    } catch (error) {
+    } catch (_error) {
       console.log('🔍 Measurements query failed, trying alternative...');
     }
 
@@ -946,7 +946,7 @@ router.get('/discover-schema', async (req, res) => {
           console.log(`🔍 Found ${tagKeys.length} tag keys`);
         }
       });
-    } catch (error) {
+    } catch (_error) {
       console.log('🔍 Tag keys query failed, trying alternative...');
     }
 
@@ -972,7 +972,7 @@ router.get('/discover-schema', async (req, res) => {
           console.log(`🔍 Found ${fieldKeys.length} field keys`);
         }
       });
-    } catch (error) {
+    } catch (_error) {
       console.log('🔍 Field keys query failed, trying alternative...');
     }
 
@@ -1398,7 +1398,7 @@ router.get('/create-bucket', async (req, res) => {
         error: () => {}, // Ignore errors
         complete: () => {}
       });
-    } catch (e) {
+    } catch (_e) {
       // Ignore - we'll try another way
     }
 
