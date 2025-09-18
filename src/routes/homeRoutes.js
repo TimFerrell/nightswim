@@ -131,16 +131,69 @@ router.get('/timeseries', async (req, res) => {
   console.log(`🏠 [Home Environment] Fetching time series data: ${hours}h, limit: ${limit}`);
 
   try {
-    const data = await influxDBClient.queryHomeEnvironmentData(hours, limit);
+    const rawData = await influxDBClient.queryHomeEnvironmentData(hours, limit);
+
+    // Process the data to create sparkline-friendly time series
+    const processedData = [];
+    const tempMap = new Map();
+    const humidityMap = new Map();
+
+    // Group data by timestamp
+    rawData.forEach(point => {
+      const timestamp = point.timestamp;
+      if (point.temperature !== undefined) {
+        tempMap.set(timestamp, point.temperature);
+      }
+      if (point.humidity !== undefined) {
+        humidityMap.set(timestamp, point.humidity);
+      }
+    });
+
+    // Create combined data points
+    const allTimestamps = new Set([...tempMap.keys(), ...humidityMap.keys()]);
+    const sortedTimestamps = Array.from(allTimestamps).sort();
+
+    sortedTimestamps.forEach(timestamp => {
+      const temperature = tempMap.get(timestamp);
+      const humidity = humidityMap.get(timestamp);
+
+      // Calculate feels-like if we have both values
+      let feelsLike = null;
+      if (temperature !== undefined && humidity !== undefined) {
+        const T = temperature;
+        const R = humidity;
+
+        if (T >= 80) {
+          feelsLike = -42.379 +
+            2.04901523 * T +
+            10.14333127 * R -
+            0.22475541 * T * R -
+            0.00683783 * T * T -
+            0.05481717 * R * R +
+            0.00122874 * T * T * R +
+            0.00085282 * T * R * R -
+            0.00000199 * T * T * R * R;
+        } else {
+          feelsLike = 0.5 * (T + 61.0 + ((T - 68.0) * 1.2) + (R * 0.094));
+        }
+      }
+
+      processedData.push({
+        timestamp,
+        temperature,
+        humidity,
+        feelsLike
+      });
+    });
 
     const totalTime = Date.now() - requestStartTime;
-    console.log(`✅ [Home Environment] Retrieved ${data.length} data points in ${totalTime}ms`);
+    console.log(`✅ [Home Environment] Retrieved ${rawData.length} raw points, processed to ${processedData.length} time series points in ${totalTime}ms`);
 
     return res.json({
       success: true,
-      data,
+      data: processedData,
       hours,
-      count: data.length,
+      count: processedData.length,
       limit,
       source: 'influxdb',
       responseTime: totalTime
@@ -276,25 +329,25 @@ router.get('/comfort', async (req, res) => {
  */
 function calculateComfortLevel(temperature, humidity) {
   if (temperature === null || humidity === null) {
-    return 'unknown';
+    return 'Unknown';
   }
 
   // Comfort zones based on temperature and humidity
   if (temperature >= 68 && temperature <= 78 && humidity >= 30 && humidity <= 60) {
-    return 'comfortable';
+    return 'Comfortable';
   } else if (temperature > 78 || (temperature > 75 && humidity > 60)) {
-    return 'hot';
+    return 'Hot';
   }
   if (temperature < 68) {
-    return 'cold';
+    return 'Cold';
   }
   if (humidity > 60) {
-    return 'humid';
+    return 'Humid';
   }
   if (humidity < 30) {
-    return 'dry';
+    return 'Dry';
   }
-  return 'marginal';
+  return 'Marginal';
 }
 
 /**
@@ -302,19 +355,19 @@ function calculateComfortLevel(temperature, humidity) {
  */
 function calculateHumidityLevel(humidity) {
   if (humidity === null) {
-    return 'unknown';
+    return 'Unknown';
   }
 
   if (humidity < 30) {
-    return 'low';
+    return 'Low';
   }
   if (humidity >= 30 && humidity <= 60) {
-    return 'normal';
+    return 'Normal';
   }
   if (humidity > 60 && humidity <= 70) {
-    return 'high';
+    return 'High';
   }
-  return 'very_high';
+  return 'Very High';
 }
 
 /**
