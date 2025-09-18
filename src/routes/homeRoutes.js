@@ -63,6 +63,12 @@ router.get('/environment', async (req, res) => {
       }
     }
 
+    // Calculate feels-like if we have both temperature and humidity
+    if (latestTemperature !== null && latestHumidity !== null) {
+      // Heat index calculation (temperature should be in Fahrenheit)
+      latestFeelsLike = 1.8 * (0.5 * (latestTemperature + 61.0 + ((latestTemperature - 68.0) * 1.2) + (latestHumidity * 0.094))) - 32.0;
+    }
+
     const comfortLevel = calculateComfortLevel(latestTemperature, latestHumidity);
     const humidityLevel = calculateHumidityLevel(latestHumidity);
 
