@@ -403,7 +403,7 @@ router.get('/debug', async (req, res) => {
 
     try {
       // Test 1: Basic connectivity - check much wider range
-      const testQuery = `from(bucket: "pool-data") |> range(start: -30d) |> limit(n: 10)`;
+      const testQuery = 'from(bucket: "pool-data") |> range(start: -30d) |> limit(n: 10)';
       console.log('🔍 [Debug] Testing basic connectivity with 30-day range...');
 
       const testPoints = [];
@@ -521,7 +521,7 @@ router.get('/simple-test', async (req, res) => {
     const queryApi = client.getQueryApi(process.env.INFLUXDB_ORG);
 
     // Step 2: Simplest possible query - just get anything from the bucket
-    const simpleQuery = `from(bucket: "pool-data") |> range(start: -7d) |> limit(n: 5)`;
+    const simpleQuery = 'from(bucket: "pool-data") |> range(start: -7d) |> limit(n: 5)';
 
     console.log('🔬 Executing simple query:', simpleQuery);
 
@@ -541,7 +541,7 @@ router.get('/simple-test', async (req, res) => {
     });
 
     // Step 3: If we have data, try a basic temperature/humidity filter
-    let tempHumidityResults = [];
+    const tempHumidityResults = [];
     if (results.length > 0) {
       const tempHumQuery = `
         from(bucket: "${process.env.INFLUXDB_BUCKET || 'default'}")
@@ -818,7 +818,7 @@ router.get('/step2-check-data-structure', async (req, res) => {
     const queryApi = client.getQueryApi(process.env.INFLUXDB_ORG);
 
     // Test 1: Check all recent data (no filters)
-    const allDataQuery = `from(bucket: "pool-data") |> range(start: -10m) |> limit(n: 20)`;
+    const allDataQuery = 'from(bucket: "pool-data") |> range(start: -10m) |> limit(n: 20)';
 
     const allDataResults = [];
     await queryApi.queryRows(allDataQuery, {
@@ -1251,7 +1251,7 @@ router.get('/sample-all', async (req, res) => {
     });
 
     // Also get bucket info
-    const bucketQuery = `buckets() |> filter(fn: (r) => r.name == "pool-data")`;
+    const bucketQuery = 'buckets() |> filter(fn: (r) => r.name == "pool-data")';
     const bucketResults = [];
     await queryApi.queryRows(bucketQuery, {
       next: (row, tableMeta) => {
@@ -1325,7 +1325,7 @@ router.get('/list-buckets', async (req, res) => {
     const queryApi = client.getQueryApi(process.env.INFLUXDB_ORG);
 
     // List all buckets including system buckets
-    const query = `buckets() |> filter(fn: (r) => true)`;
+    const query = 'buckets() |> filter(fn: (r) => true)';
 
     console.log('🪣 Listing all buckets...');
 
@@ -1384,7 +1384,7 @@ router.get('/create-bucket', async (req, res) => {
 
     // Get org ID first
     const queryApi = client.getQueryApi(process.env.INFLUXDB_ORG);
-    const orgQuery = `from(bucket: "_monitoring") |> range(start: -1h) |> limit(n: 1)`;
+    const orgQuery = 'from(bucket: "_monitoring") |> range(start: -1h) |> limit(n: 1)';
 
     // Try to get org info - this will tell us the org ID
     let orgID = null;
@@ -1407,7 +1407,7 @@ router.get('/create-bucket', async (req, res) => {
 
     const bucketRequest = {
       name: 'pool-data',
-      orgID: orgID,
+      orgID,
       description: 'Pool monitoring data for nightswim app',
       retentionRules: [{
         type: 'expire',
@@ -1495,6 +1495,217 @@ router.get('/test-basic-query', async (req, res) => {
     console.error('🔍 Basic query test error:', error);
     return res.status(500).json({
       success: false,
+      error: error.message,
+      stack: error.stack
+    });
+  }
+});
+
+/**
+ * COMPREHENSIVE PERMISSION DIAGNOSTICS
+ * GET /api/home/permission-diagnostics
+ */
+router.get('/permission-diagnostics', async (req, res) => {
+  try {
+    console.log('🔐 [Permission Diagnostics] Starting comprehensive permission analysis...');
+    const startTime = Date.now();
+
+    // Run comprehensive diagnostics
+    const diagnostics = await influxDBClient.runPermissionDiagnostics();
+    const totalTime = Date.now() - startTime;
+
+    console.log(`🔐 [Permission Diagnostics] Completed in ${totalTime}ms`);
+
+    return res.json({
+      success: true,
+      test: 'permission-diagnostics',
+      timestamp: new Date().toISOString(),
+      performance: {
+        totalTime
+      },
+      diagnostics
+    });
+
+  } catch (error) {
+    console.error('🔐 [Permission Diagnostics] Error:', error);
+    return res.status(500).json({
+      success: false,
+      test: 'permission-diagnostics',
+      error: error.message,
+      stack: error.stack
+    });
+  }
+});
+
+/**
+ * TOKEN PERMISSION TESTS
+ * GET /api/home/token-permissions
+ */
+router.get('/token-permissions', async (req, res) => {
+  try {
+    console.log('🔑 [Token Permissions] Testing token permissions...');
+    const startTime = Date.now();
+
+    // Run token permission tests
+    const tests = await influxDBClient.testTokenPermissions();
+    const totalTime = Date.now() - startTime;
+
+    console.log(`🔑 [Token Permissions] Completed in ${totalTime}ms`);
+
+    return res.json({
+      success: true,
+      test: 'token-permissions',
+      timestamp: new Date().toISOString(),
+      performance: {
+        totalTime
+      },
+      tests
+    });
+
+  } catch (error) {
+    console.error('🔑 [Token Permissions] Error:', error);
+    return res.status(500).json({
+      success: false,
+      test: 'token-permissions',
+      error: error.message,
+      stack: error.stack
+    });
+  }
+});
+
+/**
+ * ALTERNATIVE QUERY APPROACHES
+ * GET /api/home/alternative-queries
+ */
+router.get('/alternative-queries', async (req, res) => {
+  try {
+    console.log('🔄 [Alternative Queries] Testing alternative query approaches...');
+    const startTime = Date.now();
+
+    const { InfluxDB } = require('@influxdata/influxdb-client');
+
+    const client = new InfluxDB({
+      url: process.env.INFLUXDB_URL,
+      token: process.env.INFLUX_DB_TOKEN
+    });
+
+    const queryApi = client.getQueryApi(process.env.INFLUXDB_ORG);
+
+    const alternativeTests = [];
+
+    // Test 1: Try different bucket names
+    const bucketVariations = ['pool-data', 'pool_data', 'poolData', 'nightswim-data', 'nightswim_data'];
+
+    for (const bucketName of bucketVariations) {
+      try {
+        const query = `from(bucket: "${bucketName}") |> range(start: -30d) |> limit(n: 1)`;
+        const results = [];
+
+        await queryApi.queryRows(query, {
+          next: (row, tableMeta) => {
+            results.push(tableMeta.toObject(row));
+          },
+          error: () => {},
+          complete: () => {}
+        });
+
+        alternativeTests.push({
+          test: `Bucket Name: ${bucketName}`,
+          success: true,
+          resultCount: results.length,
+          accessible: true
+        });
+      } catch (error) {
+        alternativeTests.push({
+          test: `Bucket Name: ${bucketName}`,
+          success: false,
+          error: error.message,
+          accessible: false
+        });
+      }
+    }
+
+    // Test 2: Try different measurement names
+    const measurementVariations = ['pool_metrics', 'pool_measurements', 'pool_data', 'metrics', 'measurements'];
+
+    for (const measurement of measurementVariations) {
+      try {
+        const query = `from(bucket: "pool-data") |> range(start: -30d) |> filter(fn: (r) => r._measurement == "${measurement}") |> limit(n: 1)`;
+        const results = [];
+
+        await queryApi.queryRows(query, {
+          next: (row, tableMeta) => {
+            results.push(tableMeta.toObject(row));
+          },
+          error: () => {},
+          complete: () => {}
+        });
+
+        alternativeTests.push({
+          test: `Measurement: ${measurement}`,
+          success: true,
+          resultCount: results.length,
+          accessible: true
+        });
+      } catch (error) {
+        alternativeTests.push({
+          test: `Measurement: ${measurement}`,
+          success: false,
+          error: error.message,
+          accessible: false
+        });
+      }
+    }
+
+    // Test 3: Try different field names
+    const fieldVariations = ['_value', 'value', 'temperature', 'humidity', 'temp', 'hum'];
+
+    for (const field of fieldVariations) {
+      try {
+        const query = `from(bucket: "pool-data") |> range(start: -30d) |> filter(fn: (r) => r._field == "${field}") |> limit(n: 1)`;
+        const results = [];
+
+        await queryApi.queryRows(query, {
+          next: (row, tableMeta) => {
+            results.push(tableMeta.toObject(row));
+          },
+          error: () => {},
+          complete: () => {}
+        });
+
+        alternativeTests.push({
+          test: `Field: ${field}`,
+          success: true,
+          resultCount: results.length,
+          accessible: true
+        });
+      } catch (error) {
+        alternativeTests.push({
+          test: `Field: ${field}`,
+          success: false,
+          error: error.message,
+          accessible: false
+        });
+      }
+    }
+
+    const totalTime = Date.now() - startTime;
+
+    return res.json({
+      success: true,
+      test: 'alternative-queries',
+      timestamp: new Date().toISOString(),
+      performance: {
+        totalTime
+      },
+      alternativeTests
+    });
+
+  } catch (error) {
+    console.error('🔄 [Alternative Queries] Error:', error);
+    return res.status(500).json({
+      success: false,
+      test: 'alternative-queries',
       error: error.message,
       stack: error.stack
     });

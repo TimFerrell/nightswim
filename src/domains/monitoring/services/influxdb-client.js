@@ -220,7 +220,7 @@ class InfluxDBClient {
         // Source data: temperature and humidity sensors
         src =
           from(bucket: "pool-data")
-            |> range(start: 2025-09-17T11:50:00Z, stop: 2025-09-17T12:50:00Z)
+            |> range(start: -${hours}h)
             |> filter(fn: (r) => r._measurement == "pool_metrics")
             |> filter(fn: (r) => r.sensor == "pool_temperature" or r.sensor == "pool_humidity")
             |> keep(columns: ["_time", "_value", "sensor"])
@@ -287,7 +287,9 @@ class InfluxDBClient {
           rowCount++;
           const dataPoint = tableMeta.toObject(row);
           console.log(`🏠 Raw data point ${rowCount}:`, JSON.stringify(dataPoint, null, 2));
-          dataPoints.push(this.transformWorkingHomeEnvironmentPoint(dataPoint));
+          const transformedPoint = this.transformWorkingHomeEnvironmentPoint(dataPoint);
+          console.log(`🏠 Transformed data point ${rowCount}:`, JSON.stringify(transformedPoint, null, 2));
+          dataPoints.push(transformedPoint);
         },
         error: (error) => {
           console.error('❌ Home environment query error:', error);
@@ -554,6 +556,344 @@ class InfluxDBClient {
         bucket: this.config.bucket
       }
     };
+  }
+
+  /**
+   * Comprehensive permission and access diagnostics
+   */
+  async runPermissionDiagnostics() {
+    const diagnostics = {
+      timestamp: new Date().toISOString(),
+      connection: null,
+      tokenValidation: null,
+      bucketAccess: null,
+      dataAccess: null,
+      permissionTests: []
+    };
+
+    try {
+      // Ensure client is initialized
+      await this.ensureInitialized();
+
+      // 1. Connection Status
+      diagnostics.connection = {
+        isConnected: this.isConnected,
+        hasQueryApi: !!this.queryApi,
+        hasWriteApi: !!this.writeApi,
+        config: this.getConnectionStatus().config
+      };
+
+      if (!this.isConnected || !this.queryApi) {
+        diagnostics.error = 'InfluxDB client not properly initialized';
+        return diagnostics;
+      }
+
+      // 2. Token Validation - Test basic connectivity
+      try {
+        const tokenTestQuery = 'from(bucket: "_monitoring") |> range(start: -1h) |> limit(n: 1)';
+        const tokenTestStart = Date.now();
+
+        let tokenTestSuccess = false;
+        await this.queryApi.queryRows(tokenTestQuery, {
+          next: () => { tokenTestSuccess = true; },
+          error: (error) => {
+            console.log('Token test error (expected for _monitoring):', error.message);
+          },
+          complete: () => {}
+        });
+
+        diagnostics.tokenValidation = {
+          success: true,
+          testTime: Date.now() - tokenTestStart,
+          canAccessSystemBuckets: tokenTestSuccess,
+          message: 'Token authentication successful'
+        };
+      } catch (error) {
+        diagnostics.tokenValidation = {
+          success: false,
+          error: error.message,
+          message: 'Token authentication failed'
+        };
+      }
+
+      // 3. Bucket Access Tests
+      const bucketTests = [
+        { name: 'pool-data', description: 'Primary data bucket' },
+        { name: '_monitoring', description: 'System monitoring bucket' },
+        { name: '_tasks', description: 'System tasks bucket' }
+      ];
+
+      diagnostics.bucketAccess = { tests: [] };
+
+      for (const bucketTest of bucketTests) {
+        try {
+          const bucketQuery = `from(bucket: "${bucketTest.name}") |> range(start: -1h) |> limit(n: 1)`;
+          const bucketTestStart = Date.now();
+
+          let bucketAccessible = false;
+          let errorMessage = null;
+
+          await this.queryApi.queryRows(bucketQuery, {
+            next: () => { bucketAccessible = true; },
+            error: (error) => {
+              errorMessage = error.message;
+            },
+            complete: () => {}
+          });
+
+          diagnostics.bucketAccess.tests.push({
+            bucket: bucketTest.name,
+            description: bucketTest.description,
+            accessible: bucketAccessible,
+            testTime: Date.now() - bucketTestStart,
+            error: errorMessage
+          });
+
+        } catch (error) {
+          diagnostics.bucketAccess.tests.push({
+            bucket: bucketTest.name,
+            description: bucketTest.description,
+            accessible: false,
+            error: error.message
+          });
+        }
+      }
+
+      // 4. Data Access Tests
+      const dataTests = [
+        {
+          name: 'Basic Data Query',
+          query: `from(bucket: "${this.config.bucket}") |> range(start: -30d) |> limit(n: 5)`,
+          description: 'Basic data access with 30-day range'
+        },
+        {
+          name: 'Pool Metrics Query',
+          query: `from(bucket: "${this.config.bucket}") |> range(start: -30d) |> filter(fn: (r) => r._measurement == "pool_metrics") |> limit(n: 5)`,
+          description: 'Pool metrics measurement access'
+        },
+        {
+          name: 'Temperature Sensor Query',
+          query: `from(bucket: "${this.config.bucket}") |> range(start: -30d) |> filter(fn: (r) => r.sensor == "pool_temperature") |> limit(n: 5)`,
+          description: 'Temperature sensor data access'
+        },
+        {
+          name: 'Home Environment Query',
+          query: `from(bucket: "${this.config.bucket}") |> range(start: 2025-09-17T11:50:00Z, stop: 2025-09-17T12:50:00Z) |> filter(fn: (r) => r._measurement == "pool_metrics") |> filter(fn: (r) => r.sensor == "pool_temperature" or r.sensor == "pool_humidity") |> limit(n: 5)`,
+          description: 'Home environment data access (exact time range)'
+        }
+      ];
+
+      diagnostics.dataAccess = { tests: [] };
+
+      for (const dataTest of dataTests) {
+        try {
+          const dataTestStart = Date.now();
+          const results = [];
+
+          await this.queryApi.queryRows(dataTest.query, {
+            next: (row, tableMeta) => {
+              results.push(tableMeta.toObject(row));
+            },
+            error: (error) => {
+              console.log(`Data test error for ${dataTest.name}:`, error.message);
+            },
+            complete: () => {}
+          });
+
+          diagnostics.dataAccess.tests.push({
+            name: dataTest.name,
+            description: dataTest.description,
+            success: true,
+            resultCount: results.length,
+            testTime: Date.now() - dataTestStart,
+            sampleResults: results.slice(0, 2),
+            query: dataTest.query
+          });
+
+        } catch (error) {
+          diagnostics.dataAccess.tests.push({
+            name: dataTest.name,
+            description: dataTest.description,
+            success: false,
+            error: error.message,
+            query: dataTest.query
+          });
+        }
+      }
+
+      // 5. Permission Analysis
+      const permissionAnalysis = this.analyzePermissions(diagnostics);
+      diagnostics.permissionAnalysis = permissionAnalysis;
+
+    } catch (error) {
+      diagnostics.error = error.message;
+      diagnostics.stack = error.stack;
+    }
+
+    return diagnostics;
+  }
+
+  /**
+   * Analyze permission diagnostics to provide insights
+   */
+  analyzePermissions(diagnostics) {
+    const analysis = {
+      overallStatus: 'unknown',
+      issues: [],
+      recommendations: [],
+      tokenPermissions: 'unknown'
+    };
+
+    // Check token validation
+    if (diagnostics.tokenValidation && diagnostics.tokenValidation.success) {
+      analysis.tokenPermissions = 'valid';
+    } else {
+      analysis.tokenPermissions = 'invalid';
+      analysis.issues.push('Token authentication failed');
+      analysis.recommendations.push('Verify INFLUX_DB_TOKEN environment variable');
+    }
+
+    // Check bucket access
+    if (diagnostics.bucketAccess && diagnostics.bucketAccess.tests) {
+      const poolDataAccess = diagnostics.bucketAccess.tests.find(t => t.bucket === 'pool-data');
+      if (poolDataAccess && poolDataAccess.accessible) {
+        analysis.bucketAccess = 'accessible';
+      } else {
+        analysis.bucketAccess = 'inaccessible';
+        analysis.issues.push('Cannot access pool-data bucket');
+        analysis.recommendations.push('Check bucket permissions for the token');
+      }
+    }
+
+    // Check data access
+    if (diagnostics.dataAccess && diagnostics.dataAccess.tests) {
+      const basicDataTest = diagnostics.dataAccess.tests.find(t => t.name === 'Basic Data Query');
+      if (basicDataTest && basicDataTest.success && basicDataTest.resultCount > 0) {
+        analysis.dataAccess = 'accessible';
+        analysis.overallStatus = 'working';
+      } else if (basicDataTest && basicDataTest.success && basicDataTest.resultCount === 0) {
+        analysis.dataAccess = 'accessible_but_empty';
+        analysis.overallStatus = 'no_data';
+        analysis.issues.push('Bucket accessible but contains no data');
+        analysis.recommendations.push('Check if data is being written to the bucket');
+      } else {
+        analysis.dataAccess = 'inaccessible';
+        analysis.overallStatus = 'permission_issue';
+        analysis.issues.push('Cannot read data from bucket');
+        analysis.recommendations.push('Verify read permissions for the token');
+      }
+    }
+
+    return analysis;
+  }
+
+  /**
+   * Test token permissions with minimal queries
+   */
+  async testTokenPermissions() {
+    const tests = {
+      timestamp: new Date().toISOString(),
+      results: []
+    };
+
+    try {
+      await this.ensureInitialized();
+
+      if (!this.isConnected || !this.queryApi) {
+        tests.error = 'Client not initialized';
+        return tests;
+      }
+
+      // Test 1: System bucket access (usually requires admin permissions)
+      try {
+        const systemQuery = 'from(bucket: "_monitoring") |> range(start: -1h) |> limit(n: 1)';
+        let systemAccessible = false;
+
+        await this.queryApi.queryRows(systemQuery, {
+          next: () => { systemAccessible = true; },
+          error: () => {},
+          complete: () => {}
+        });
+
+        tests.results.push({
+          test: 'System Bucket Access',
+          success: systemAccessible,
+          permission: systemAccessible ? 'admin' : 'limited',
+          description: systemAccessible ? 'Token has admin permissions' : 'Token has limited permissions'
+        });
+      } catch (error) {
+        tests.results.push({
+          test: 'System Bucket Access',
+          success: false,
+          error: error.message,
+          permission: 'unknown'
+        });
+      }
+
+      // Test 2: Bucket listing (requires read permissions)
+      try {
+        const bucketQuery = `buckets() |> filter(fn: (r) => r.name == "${this.config.bucket}")`;
+        const bucketResults = [];
+
+        await this.queryApi.queryRows(bucketQuery, {
+          next: (row, tableMeta) => {
+            bucketResults.push(tableMeta.toObject(row));
+          },
+          error: () => {},
+          complete: () => {}
+        });
+
+        tests.results.push({
+          test: 'Bucket Listing',
+          success: bucketResults.length > 0,
+          bucketExists: bucketResults.length > 0,
+          permission: bucketResults.length > 0 ? 'read' : 'no_read',
+          description: bucketResults.length > 0 ? 'Can list buckets' : 'Cannot list buckets'
+        });
+      } catch (error) {
+        tests.results.push({
+          test: 'Bucket Listing',
+          success: false,
+          error: error.message,
+          permission: 'unknown'
+        });
+      }
+
+      // Test 3: Data reading (requires read permissions on specific bucket)
+      try {
+        const dataQuery = `from(bucket: "${this.config.bucket}") |> range(start: -30d) |> limit(n: 1)`;
+        const dataResults = [];
+
+        await this.queryApi.queryRows(dataQuery, {
+          next: (row, tableMeta) => {
+            dataResults.push(tableMeta.toObject(row));
+          },
+          error: () => {},
+          complete: () => {}
+        });
+
+        tests.results.push({
+          test: 'Data Reading',
+          success: true,
+          dataFound: dataResults.length > 0,
+          permission: 'read',
+          description: dataResults.length > 0 ? 'Can read data from bucket' : 'Can access bucket but no data found'
+        });
+      } catch (error) {
+        tests.results.push({
+          test: 'Data Reading',
+          success: false,
+          error: error.message,
+          permission: 'no_read',
+          description: 'Cannot read data from bucket'
+        });
+      }
+
+    } catch (error) {
+      tests.error = error.message;
+    }
+
+    return tests;
   }
 }
 
