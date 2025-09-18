@@ -1697,6 +1697,191 @@ class InfluxDBClient {
 
     return results;
   }
+
+  /**
+   * Force InfluxDB to explain its schema and data structure
+   */
+  async explainSchema() {
+    const results = {
+      timestamp: new Date().toISOString(),
+      connectionStatus: null,
+      schemaExplanations: [],
+      overallStatus: 'unknown'
+    };
+
+    try {
+      await this.ensureInitialized();
+
+      if (!this.isConnected || !this.queryApi) {
+        results.connectionStatus = { connected: false, error: 'Not initialized' };
+        results.overallStatus = 'not_connected';
+        return results;
+      }
+
+      results.connectionStatus = {
+        connected: true,
+        config: {
+          url: this.config.url,
+          org: this.config.org,
+          bucket: this.config.bucket,
+          tokenLength: this.config.token ? this.config.token.length : 0
+        }
+      };
+
+      // Schema explanation queries
+      const schemaQueries = [
+        {
+          name: 'Schema - All Measurements',
+          query: `import "influxdata/influxdb/schema"
+            schema.measurements(bucket: "${this.config.bucket}")`,
+          description: 'Get all measurements in the bucket'
+        },
+        {
+          name: 'Schema - All Fields',
+          query: `import "influxdata/influxdb/schema"
+            schema.fieldKeys(bucket: "${this.config.bucket}")`,
+          description: 'Get all field keys in the bucket'
+        },
+        {
+          name: 'Schema - All Tags',
+          query: `import "influxdata/influxdb/schema"
+            schema.tagKeys(bucket: "${this.config.bucket}")`,
+          description: 'Get all tag keys in the bucket'
+        },
+        {
+          name: 'Schema - Tag Values',
+          query: `import "influxdata/influxdb/schema"
+            schema.tagValues(bucket: "${this.config.bucket}", tag: "_measurement")`,
+          description: 'Get all measurement values'
+        },
+        {
+          name: 'Schema - Field Values',
+          query: `import "influxdata/influxdb/schema"
+            schema.fieldKeys(bucket: "${this.config.bucket}")`,
+          description: 'Get all field key values'
+        },
+        {
+          name: 'Schema - Data Shape',
+          query: `from(bucket: "${this.config.bucket}")
+            |> range(start: -30d)
+            |> limit(n: 1)
+            |> schema.fieldsAsCols()`,
+          description: 'Get data shape with fields as columns'
+        },
+        {
+          name: 'Schema - Raw Data Sample',
+          query: `from(bucket: "${this.config.bucket}")
+            |> range(start: -30d)
+            |> limit(n: 5)`,
+          description: 'Get raw data sample to see structure'
+        },
+        {
+          name: 'Schema - Group by Measurement',
+          query: `from(bucket: "${this.config.bucket}")
+            |> range(start: -30d)
+            |> group(columns: ["_measurement"])
+            |> limit(n: 5)`,
+          description: 'Group by measurement to see data organization'
+        },
+        {
+          name: 'Schema - Group by Field',
+          query: `from(bucket: "${this.config.bucket}")
+            |> range(start: -30d)
+            |> group(columns: ["_field"])
+            |> limit(n: 5)`,
+          description: 'Group by field to see field organization'
+        },
+        {
+          name: 'Schema - Distinct Measurements',
+          query: `from(bucket: "${this.config.bucket}")
+            |> range(start: -30d)
+            |> keep(columns: ["_measurement"])
+            |> distinct(column: "_measurement")`,
+          description: 'Get distinct measurement names'
+        },
+        {
+          name: 'Schema - Distinct Fields',
+          query: `from(bucket: "${this.config.bucket}")
+            |> range(start: -30d)
+            |> keep(columns: ["_field"])
+            |> distinct(column: "_field")`,
+          description: 'Get distinct field names'
+        },
+        {
+          name: 'Schema - Time Range Analysis',
+          query: `from(bucket: "${this.config.bucket}")
+            |> range(start: -365d)
+            |> keep(columns: ["_time"])
+            |> limit(n: 1)`,
+          description: 'Check if data exists in wider time range'
+        }
+      ];
+
+      for (const schemaTest of schemaQueries) {
+        try {
+          const startTime = Date.now();
+          const schemaData = [];
+
+          await this.queryApi.queryRows(schemaTest.query, {
+            next: (row, tableMeta) => {
+              const rawRow = tableMeta.toObject(row);
+              schemaData.push(rawRow);
+            },
+            error: (error) => {
+              console.log(`Schema query error for ${schemaTest.name}:`, error.message);
+            },
+            complete: () => {}
+          });
+
+          results.schemaExplanations.push({
+            name: schemaTest.name,
+            description: schemaTest.description,
+            success: true,
+            testTime: Date.now() - startTime,
+            resultCount: schemaData.length,
+            rawData: schemaData,
+            query: schemaTest.query,
+            dataStructure: schemaData.length > 0 ? {
+              keys: Object.keys(schemaData[0]),
+              sampleRow: schemaData[0],
+              allRows: schemaData,
+              uniqueValues: schemaData.length > 0 ? Object.keys(schemaData[0]).reduce((acc, key) => {
+                acc[key] = [...new Set(schemaData.map(row => row[key]))];
+                return acc;
+              }, {}) : null
+            } : null
+          });
+        } catch (error) {
+          results.schemaExplanations.push({
+            name: schemaTest.name,
+            description: schemaTest.description,
+            success: false,
+            error: error.message,
+            query: schemaTest.query
+          });
+        }
+      }
+
+      // Determine overall status
+      const hasData = results.schemaExplanations.some(test => test.success && test.resultCount > 0);
+      const hasWorkingQueries = results.schemaExplanations.some(test => test.success);
+
+      if (hasData) {
+        results.overallStatus = 'schema_found';
+      } else if (hasWorkingQueries) {
+        results.overallStatus = 'queries_work_no_schema';
+      } else {
+        results.overallStatus = 'queries_fail';
+      }
+
+    } catch (error) {
+      results.error = error.message;
+      results.stack = error.stack;
+      results.overallStatus = 'error';
+    }
+
+    return results;
+  }
 }
 
 // Create singleton instance

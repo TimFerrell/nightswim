@@ -1996,4 +1996,35 @@ router.get('/test-direct-access', async (req, res) => {
   }
 });
 
+router.get('/explain-schema', async (req, res) => {
+  try {
+    console.log('🔍 [Explain Schema] Starting InfluxDB schema explanation...');
+    const startTime = Date.now();
+
+    const schemaExplanation = await influxDBClient.explainSchema();
+    const totalTime = Date.now() - startTime;
+
+    console.log(`🔍 [Explain Schema] Completed in ${totalTime}ms`);
+
+    return res.json({
+      success: true,
+      test: 'explain-schema',
+      timestamp: new Date().toISOString(),
+      performance: {
+        totalTime
+      },
+      schemaExplanation
+    });
+
+  } catch (error) {
+    console.error('🔍 [Explain Schema] Error:', error);
+    return res.status(500).json({
+      success: false,
+      test: 'explain-schema',
+      error: error.message,
+      stack: error.stack
+    });
+  }
+});
+
 module.exports = router;
