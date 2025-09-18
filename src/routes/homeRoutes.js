@@ -2027,4 +2027,35 @@ router.get('/explain-schema', async (req, res) => {
   }
 });
 
+router.get('/test-pool-route-query', async (req, res) => {
+  try {
+    console.log('🔍 [Test Pool Route Query] Testing exact same query approach as working pool routes...');
+    const startTime = Date.now();
+
+    const poolRouteTest = await influxDBClient.testPoolRouteQuery();
+    const totalTime = Date.now() - startTime;
+
+    console.log(`🔍 [Test Pool Route Query] Completed in ${totalTime}ms`);
+
+    return res.json({
+      success: true,
+      test: 'test-pool-route-query',
+      timestamp: new Date().toISOString(),
+      performance: {
+        totalTime
+      },
+      poolRouteTest
+    });
+
+  } catch (error) {
+    console.error('🔍 [Test Pool Route Query] Error:', error);
+    return res.status(500).json({
+      success: false,
+      test: 'test-pool-route-query',
+      error: error.message,
+      stack: error.stack
+    });
+  }
+});
+
 module.exports = router;

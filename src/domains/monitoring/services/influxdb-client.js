@@ -1882,6 +1882,140 @@ class InfluxDBClient {
 
     return results;
   }
+
+  /**
+   * Test the exact same query approach as the working pool routes
+   */
+  async testPoolRouteQuery() {
+    const results = {
+      timestamp: new Date().toISOString(),
+      connectionStatus: null,
+      poolRouteTests: [],
+      overallStatus: 'unknown'
+    };
+
+    try {
+      await this.ensureInitialized();
+
+      if (!this.isConnected || !this.queryApi) {
+        results.connectionStatus = { connected: false, error: 'Not initialized' };
+        results.overallStatus = 'not_connected';
+        return results;
+      }
+
+      results.connectionStatus = {
+        connected: true,
+        config: {
+          url: this.config.url,
+          org: this.config.org,
+          bucket: this.config.bucket,
+          tokenLength: this.config.token ? this.config.token.length : 0
+        }
+      };
+
+      // Test the exact same query approach as pool routes
+      const poolRouteQueries = [
+        {
+          name: 'Pool Route - Exact Same Query',
+          query: `from(bucket: "${this.config.bucket}")
+            |> range(start: -1h, stop: now())
+            |> filter(fn: (r) => r._measurement == "pool_metrics")
+            |> limit(n: 10)`,
+          description: 'Exact same query as working pool routes'
+        },
+        {
+          name: 'Pool Route - Temperature/Humidity Filter',
+          query: `from(bucket: "${this.config.bucket}")
+            |> range(start: -1h, stop: now())
+            |> filter(fn: (r) => r._measurement == "pool_metrics")
+            |> filter(fn: (r) => r.sensor == "pool_temperature" or r.sensor == "pool_humidity")
+            |> limit(n: 10)`,
+          description: 'Pool route query with temperature/humidity filter'
+        },
+        {
+          name: 'Pool Route - Using iterateRows (like pool routes)',
+          query: `from(bucket: "${this.config.bucket}")
+            |> range(start: -1h, stop: now())
+            |> filter(fn: (r) => r._measurement == "pool_metrics")
+            |> limit(n: 10)`,
+          description: 'Same query but using iterateRows like pool routes'
+        }
+      ];
+
+      for (const queryTest of poolRouteQueries) {
+        try {
+          const startTime = Date.now();
+          const data = [];
+
+          if (queryTest.name.includes('iterateRows')) {
+            // Use iterateRows like the pool routes do
+            for await (const { values, tableMeta } of this.queryApi.iterateRows(queryTest.query)) {
+              const rawRow = tableMeta.toObject(values);
+              data.push(rawRow);
+            }
+          } else {
+            // Use queryRows like our home environment queries do
+            await this.queryApi.queryRows(queryTest.query, {
+              next: (row, tableMeta) => {
+                const rawRow = tableMeta.toObject(row);
+                data.push(rawRow);
+              },
+              error: (error) => {
+                console.log(`Pool route query error for ${queryTest.name}:`, error.message);
+              },
+              complete: () => {}
+            });
+          }
+
+          results.poolRouteTests.push({
+            name: queryTest.name,
+            description: queryTest.description,
+            success: true,
+            testTime: Date.now() - startTime,
+            resultCount: data.length,
+            rawData: data,
+            query: queryTest.query,
+            dataStructure: data.length > 0 ? {
+              keys: Object.keys(data[0]),
+              sampleRow: data[0],
+              allRows: data,
+              uniqueValues: data.length > 0 ? Object.keys(data[0]).reduce((acc, key) => {
+                acc[key] = [...new Set(data.map(row => row[key]))];
+                return acc;
+              }, {}) : null
+            } : null
+          });
+        } catch (error) {
+          results.poolRouteTests.push({
+            name: queryTest.name,
+            description: queryTest.description,
+            success: false,
+            error: error.message,
+            query: queryTest.query
+          });
+        }
+      }
+
+      // Determine overall status
+      const hasData = results.poolRouteTests.some(test => test.success && test.resultCount > 0);
+      const hasWorkingQueries = results.poolRouteTests.some(test => test.success);
+
+      if (hasData) {
+        results.overallStatus = 'data_found';
+      } else if (hasWorkingQueries) {
+        results.overallStatus = 'queries_work_no_data';
+      } else {
+        results.overallStatus = 'queries_fail';
+      }
+
+    } catch (error) {
+      results.error = error.message;
+      results.stack = error.stack;
+      results.overallStatus = 'error';
+    }
+
+    return results;
+  }
 }
 
 // Create singleton instance
