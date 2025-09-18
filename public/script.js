@@ -960,6 +960,10 @@ const initializeSparklines = () => {
                 valueStr = `${Math.round(value * 10) / 10}V`;
               } else if (chartLabel.includes('Pump')) {
                 valueStr = value === 1 ? 'Pump ON' : 'Pump OFF';
+              } else if (chartLabel.includes('Humidity')) {
+                valueStr = `${Math.round(value)}%`;
+              } else if (chartLabel.includes('Feels Like')) {
+                valueStr = `${Math.round(value * 10) / 10}°F`;
               } else {
                 valueStr = `${value}`;
               }
@@ -1100,39 +1104,21 @@ const initializeSparklines = () => {
   if (homeTempCanvas) {
     if (homeTempSparkline) homeTempSparkline.destroy();
     const { homeTemperature } = CONFIG.thresholds;
-    homeTempSparkline = new Chart(homeTempCanvas, {
-      ...chartConfig('Home Temp', '#e74c3c'),
-      options: {
-        ...chartConfig('Home Temp', '#e74c3c').options,
-        scales: { y: { min: homeTemperature.min, max: homeTemperature.max, display: false } }
-      }
-    });
+    homeTempSparkline = new Chart(homeTempCanvas, chartConfig('Home Temp', '#e74c3c', { min: homeTemperature.min, max: homeTemperature.max }));
   }
 
   const homeHumidityCanvas = document.getElementById('homeHumiditySparkline');
   if (homeHumidityCanvas) {
     if (homeHumiditySparkline) homeHumiditySparkline.destroy();
     const { homeHumidity } = CONFIG.thresholds;
-    homeHumiditySparkline = new Chart(homeHumidityCanvas, {
-      ...chartConfig('Home Humidity', '#3498db'),
-      options: {
-        ...chartConfig('Home Humidity', '#3498db').options,
-        scales: { y: { min: homeHumidity.min, max: homeHumidity.max, display: false } }
-      }
-    });
+    homeHumiditySparkline = new Chart(homeHumidityCanvas, chartConfig('Home Humidity', '#3498db', { min: homeHumidity.min, max: homeHumidity.max }));
   }
 
   const homeFeelsLikeCanvas = document.getElementById('homeFeelsLikeSparkline');
   if (homeFeelsLikeCanvas) {
     if (homeFeelsLikeSparkline) homeFeelsLikeSparkline.destroy();
     const { homeTemperature } = CONFIG.thresholds;
-    homeFeelsLikeSparkline = new Chart(homeFeelsLikeCanvas, {
-      ...chartConfig('Feels Like', '#f39c12'),
-      options: {
-        ...chartConfig('Feels Like', '#f39c12').options,
-        scales: { y: { min: homeTemperature.min, max: homeTemperature.max, display: false } }
-      }
-    });
+    homeFeelsLikeSparkline = new Chart(homeFeelsLikeCanvas, chartConfig('Feels Like', '#f39c12', { min: homeTemperature.min, max: homeTemperature.max }));
   }
 
   console.log('✅ Sparklines initialized');
