@@ -215,17 +215,17 @@ class InfluxDBClient {
     }
 
     try {
-      // SIMPLE QUERY - Just get the raw temperature and humidity sensor data
+      // Try the requested time range first - query for processed data fields
       const query = `
         from(bucket: "pool-data")
           |> range(start: -${hours}h)
           |> filter(fn: (r) => r._measurement == "pool_metrics")
-          |> filter(fn: (r) => r.sensor == "pool_temperature" or r.sensor == "pool_humidity")
+          |> filter(fn: (r) => r._field == "Temp (F)" or r._field == "Humidity (%)" or r._field == "Feels-Like (F)")
           |> sort(columns: ["_time"])
           |> limit(n: ${limit})
       `;
 
-      console.log('🏠 Executing WORKING home environment query for', hours, 'hours');
+      console.log('🏠 Executing home environment query for', hours, 'hours');
 
       const dataPoints = [];
       let rowCount = 0;
@@ -234,10 +234,36 @@ class InfluxDBClient {
       for await (const { values, tableMeta } of this.queryApi.iterateRows(query)) {
         rowCount++;
         const dataPoint = tableMeta.toObject(values);
-        console.log(`🏠 Raw data point ${rowCount}:`, JSON.stringify(dataPoint, null, 2));
         const transformedPoint = this.transformWorkingHomeEnvironmentPoint(dataPoint);
-        console.log(`🏠 Transformed data point ${rowCount}:`, JSON.stringify(transformedPoint, null, 2));
         dataPoints.push(transformedPoint);
+      }
+
+      // If we don't have enough data in the requested time range, try extending it
+      if (dataPoints.length < 10 && hours < 168) { // Less than 10 points and less than 7 days
+        console.log(`🏠 Only found ${dataPoints.length} points in ${hours}h, trying extended range...`);
+
+        const extendedHours = Math.min(hours * 3, 168); // Try 3x the range, max 7 days
+        const extendedQuery = `
+          from(bucket: "pool-data")
+            |> range(start: -${extendedHours}h)
+            |> filter(fn: (r) => r._measurement == "pool_metrics")
+            |> filter(fn: (r) => r._field == "Temp (F)" or r._field == "Humidity (%)" or r._field == "Feels-Like (F)")
+            |> sort(columns: ["_time"])
+            |> limit(n: ${limit})
+        `;
+
+        const extendedDataPoints = [];
+        let extendedRowCount = 0;
+
+        for await (const { values, tableMeta } of this.queryApi.iterateRows(extendedQuery)) {
+          extendedRowCount++;
+          const dataPoint = tableMeta.toObject(values);
+          const transformedPoint = this.transformWorkingHomeEnvironmentPoint(dataPoint);
+          extendedDataPoints.push(transformedPoint);
+        }
+
+        console.log(`🏠 Extended query (${extendedHours}h) found ${extendedRowCount} raw rows, created ${extendedDataPoints.length} data points`);
+        return extendedDataPoints;
       }
 
       console.log(`🏠 Query complete: processed ${rowCount} raw rows, created ${dataPoints.length} data points`);
@@ -409,26 +435,24 @@ class InfluxDBClient {
    * Transform working home environment InfluxDB point to our data format
    */
   transformWorkingHomeEnvironmentPoint(influxPoint) {
-    // Handle the actual field names we discovered in the data
+    // Handle the processed data field names from the CSV
     let temperature = undefined;
     let humidity = undefined;
     let feelsLike = undefined;
 
-    // Check for temperature data (field: "value" for pool_temperature sensor, in Celsius)
-    if (influxPoint.sensor === 'pool_temperature' && influxPoint._field === 'value') {
-      // Convert Celsius to Fahrenheit
-      temperature = (influxPoint._value * 9/5) + 32;
+    // Check for processed temperature data (field: "Temp (F)")
+    if (influxPoint._field === 'Temp (F)') {
+      temperature = influxPoint._value;
     }
 
-    // Check for humidity data (field: "value" for pool_humidity sensor, already in percentage)
-    if (influxPoint.sensor === 'pool_humidity' && influxPoint._field === 'value') {
+    // Check for processed humidity data (field: "Humidity (%)")
+    if (influxPoint._field === 'Humidity (%)') {
       humidity = influxPoint._value;
     }
 
-    // Calculate feels-like if we have both temperature and humidity
-    if (temperature !== undefined && humidity !== undefined) {
-      // Heat index calculation (temperature should be in Fahrenheit)
-      feelsLike = 1.8 * (0.5 * (temperature + 61.0 + ((temperature - 68.0) * 1.2) + (humidity * 0.094))) - 32.0;
+    // Check for processed feels-like data (field: "Feels-Like (F)")
+    if (influxPoint._field === 'Feels-Like (F)') {
+      feelsLike = influxPoint._value;
     }
 
     return {

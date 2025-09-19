@@ -68,7 +68,7 @@ const CONFIG = {
 // Global chart variables
 let tempChart, electricalChart, chemistryChart, homeEnvironmentChart;
 let saltSparkline, waterTempSparkline, cellVoltageSparkline, filterPumpSparkline, weatherTimeSeriesChart;
-let homeTempSparkline, homeHumiditySparkline, homeFeelsLikeSparkline;
+let homeTempSparkline, homeHumiditySparkline, homeFeelsLikeSparkline, weatherSparkline;
 
 // Configuration initialization
 const initializeConfig = async () => {
@@ -369,13 +369,42 @@ const updateWeatherTimeSeriesChart = (data) => {
     return;
   }
 
-  const labels = data.timeSeries.map(d => new Date(d.timestamp));
+  // Filter to only show last 24 hours of data
+  const now = new Date();
+  const twentyFourHoursAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000));
+
+  const filteredTimeSeries = data.timeSeries
+    .filter(d => new Date(d.timestamp) >= twentyFourHoursAgo)
+    .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+  const labels = filteredTimeSeries.map(d => new Date(d.timestamp));
 
   weatherTimeSeriesChart.data.labels = labels;
-  weatherTimeSeriesChart.data.datasets[0].data = data.timeSeries.map(d => d.rain);
-  weatherTimeSeriesChart.data.datasets[1].data = data.timeSeries.map(d => d.heatIndex);
+  weatherTimeSeriesChart.data.datasets[0].data = filteredTimeSeries.map(d => d.rain);
+  weatherTimeSeriesChart.data.datasets[1].data = filteredTimeSeries.map(d => d.heatIndex);
 
   weatherTimeSeriesChart.update('none');
+};
+
+const updateWeatherSparkline = (data) => {
+  if (!weatherSparkline || !data.timeSeriesData) {
+    return;
+  }
+
+  // Filter to only show last 24 hours of data
+  const now = new Date();
+  const twentyFourHoursAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000));
+
+  const filteredData = data.timeSeriesData
+    .filter(d => d.temperature !== null && d.temperature !== undefined)
+    .filter(d => new Date(d.timestamp) >= twentyFourHoursAgo)
+    .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+  if (filteredData.length > 0) {
+    weatherSparkline.data.labels = filteredData.map(d => new Date(d.timestamp));
+    weatherSparkline.data.datasets[0].data = filteredData.map(d => d.temperature);
+    weatherSparkline.update('none');
+  }
 };
 
 const updateWeatherAlertsCard = (alertsData, historyData) => {
@@ -461,6 +490,7 @@ const updateWeatherTimeSeriesCard = (data) => {
   }
 
   updateWeatherTimeSeriesChart(data);
+  updateWeatherSparkline(data);
 };
 
 // Home Environment Card Update Functions
@@ -709,7 +739,8 @@ const loadWeatherTimeSeries = async () => {
     console.log('🌤️ Loading weather time series from InfluxDB...');
     const startTime = Date.now();
 
-    const response = await fetch('/api/pool/weather', { credentials: 'include' });
+    // Use the correct time series endpoint with 1 day of data for 24-hour display
+    const response = await fetch('/api/pool/weather/timeseries?days=1', { credentials: 'include' });
 
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -773,19 +804,36 @@ const loadHomeEnvironmentTimeSeries = async (hours = 24) => {
     console.log(`🏠 Loading home environment time series (${hours}h)...`);
     const startTime = Date.now();
 
-    const response = await fetch(`/api/home/timeseries?hours=${hours}`, { credentials: 'include' });
+    let response = await fetch(`/api/home/timeseries?hours=${hours}`, { credentials: 'include' });
 
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
-    const result = await response.json();
+    let result = await response.json();
 
     if (!result.success) {
       throw new Error(result.error || 'Invalid home environment time series response format');
     }
 
-    const data = result.data;
+    let data = result.data;
+
+    // If we don't have enough recent data, try extending the time range
+    if (data.length < 50 && hours < 168) { // Less than 50 points and less than 7 days
+      console.log(`🏠 Only found ${data.length} points in ${hours}h, trying extended range...`);
+
+      const extendedHours = Math.min(hours * 4, 168); // Try 4x the range, max 7 days
+      response = await fetch(`/api/home/timeseries?hours=${extendedHours}`, { credentials: 'include' });
+
+      if (response.ok) {
+        result = await response.json();
+        if (result.success) {
+          data = result.data;
+          console.log(`🏠 Extended query (${extendedHours}h) found ${data.length} data points`);
+        }
+      }
+    }
+
     const loadTime = Date.now() - startTime;
     console.log(`✅ Home environment time series loaded in ${loadTime}ms`);
 
@@ -846,9 +894,15 @@ const loadHomeEnvironmentTimeSeries = async (hours = 24) => {
         source: 'influxdb'
       });
 
-      // Update sparklines
+      // Update sparklines - filter to only show last 24 hours of data
+      const now = new Date();
+      const twentyFourHoursAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000));
+
       if (homeTempSparkline) {
-        const tempData = data.filter(d => d.temperature !== null && d.temperature !== undefined);
+        const tempData = data
+          .filter(d => d.temperature !== null && d.temperature !== undefined)
+          .filter(d => new Date(d.timestamp) >= twentyFourHoursAgo)
+          .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
         if (tempData.length > 0) {
           homeTempSparkline.data.labels = tempData.map(d => new Date(d.timestamp));
           homeTempSparkline.data.datasets[0].data = tempData.map(d => d.temperature);
@@ -857,7 +911,10 @@ const loadHomeEnvironmentTimeSeries = async (hours = 24) => {
       }
 
       if (homeHumiditySparkline) {
-        const humidityData = data.filter(d => d.humidity !== null && d.humidity !== undefined);
+        const humidityData = data
+          .filter(d => d.humidity !== null && d.humidity !== undefined)
+          .filter(d => new Date(d.timestamp) >= twentyFourHoursAgo)
+          .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
         if (humidityData.length > 0) {
           homeHumiditySparkline.data.labels = humidityData.map(d => new Date(d.timestamp));
           homeHumiditySparkline.data.datasets[0].data = humidityData.map(d => d.humidity);
@@ -866,7 +923,10 @@ const loadHomeEnvironmentTimeSeries = async (hours = 24) => {
       }
 
       if (homeFeelsLikeSparkline) {
-        const feelsLikeData = data.filter(d => d.feelsLike !== null && d.feelsLike !== undefined);
+        const feelsLikeData = data
+          .filter(d => d.feelsLike !== null && d.feelsLike !== undefined)
+          .filter(d => new Date(d.timestamp) >= twentyFourHoursAgo)
+          .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
         if (feelsLikeData.length > 0) {
           homeFeelsLikeSparkline.data.labels = feelsLikeData.map(d => new Date(d.timestamp));
           homeFeelsLikeSparkline.data.datasets[0].data = feelsLikeData.map(d => d.feelsLike);
@@ -1214,6 +1274,13 @@ const initializeSparklines = () => {
     if (homeFeelsLikeSparkline) homeFeelsLikeSparkline.destroy();
     const { homeTemperature } = CONFIG.thresholds;
     homeFeelsLikeSparkline = new Chart(homeFeelsLikeCanvas, chartConfig('Feels Like', '#f39c12', { min: homeTemperature.min, max: homeTemperature.max }));
+  }
+
+  // Initialize weather sparkline
+  const weatherSparklineCanvas = document.getElementById('weatherSparkline');
+  if (weatherSparklineCanvas) {
+    if (weatherSparkline) weatherSparkline.destroy();
+    weatherSparkline = new Chart(weatherSparklineCanvas, chartConfig('Weather Temp', '#ff6b35', { min: 30, max: 100 }));
   }
 
   console.log('✅ Sparklines initialized');
@@ -2367,6 +2434,7 @@ window.addEventListener('beforeunload', () => {
   cleanupChart(cellVoltageSparkline);
   cleanupChart(filterPumpSparkline);
   cleanupChart(weatherTimeSeriesChart);
+  cleanupChart(weatherSparkline);
   cleanupChart(homeTempSparkline);
   cleanupChart(homeHumiditySparkline);
   cleanupChart(homeFeelsLikeSparkline);
