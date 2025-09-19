@@ -327,7 +327,14 @@ describe('Home Environment Frontend', () => {
       ];
 
       const mockChart = {
-        data: { labels: [], datasets: [] },
+        data: {
+          labels: [],
+          datasets: [
+            { data: [] }, // Temperature dataset
+            { data: [] }, // Humidity dataset
+            { data: [] }  // Feels-like dataset
+          ]
+        },
         update: jest.fn()
       };
 
