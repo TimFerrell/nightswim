@@ -38,7 +38,8 @@ describe('InfluxDBClient - Home Environment', () => {
 
     // Create mock query API
     mockQueryApi = {
-      queryRows: jest.fn()
+      queryRows: jest.fn(),
+      iterateRows: jest.fn()
     };
 
     // Mock InfluxDB constructor
@@ -72,27 +73,19 @@ describe('InfluxDBClient - Home Environment', () => {
         { _time: '2025-01-01T11:00:00Z', _field: 'Feels-Like (F)', _value: 74.8 }
       ];
 
-      mockQueryApi.queryRows.mockImplementation((query, callbacks) => {
-        mockData.forEach(point => {
-          const mockRow = {
-            _time: point._time,
-            [point._field]: point._value
+      mockQueryApi.iterateRows.mockImplementation(async function* (query) {
+        for (const point of mockData) {
+          yield {
+            values: point,
+            tableMeta: { toObject: (values) => values }
           };
-          callbacks.next(mockRow, { toObject: () => mockRow });
-        });
-        callbacks.complete();
-        return Promise.resolve();
+        }
       });
 
       const result = await client.queryHomeEnvironmentData(24, 100);
 
-      expect(mockQueryApi.queryRows).toHaveBeenCalledWith(
-        expect.stringContaining('pool_metrics'),
-        expect.objectContaining({
-          next: expect.any(Function),
-          error: expect.any(Function),
-          complete: expect.any(Function)
-        })
+      expect(mockQueryApi.iterateRows).toHaveBeenCalledWith(
+        expect.stringContaining('pool_metrics')
       );
 
       expect(result).toHaveLength(6);
